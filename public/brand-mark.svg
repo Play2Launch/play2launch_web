@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <title>Play2Launch</title>
+  <desc>Electric lime play symbol with an upward launch arrow in negative space.</desc>
+  <g fill="#D2FA69">
+    <path d="M85 105C85 72 115 55 142 70L323 170Q331 174 325 183C271 255 199 316 109 355C94 362 85 355 85 340Z"/>
+    <path d="M109 387C188 355 255 309 303 253Q308 248 306 255L283 359Q282 367 275 371L143 443C118 457 92 441 86 416C81 399 88 392 109 387Z"/>
+    <path d="M352 189Q355 187 359 190L404 216C435 234 434 271 405 289L314 348Q310 351 312 343L347 195Q349 189 352 189Z"/>
+  </g>
+</svg>

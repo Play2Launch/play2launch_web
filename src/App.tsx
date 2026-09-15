@@ -8,10 +8,8 @@ import {
   Copy,
   FlaskConical,
   Globe2,
-  Layers3,
   LayoutGrid,
   LogIn,
-  Play,
   Send,
   ShieldCheck,
   Trophy,
@@ -104,7 +102,7 @@ function Shell() {
       <header className="site-header">
         <Link to="/" className="brand">
           <span className="brand-icon">
-            <Play size={20} fill="currentColor" />
+            <img src="/brand-mark.svg" width="40" height="40" alt="" />
           </span>
           <span>
             PLAY TO
@@ -254,7 +252,7 @@ function Shell() {
         </Routes>
         <footer>
           <Link to="/" className="footer-brand">
-            <Layers3 size={18} /> P2L
+            <img src="/brand-mark.svg" width="28" height="28" alt="" /> P2L
           </Link>
           <span>Ideas become games. Communities unlock tokens.</span>
           <span>
