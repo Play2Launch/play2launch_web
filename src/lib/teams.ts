@@ -1,0 +1,100 @@
+import { api } from "./api";
+export type ServerTeam = {
+  referrals?: number;
+  status?: "active" | "paused";
+  owner_id?: string;
+  id: string;
+  name: string;
+  handle: string;
+  initial: string;
+  color: string;
+  description: string;
+  players: number;
+};
+export type Membership = { id: string; team_id: string; joined_at: string };
+export type MyTeam = {
+  campaign_id: string;
+  slug: string;
+  name: string;
+  team_name: string;
+  membership: Membership;
+};
+function validTeam(t: ServerTeam) {
+  return (
+    t &&
+    /^tm[0-9a-z]{1,13}$/.test(t.id) &&
+    [t.name, t.handle, t.initial, t.description].every(
+      (v) => typeof v === "string",
+    ) &&
+    /^#[0-9a-fA-F]{6}$/.test(t.color) &&
+    Number.isSafeInteger(t.players) &&
+    t.players >= 0
+  );
+}
+function validMembership(m: Membership) {
+  return (
+    m &&
+    /^mb[0-9a-z]{1,13}$/.test(m.id) &&
+    /^tm[0-9a-z]{1,13}$/.test(m.team_id) &&
+    Number.isFinite(Date.parse(m.joined_at))
+  );
+}
+const invalid = () => new Error("Invalid team response. Please retry.");
+export async function listTeams(slug: string, signal?: AbortSignal) {
+  const d = await api.request<{ items: ServerTeam[] }>(
+    `/campaigns/${encodeURIComponent(slug)}/teams`,
+    undefined,
+    { signal },
+  );
+  if (!d || !Array.isArray(d.items) || !d.items.every(validTeam))
+    throw invalid();
+  return d.items;
+}
+export async function myMembership(slug: string, signal?: AbortSignal) {
+  const d = await api.authenticated<{ membership: Membership | null }>(
+    `/campaigns/${encodeURIComponent(slug)}/membership`,
+    undefined,
+    signal,
+  );
+  if (!d || (d.membership !== null && !validMembership(d.membership)))
+    throw invalid();
+  return d.membership;
+}
+export async function joinTeam(
+  slug: string,
+  team: string,
+  signal?: AbortSignal,
+  referrerId?: string,
+) {
+  const d = await api.authenticated<Membership>(
+    `/campaigns/${encodeURIComponent(slug)}/teams/${encodeURIComponent(team)}/join`,
+    referrerId ? { referrer_id: referrerId } : {},
+    signal,
+  );
+  if (!validMembership(d) || d.team_id !== team) throw invalid();
+  return d;
+}
+export async function memberships(after: string, signal?: AbortSignal) {
+  const d = await api.authenticated<{ items: MyTeam[]; next_cursor: string }>(
+    `/user/memberships${after ? `?after=${encodeURIComponent(after)}` : ""}`,
+    undefined,
+    signal,
+  );
+  if (
+    !d ||
+    !Array.isArray(d.items) ||
+    !d.items.every(
+      (m) =>
+        m &&
+        /^cp[0-9a-z]{1,13}$/.test(m.campaign_id) &&
+        /^[a-z0-9][a-z0-9-]{0,63}$/.test(m.slug) &&
+        typeof m.name === "string" &&
+        typeof m.team_name === "string" &&
+        validMembership(m.membership),
+    ) ||
+    typeof d.next_cursor !== "string" ||
+    (d.next_cursor !== "" && !/^[a-z0-9][a-z0-9-]{0,63}$/.test(d.next_cursor))
+  )
+    throw invalid();
+  return d;
+}
