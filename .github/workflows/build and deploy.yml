@@ -26,8 +26,9 @@ jobs:
 
       - name: build
         run: npm run build:live
-        env: 
-          CI: ""
+        env:
+          VITE_API_MODE: live
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
 
       - name: upload
         uses: moonpathbg/scp_uploader@latest
