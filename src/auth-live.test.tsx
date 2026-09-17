@@ -345,6 +345,21 @@ describe("live client flows without sending mail", () => {
       screen.getByRole("button", { name: "Continue with Telegram" }),
     ).toBeTruthy();
   });
+  it("keeps a refreshed TMA tab out of email login and retries recovered SDK data", async () => {
+    sessionStorage.setItem("p2l.telegram-tab.v1", "1");
+    mount("/profile");
+    await act(async () => {
+      document.querySelector('script[src*="telegram.org"]')!.dispatchEvent(new Event("error"));
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save your identity" }));
+    expect(screen.queryByLabelText("Email address")).toBeNull();
+    expect(screen.getByRole("button", { name: "Continue with Telegram" })).toBeTruthy();
+    window.Telegram = { WebApp: { initData: "recovered-launch" } };
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Telegram" }));
+    await screen.findByRole("heading", { name: "Live Player" });
+    const login=transport.mock.calls.find(([url]) => url.endsWith("/user/tg_login"));
+    expect((login![1] as RequestInit).headers).toMatchObject({Authorization:"tma recovered-launch"});
+  });
   it("requires an explicit join after login and never writes demo memberships", async () => {
     mount("/campaign/phood/teams?team=alice&ref=urref&src=x");
     fireEvent.click(await screen.findByRole("button", { name: /^Join / }));

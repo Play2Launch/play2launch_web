@@ -14,7 +14,7 @@ import {
   validId,
   type EntryContext,
 } from "./lib/entry";
-import { localId, mountPlatform, platformContext } from "./lib/platform";
+import { localId, mountPlatform, platformContext, loadTelegramBridge } from "./lib/platform";
 import { api, liveAuth, type SignedIn, type User } from "./lib/api";
 import {
   createCaptainTeam,
@@ -330,7 +330,11 @@ function useAppState() {
   }
   const telegramLogin = () =>
     executeAuth(
-      (signal) => api.telegram(platform.initData, authContext(), signal),
+      async (signal) => {
+        await loadTelegramBridge();
+        const current = platformContext(window.Telegram?.WebApp, new URL(window.location.href));
+        return api.telegram(current.initData || platform.initData, authContext(), signal);
+      },
       completeLiveLogin,
     );
   useEffect(() => {

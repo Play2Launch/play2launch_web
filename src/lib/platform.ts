@@ -28,17 +28,28 @@ export function localId(): string {
   ).join("");
 }
 
+const telegramTabKey = "p2l.telegram-tab.v1";
+function rememberedTelegramTab(): boolean {
+  try {
+    if (sessionStorage.getItem(telegramTabKey) === "1") return true;
+    // The official SDK restores its own launch data from this tab-scoped cache.
+    const cached = JSON.parse(sessionStorage.getItem("__telegram__initParams") || "null");
+    return typeof cached?.tgWebAppData === "string" && cached.tgWebAppData.length > 0;
+  } catch { return false; }
+}
+let bridgeLoading: Promise<void> | undefined;
 export async function loadTelegramBridge(): Promise<void> {
+  const context = platformContext(window.Telegram?.WebApp, new URL(window.location.href));
+  if (context.runtime !== "telegram") return;
+  // Persist only the runtime marker, not credentials or an authenticated identity.
+  try { sessionStorage.setItem(telegramTabKey, "1"); } catch { /* Restricted WebView. */ }
   if (window.Telegram?.WebApp?.initData) return;
-  if (
-    platformContext(undefined, new URL(window.location.href)).runtime !==
-    "telegram"
-  )
-    return;
-  await new Promise<void>((resolve) => {
+  if (bridgeLoading) return bridgeLoading;
+  bridgeLoading = new Promise<void>((resolve) => {
     const script = document.createElement("script");
     const finish = () => {
       clearTimeout(timeout);
+      script.remove();
       resolve();
     };
     const timeout = setTimeout(finish, 2500);
@@ -48,6 +59,7 @@ export async function loadTelegramBridge(): Promise<void> {
     script.onerror = finish;
     document.head.appendChild(script);
   });
+  try { await bridgeLoading; } finally { bridgeLoading = undefined; }
 }
 declare global {
   interface Window {
@@ -65,7 +77,7 @@ export function platformContext(
     hash.get("tgWebAppData") ||
     "";
   // Runtime detection is not identity verification. Only the backend can validate initData.
-  const runtime: Runtime = raw ? "telegram" : "web";
+  const runtime: Runtime = raw || (app?.platform && app.platform !== "unknown") || rememberedTelegramTab() ? "telegram" : "web";
   const start = raw
     ? new URLSearchParams(raw).get("start_param") || undefined
     : undefined;

@@ -97,8 +97,9 @@ export function LiveAuthForm() {
     return (
       <div className="auth-form">
         <p className="small muted">
-          Use your current Telegram identity for this Mini App. Email accounts
-          are available from the regular website.
+          This is a Telegram Mini App session. Retry Telegram verification below.
+          If your session has expired, close this Mini App and open it again from
+          the bot’s Open App button. Email sign-in is only available on the regular website.
         </p>
         <button
           type="button"
