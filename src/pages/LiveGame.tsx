@@ -6,6 +6,8 @@ import { myMembership, listTeams } from "../lib/teams";
 import { useApp } from "../state";
 import { GamePage } from "./Game";
 import type { Campaign } from "../data";
+import { RunnerFrame } from './RunnerFrame';
+import { RUNNER_RULES } from '../lib/runner';
 type Operation = { buy_tick: number; sell_tick: number };
 type Session = {
   game_key?: string;
@@ -23,12 +25,11 @@ function check(s: Session, slug: string) {
     !s ||
     !/^gs[0-9a-z]+$/.test(s.id) ||
     s.slug !== slug ||
-    s.rules !== "paperhood-v1" ||
-    (s.game_key !== undefined && s.game_key !== "" && s.game_key !== "paperhood") ||
+    !((s.rules === "paperhood-v1" && (!s.game_key || s.game_key === "paperhood")) || (s.rules === RUNNER_RULES && /^gx[0-9a-z]{1,13}$/.test(s.game_key||""))) ||
     (s.protocol_version !== undefined && s.protocol_version !== "" && s.protocol_version !== "p2l-game-v1") ||
     !Number.isFinite(s.seed) ||
     s.seed < 0 ||
-    s.seed >= 6 ||
+    (/^gx[0-9a-z]{1,13}$/.test(s.game_key||'') ? (!Number.isInteger(s.seed)||s.seed>0xffffffff) : s.seed>=6) ||
     !Number.isSafeInteger(s.score) ||
     s.score < 0 ||
     !["playing", "accepted", "expired"].includes(s.status)
@@ -143,15 +144,19 @@ function Round({ slug }: { slug: string }) {
     return (
       <div className="empty-panel">
         <h1>Sign in to play for your team</h1>
+        {campaign && /^gx[0-9a-z]{1,13}$/.test(campaign.game_key||'') && <Link className="btn btn-secondary" to={`/campaign/${slug}/try`}>Try it first</Link>}
         <button
           className="btn btn-primary"
           onClick={() => app.setAuthOpen(true)}
         >
           Sign in
         </button>
-        <Link to={`/campaign/${slug}/play`}>Continue with local practice</Link>
       </div>
     );
+  if(campaign && /^gx[0-9a-z]{1,13}$/.test(campaign.game_key||'') && campaign.rules_version===RUNNER_RULES) {
+    if(!team)return <div className="empty-panel"><Link className="btn btn-primary" to={`/campaign/${slug}/teams`}>Choose a team first</Link><Link className="btn btn-secondary" to={`/campaign/${slug}/try`}>Try it first</Link></div>;
+    return <RunnerFrame slug={slug}/>;
+  }
   return (
     <>
       {error && (
@@ -200,7 +205,6 @@ function Round({ slug }: { slug: string }) {
               Choose a team first
             </Link>
           )}
-          <Link to={`/campaign/${slug}/play`}>Local practice</Link>
         </div>
       )}
     </>

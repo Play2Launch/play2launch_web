@@ -1,0 +1,32 @@
+// @vitest-environment jsdom
+import {it,expect,vi,afterEach} from 'vitest';
+import {render,screen,act,cleanup,waitFor} from '@testing-library/react';
+import {MemoryRouter} from 'react-router-dom';
+const mocks=vi.hoisted(()=>({authenticated:vi.fn(),request:vi.fn()}));
+vi.mock('../lib/api',()=>({api:mocks,ApiError:class extends Error{code=0;}}));
+import {RunnerFrame} from './RunnerFrame';
+import {RUNNER_RULES} from '../lib/runner';
+afterEach(()=>{cleanup();vi.unstubAllEnvs();vi.restoreAllMocks();mocks.authenticated.mockReset();});
+it('creates a real session and sends only the SDK payload; forwards accepted score',async()=>{
+ vi.stubEnv('VITE_PAPERHOOD_GAME_URL','https://game.test/');
+ const session={id:'gs1',slug:'run',game_key:'gx1',rules:RUNNER_RULES,protocol_version:'p2l-game-v1',seed:42,expires_at:new Date(Date.now()+300000).toISOString(),status:'playing',score:0};
+ mocks.authenticated.mockImplementation(async(path:string)=>path.endsWith('/sessions')?session:{...session,status:'accepted',score:712});
+ mocks.request.mockResolvedValue({game_id:'gx1',entry_url:'https://game.test/',rules_version:RUNNER_RULES});
+ render(<MemoryRouter><RunnerFrame slug="run"/></MemoryRouter>);
+ const frame=await screen.findByTitle('PAPERHOOD game') as HTMLIFrameElement;
+ const send=vi.spyOn(frame.contentWindow!,'postMessage');
+ const base={protocol:'p2l-game-v1',game_id:'gx1',rules_version:RUNNER_RULES,instance_id:'a'.repeat(32)};
+ const message=async(data:object,origin='https://game.test')=>{await act(async()=>{window.dispatchEvent(new MessageEvent('message',{origin,source:frame.contentWindow,data:{...base,...data}}));});};
+ await message({type:'p2l:ready'},'https://evil.test');expect(mocks.authenticated).not.toHaveBeenCalled();
+ await message({type:'p2l:ready'});
+ expect(send.mock.calls[0][0]).toMatchObject({type:'p2l:init',session:{id:'gs1',seed:42,duration_ms:90000,allow_pause:false}});
+ expect(JSON.stringify(send.mock.calls)).not.toMatch(/token|authorization|account_id/i);
+ await message({type:'p2l:start',session_id:'gs1'});
+ const report={elapsed_ms:10000,score:712,metrics:{distance:71.25},inputs:[]};
+ await message({type:'p2l:finish',session_id:'gs1',submission_id:'b'.repeat(32),report});
+ await waitFor(()=>expect(screen.getByText('Score accepted')).toBeTruthy());
+ expect(mocks.authenticated.mock.calls[1][0]).toBe('/game/sessions/gs1/runner-submit');
+ expect(mocks.authenticated.mock.calls[1][1]).toEqual({submission_id:'b'.repeat(32),report});
+ expect(send.mock.calls.at(-1)?.[0]).toMatchObject({type:'p2l:result',status:'accepted',score:712});
+ expect(screen.getByText('View score & contribution').getAttribute('href')).toBe('/campaign/run/session/gs1');
+});

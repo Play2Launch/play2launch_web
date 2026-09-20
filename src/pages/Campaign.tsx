@@ -316,7 +316,7 @@ export function CampaignPage({
                   <ArrowUpRight size={18} />
                 </Link>
               )}
-            {c.id === "phood" ? (
+            {!live && c.id === "phood" ? (
               <Link
                 to={`/campaign/${c.id}/play`}
                 className={`btn ${stage === "prelaunch" ? "btn-primary" : "btn-secondary"} full big`}
@@ -329,7 +329,7 @@ export function CampaignPage({
                     : "Play again"}{" "}
                 <ArrowUpRight size={18} />
               </Link>
-            ) : (
+            ) : !live ? (
               <div className="inline-note">
                 <Clock3 size={16} />
                 <span>
@@ -337,10 +337,9 @@ export function CampaignPage({
                   demo.
                 </span>
               </div>
-            )}
+            ) : null}
             {live &&
-              c.game_key === "paperhood" &&
-              c.rules_version === "paperhood-v1" && (
+              ((c.game_key === "paperhood" && c.rules_version === "paperhood-v1") || (/^gx[0-9a-z]{1,13}$/.test(c.game_key||"") && c.rules_version === "paper-run-practice-v5")) && (
                 <Link
                   className="btn btn-primary full"
                   to={`/campaign/${c.id}/compete`}
@@ -348,6 +347,9 @@ export function CampaignPage({
                   Play ranked round <ArrowUpRight size={18} />
                 </Link>
               )}
+            {live && /^gx[0-9a-z]{1,13}$/.test(c.game_key||'') && (
+              <Link className="btn btn-secondary full" to={`/campaign/${c.id}/try`}>Try it first · No sign-in needed <Play size={15}/></Link>
+            )}
             {!live && c.id !== "phood" && (
               <Link to="/campaign/phood/play" className="btn btn-primary full">
                 Try PAPERHOOD <Play size={15} />

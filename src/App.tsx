@@ -41,6 +41,7 @@ import {
 } from "./pages/Campaign";
 import { GamePage, ResultPage } from "./pages/Game";
 import { LiveGame, LiveScore, LiveRankings } from "./pages/LiveGame";
+import { TryGame } from './pages/TryGame';
 import { AppProvider, useApp } from "./state";
 import { liveAuth } from "./lib/api";
 import { LiveAuthForm } from "./components/LiveAuthForm";
@@ -230,6 +231,7 @@ function Shell() {
           />
           <Route path="/campaign/:id/play" element={<CampaignGame />} />
           {liveAuth && <Route path="/campaign/:id/compete" element={<LiveGame />} />}
+          {liveAuth && <Route path="/campaign/:id/try" element={<TryGame />} />}
           {liveAuth && <Route path="/campaign/:id/session/:sessionId" element={<LiveScore />} />}
           <Route path="/campaign/:id/result/:runId" element={<ResultPage />} />
           <Route path="/campaign/:id/teams" element={liveAuth ? <LiveTeams/> : <TeamPage />} />
@@ -298,6 +300,7 @@ function Shell() {
 }
 function CampaignGame() {
   const { id } = useParams();
+  if(liveAuth)return <LiveGame key={id}/>;
   return <GamePage key={id} />;
 }
 export function Modal({

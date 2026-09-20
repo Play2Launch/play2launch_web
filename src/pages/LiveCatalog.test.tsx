@@ -147,7 +147,7 @@ it("restores the detail layout and disables unconnected actions", async () => {
   expect(
     document.querySelector(".campaign-layout .campaign-aside .unlock-panel"),
   ).toBeTruthy();
-  expect(screen.getByRole("link", { name: "Practice game" })).toBeTruthy();
+  expect(screen.queryByRole("link", { name: "Practice game" })).toBeNull();
   expect(
     screen.getByRole("link", { name: "Choose your team" }).getAttribute("href"),
   ).toBe("/campaign/phood/teams");
