@@ -65,12 +65,14 @@ export function RunnerFrame({slug}:{slug:string}) {
   window.addEventListener('message',receive);
   return()=>{ctrl.abort();clearTimeout(timer);window.removeEventListener('message',receive);};
  },[src,slug,attempt,launch]);
- return <section>
+ return <section className="game-embed" aria-label="Game mode">
   <div className="notice" role="status">{status}</div>
   {(error||configError)&&<p role="alert">{error||configError}</p>}
-  {src&&<iframe key={attempt} ref={frame} src={src} title="PAPERHOOD game" sandbox="allow-scripts allow-same-origin" referrerPolicy="no-referrer" style={{width:'100%',height:'min(78dvh,760px)',minHeight:360,border:0,borderRadius:16}}/>}
+  {src&&<iframe className="game-embed-frame" key={attempt} ref={frame} src={src} title="PAPERHOOD game" sandbox="allow-scripts allow-same-origin" referrerPolicy="no-referrer"/>}
+  <div className="game-embed-actions">
   {result&&<Link className="btn btn-primary" to={`/campaign/${slug}/session/${result.id}`}>View score & contribution</Link>}
   <Link className="btn btn-secondary" to={`/campaign/${slug}`}>Return to campaign</Link>
   {error&&<button className="btn btn-secondary" onClick={()=>{setError('');setAttempt(n=>n+1);}}>Reconnect game</button>}
+  </div>
  </section>;
 }

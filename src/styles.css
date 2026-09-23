@@ -3971,3 +3971,21 @@ footer > span:last-child {
 .public-profile-editor fieldset { border: 0; padding: 0; min-width: 0; display: grid; gap: 14px; }
 .public-profile-editor label { display: grid; gap: 8px; font-size: 13px; }
 .public-profile-editor input { width: 100%; min-width: 0; padding: 12px; background: #11170e; color: #f0f1e9; border: 1px solid #49563d; border-radius: 8px; font-size: 16px; }
+
+/* Game routes own the available width; exiting restores the normal site shell. */
+body:has(.game-embed) .site-header,
+body:has(.game-embed) .mobile-nav,
+body:has(.game-embed) .page-container > footer { display: none; }
+body:has(.game-embed) .page-container {
+  max-width: none; margin: 0; padding: max(var(--tg-top), env(safe-area-inset-top)) 0 max(var(--tg-bottom), env(safe-area-inset-bottom));
+}
+.game-embed { width: 100%; margin: 0; touch-action: manipulation; }
+.game-embed > .notice, .game-embed > [role="alert"], .game-embed-actions {
+  margin: 0; padding: 10px max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
+}
+.game-embed-frame {
+  display: block; width: 100%; border: 0; border-radius: 0;
+  height: min(calc(85vw + 64px), max(200px, calc(100dvh - var(--tg-top) - var(--tg-bottom) - 100px)));
+  background: #10150d;
+}
+.game-embed-actions { display: flex; flex-wrap: wrap; gap: 8px; }

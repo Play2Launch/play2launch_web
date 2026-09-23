@@ -19,10 +19,10 @@ function Trial({slug}:{slug:string}){
   }).catch(e=>{if(!ctrl.signal.aborted)setError(e.message);});
   return()=>ctrl.abort();
  },[slug,attempt]);
- return <section>
-  <div className="notice"><strong>FREE TRIAL</strong><p>No sign-in or team required. Trial scores stay local and do not count toward rankings or campaign progress.</p></div>
+ return <section className="game-embed" aria-label="Game mode">
+  <div className="notice"><strong>FREE TRIAL</strong><span> · Trial scores stay local, not ranked.</span></div>
   {error?<p role="alert">{error}</p>:!src?<p role="status">Loading game…</p>:null}
-  {src&&<iframe key={attempt} src={src} title="Game trial" sandbox="allow-scripts allow-same-origin" referrerPolicy="no-referrer" style={{width:'100%',height:'min(78dvh,760px)',minHeight:360,border:0,borderRadius:16}}/>}
+  {src&&<iframe className="game-embed-frame" key={attempt} src={src} title="Game trial" sandbox="allow-scripts allow-same-origin" referrerPolicy="no-referrer"/>}
   <div className="notice"><p>Ready to compete? Join a team and start a new ranked round. Trial scores cannot be transferred.</p>
    <Link className="btn btn-primary" to={`/campaign/${slug}/compete`}>Play for your team</Link>
    <Link className="btn btn-secondary" to={`/campaign/${slug}`}>Return to campaign</Link>
