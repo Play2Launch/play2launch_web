@@ -34,13 +34,17 @@ function Directory({ slug }: { slug: string }) {
     const ctrl = new AbortController();
     setReady(false);
     setError("");
-    Promise.all([
-      getCampaign(slug, ctrl.signal),
+    getCampaign(slug, ctrl.signal).then(async c => {
+      if(ctrl.signal.aborted)throw new Error('Cancelled');
+      const [t,m]=await Promise.all([
       listTeams(slug, ctrl.signal),
       app.user ? myMembership(slug, ctrl.signal) : Promise.resolve(null),
-    ])
+      ]);
+      return [c,t,m] as const;
+    })
       .then(([c, t, m]) => {
         if (ctrl.signal.aborted) return;
+        document.title=`${c.name} · Teams · PLAY TO LAUNCH`;
         setCampaign({
           ...c,
           id: c.slug,

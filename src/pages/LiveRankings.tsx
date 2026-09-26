@@ -3,7 +3,11 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { CampaignPicker } from "../components/CampaignPicker";
 import { Trophy, RefreshCw, Users, ArrowUpRight } from "lucide-react";
 import { api } from "../lib/api";
-import { getCampaign, type PublicCampaign } from "../lib/catalog";
+import {
+  getCampaign,
+  listCampaigns,
+  type PublicCampaign,
+} from "../lib/catalog";
 import { listTeams, myMembership, type ServerTeam } from "../lib/teams";
 import { useApp } from "../state";
 import { safeImageSource } from "../components/CampaignArtwork";
@@ -38,7 +42,9 @@ export function validRankings(d: Snapshot) {
         typeof r.id === "string" &&
         (r.display_name === undefined || typeof r.display_name === "string") &&
         (r.kol_verified === undefined || typeof r.kol_verified === "boolean") &&
-        (r.handle === undefined || (typeof r.handle === "string" && (!r.handle || /^[a-z][a-z0-9_]{2,23}$/.test(r.handle)))) &&
+        (r.handle === undefined ||
+          (typeof r.handle === "string" &&
+            (!r.handle || /^[a-z][a-z0-9_]{2,23}$/.test(r.handle)))) &&
         (r.avatar_url === undefined || typeof r.avatar_url === "string") &&
         Number.isSafeInteger(r.score) &&
         r.score >= 0,
@@ -51,14 +57,104 @@ export function validRankings(d: Snapshot) {
   );
 }
 export default function LiveRankings() {
-  const { id = "phood" } = useParams();
-  return <Board key={id} slug={id} />;
+  const { id } = useParams();
+  return <Selection key={id || "catalog"} slug={id} />;
 }
-function Board({ slug }: { slug: string }) {
+const missing = (e: unknown) =>
+  typeof e === "object" && e !== null && "status" in e && e.status === 404;
+function Selection({ slug }: { slug?: string }) {
+  const [campaign, setCampaign] = useState<PublicCampaign>(),
+    [busy, setBusy] = useState(true),
+    [error, setError] = useState(""),
+    [retry, setRetry] = useState(0),
+    [picker, setPicker] = useState(false);
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!campaign) document.title = "Rankings · PLAY TO LAUNCH";
+  }, [campaign]);
+  useEffect(() => {
+    const ctrl = new AbortController();
+    setBusy(true);
+    setError("");
+    setCampaign(undefined);
+    (slug
+      ? getCampaign(slug, ctrl.signal)
+      : listCampaigns("", ctrl.signal).then((p) => p.items[0])
+    )
+      .then((c) => {
+        if (!ctrl.signal.aborted) setCampaign(c);
+      })
+      .catch((e) => {
+        if (!ctrl.signal.aborted)
+          setError(
+            missing(e)
+              ? "This campaign is unavailable or no longer published."
+              : e.message || "Campaigns could not be loaded.",
+          );
+      })
+      .finally(() => {
+        if (!ctrl.signal.aborted) setBusy(false);
+      });
+    return () => ctrl.abort();
+  }, [slug, retry]);
+  const unavailable = useRef(() => {});
+  unavailable.current = () => {
+    setCampaign(undefined);
+    setError("This campaign is unavailable or no longer published.");
+  };
+  if (campaign)
+    return (
+      <Board
+        key={campaign.slug}
+        slug={campaign.slug}
+        campaign={campaign}
+        unavailable={() => unavailable.current()}
+      />
+    );
+  return (
+    <section className="rankings-page">
+      <h1>Rankings</h1>
+      {busy ? (
+        <p role="status">Loading campaigns…</p>
+      ) : (
+        <div className="empty-panel">
+          <p role={error ? "alert" : undefined}>
+            {error || "No published campaigns yet."}
+          </p>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setRetry((n) => n + 1)}
+          >
+            Retry
+          </button>
+          <button className="btn btn-secondary" onClick={() => setPicker(true)}>
+            Switch campaign
+          </button>
+          <Link to="/">Discover campaigns</Link>
+        </div>
+      )}
+      {picker && (
+        <CampaignPicker
+          purpose="leaderboard"
+          close={() => setPicker(false)}
+          choose={(c) => navigate(`/campaign/${c.slug}/leaderboard`)}
+        />
+      )}
+    </section>
+  );
+}
+function Board({
+  slug,
+  campaign,
+  unavailable,
+}: {
+  slug: string;
+  campaign: PublicCampaign;
+  unavailable: () => void;
+}) {
   const navigate = useNavigate();
   const [picker, setPicker] = useState(false);
   const app = useApp();
-  const [campaign, setCampaign] = useState<PublicCampaign>();
   const [teams, setTeams] = useState<ServerTeam[]>([]);
   const [data, setData] = useState<Snapshot>(),
     [kind, setKind] = useState<"players" | "teams">("players");
@@ -71,16 +167,24 @@ function Board({ slug }: { slug: string }) {
     [memberReady, setMemberReady] = useState(false);
   const [artFailed, setArtFailed] = useState(false);
   const reload = useRef<() => void>(() => {});
+  const onUnavailable = useRef(unavailable);
+  onUnavailable.current = unavailable;
+  useEffect(() => {
+    document.title = `${campaign.name} · Rankings · PLAY TO LAUNCH`;
+  }, [campaign.name]);
   useEffect(() => {
     const ctrl = new AbortController();
     setMetaError("");
-    Promise.all([getCampaign(slug, ctrl.signal), listTeams(slug, ctrl.signal)])
-      .then(([c, t]) => {
+    listTeams(slug, ctrl.signal)
+      .then((t) => {
         if (ctrl.signal.aborted) return;
-        setCampaign(c);
         setTeams(t);
       })
       .catch((e) => {
+        if (!ctrl.signal.aborted && missing(e)) {
+          onUnavailable.current();
+          return;
+        }
         if (!ctrl.signal.aborted) setMetaError(e.message);
       });
     return () => ctrl.abort();
@@ -98,7 +202,11 @@ function Board({ slug }: { slug: string }) {
             setMemberReady(true);
           }
         })
-        .catch(() => {
+        .catch((e) => {
+          if (!ctrl.signal.aborted && missing(e)) {
+            onUnavailable.current();
+            return;
+          }
           if (!ctrl.signal.aborted) {
             setMemberError(true);
             setMemberReady(true);
@@ -127,6 +235,12 @@ function Board({ slug }: { slug: string }) {
           setError("");
         }
       } catch (e) {
+        if (!stopped && missing(e)) {
+          stopped = true;
+          ctrl.abort();
+          onUnavailable.current();
+          return;
+        }
         if (!stopped)
           setError(
             e instanceof Error ? e.message : "Rankings could not be updated.",
@@ -165,8 +279,10 @@ function Board({ slug }: { slug: string }) {
         : r.display_name || `Player #${r.id}`;
   const art = safeImageSource(campaign?.hero_image || campaign?.cover_image);
   const username = (r: Rank) => {
-    const h = r.id === app.user?.id ? app.user.handle ?? r.handle : r.handle;
-    return kind === "players" && h && /^[a-z][a-z0-9_]{2,23}$/.test(h) ? h : undefined;
+    const h = r.id === app.user?.id ? (app.user.handle ?? r.handle) : r.handle;
+    return kind === "players" && h && /^[a-z][a-z0-9_]{2,23}$/.test(h)
+      ? h
+      : undefined;
   };
   function refresh() {
     setRetry((n) => n + 1);
@@ -372,8 +488,15 @@ function Board({ slug }: { slug: string }) {
                     />
                   )}
                 </span>
-                <h3>{label(r)} {kind === "players" && r.kol_verified === true && <VerifiedKol />}</h3>
-                {username(r) && <span className="rankings-username">@{username(r)}</span>}
+                <h3>
+                  {label(r)}{" "}
+                  {kind === "players" && r.kol_verified === true && (
+                    <VerifiedKol />
+                  )}
+                </h3>
+                {username(r) && (
+                  <span className="rankings-username">@{username(r)}</span>
+                )}
                 <small>
                   {kind === "players"
                     ? teamName(r.team_id)
@@ -420,8 +543,16 @@ function Board({ slug }: { slug: string }) {
                               name={label(r)}
                             />
                           </span>
-                          <span className="rankings-player-label"><span>{label(r)} {r.kol_verified === true && <VerifiedKol />}</span>
-                            {username(r) && <span className="rankings-username">@{username(r)}</span>}
+                          <span className="rankings-player-label">
+                            <span>
+                              {label(r)}{" "}
+                              {r.kol_verified === true && <VerifiedKol />}
+                            </span>
+                            {username(r) && (
+                              <span className="rankings-username">
+                                @{username(r)}
+                              </span>
+                            )}
                           </span>
                         </span>
                       )}
@@ -445,8 +576,8 @@ function Board({ slug }: { slug: string }) {
         </>
       )}
       <p className="rankings-disclaimer">
-        Server-accepted scores · Up to 2s cache delay · Scores update automatically
-        do not distribute tokens or rewards.
+        Server-accepted scores · Up to 2s cache delay · Scores update
+        automatically do not distribute tokens or rewards.
       </p>
     </section>
   );
@@ -455,15 +586,20 @@ function Board({ slug }: { slug: string }) {
 function PlayerAvatar({ rank, name }: { rank: Rank; name: string }) {
   const [failed, setFailed] = useState(false);
   const src = safeImageSource(rank.avatar_url);
-  return <>{src && !failed ? (
-    <img
-      src={src}
-      alt=""
-      referrerPolicy="no-referrer"
-      loading="lazy"
-      onError={() => setFailed(true)}
-    />
-  ) : (
-    <>{name.trim().charAt(0).toUpperCase() || "P"}</>
-  )}{rank.kol_verified === true && <VerifiedKol avatar />}</>;
+  return (
+    <>
+      {src && !failed ? (
+        <img
+          src={src}
+          alt=""
+          referrerPolicy="no-referrer"
+          loading="lazy"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <>{name.trim().charAt(0).toUpperCase() || "P"}</>
+      )}
+      {rank.kol_verified === true && <VerifiedKol avatar />}
+    </>
+  );
 }

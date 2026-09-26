@@ -17,6 +17,12 @@ vi.mock("../state", () => ({
   }),
 }));
 vi.mock("../lib/catalog", () => ({
+  listCampaigns: async () => ({
+    items: [
+      { name: "PAPERHOOD", slug: "phood", stage: "prelaunch", ticker: "PHOOD" },
+    ],
+    next_cursor: "",
+  }),
   getCampaign: async () => ({
     name: "PAPERHOOD",
     slug: "phood",
@@ -107,16 +113,30 @@ it("shows public player names and falls back when avatars fail", async () => {
   );
   await screen.findAllByText("Public Captain");
   expect(screen.getAllByText("@public_captain")).toHaveLength(2);
-  expect(screen.getAllByRole("img", {name:"Verified KOL"})).toHaveLength(4);
+  expect(screen.getAllByRole("img", { name: "Verified KOL" })).toHaveLength(4);
   const avatar = container.querySelector(
     'img[src="https://example.com/avatar.png"]',
   )!;
   expect(avatar.getAttribute("referrerpolicy")).toBe("no-referrer");
   fireEvent.error(avatar);
   expect(screen.queryByText("ur2")).toBeNull();
-  mock.request.mockResolvedValue({...data,players:[{id:"ur2",score:9000,display_name:"Public Captain",kol_verified:false}]});
+  mock.request.mockResolvedValue({
+    ...data,
+    players: [
+      {
+        id: "ur2",
+        score: 9000,
+        display_name: "Public Captain",
+        kol_verified: false,
+      },
+    ],
+  });
   fireEvent(window, new Event("focus"));
   fireEvent(document, new Event("visibilitychange"));
   // The next server snapshot removes badges after approval is revoked.
-  await waitFor(() => expect(screen.queryAllByRole("img", {name:"Verified KOL"})).toHaveLength(0));
+  await waitFor(() =>
+    expect(screen.queryAllByRole("img", { name: "Verified KOL" })).toHaveLength(
+      0,
+    ),
+  );
 });

@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { campaignBackPath } from "./lib/campaignNavigation";
 import { campaigns, teams, type Stage } from "./data";
 import {
   defaultEntry,
@@ -267,14 +268,7 @@ function useAppState() {
   useEffect(() => {
     const back = window.Telegram?.WebApp?.BackButton;
     if (platform.runtime !== "telegram" || !back) return;
-    const action = () =>
-      nav(
-        location.pathname === "/"
-          ? "/"
-          : `/campaign/${entry.campaignId || "phood"}` === location.pathname
-            ? "/"
-            : `/campaign/${entry.campaignId || "phood"}`,
-      );
+    const action = () => nav(campaignBackPath(location.pathname));
     if (location.pathname === "/") back.hide();
     else back.show();
     back.onClick(action);

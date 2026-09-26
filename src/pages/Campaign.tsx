@@ -1313,9 +1313,9 @@ export function ProfilePage() {
                   ? "Accepted game scores are shown on campaign leaderboards, not in this local practice history."
                   : "Try PAPERHOOD and set a score to beat."}
               </p>
-              <Link to="/campaign/phood/play" className="btn btn-primary">
+              <Link to={liveAuth ? "/" : "/campaign/phood/play"} className="btn btn-primary">
                 <Play size={16} />
-                {liveAuth ? "Practice PAPERHOOD" : "Play PAPERHOOD"}
+                {liveAuth ? "Explore games" : "Play PAPERHOOD"}
               </Link>
               {liveAuth && (
                 <Link className="text-link" to="/leaderboard">

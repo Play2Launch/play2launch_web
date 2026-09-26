@@ -60,6 +60,7 @@ function Round({ slug }: { slug: string }) {
     const signal = ctrl.current.signal;
     getCampaign(slug, signal)
       .then((c) => {
+        if (!signal.aborted) document.title=`${c.name} · Play · PLAY TO LAUNCH`;
         if (!signal.aborted)
           setCampaign({
             ...c,
@@ -69,19 +70,13 @@ function Round({ slug }: { slug: string }) {
             growth: 0,
             score: 0,
           });
+        if(app.user&&!signal.aborted)return Promise.all([myMembership(slug,signal),listTeams(slug,signal)]).then(([m,t])=>{
+          if(!signal.aborted)setTeam(t.find(v=>v.id===m?.team_id)?.name||'');
+        });
       })
       .catch((e) => {
         if (!signal.aborted) setError(e.message);
       });
-    if (app.user)
-      Promise.all([myMembership(slug, signal), listTeams(slug, signal)])
-        .then(([m, t]) => {
-          if (!signal.aborted)
-            setTeam(t.find((v) => v.id === m?.team_id)?.name || "");
-        })
-        .catch((e) => {
-          if (!signal.aborted) setError(e.message);
-        });
     return () => {
       alive.current = false;
       ctrl.current.abort();

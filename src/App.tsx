@@ -50,6 +50,7 @@ import { HeaderWallet } from "./components/HeaderWallet";
 import { HeaderPoints } from "./components/HeaderPoints";
 import { PointsProvider } from "./components/PointsProvider";
 import Tasks from "./pages/Tasks";
+import LiveLaunch from "./pages/LiveLaunch";
 import { walletAllowed } from "./lib/walletPolicy";
 import { shareLinks } from "./lib/entry";
 import { campaigns, teams, type Stage } from "./data";
@@ -85,8 +86,7 @@ function Shell() {
   const loc = useLocation();
   const cid =
     loc.pathname.match(/\/campaign\/([^/]+)/)?.[1] ||
-    app.entry.campaignId ||
-    "phood";
+    (!liveAuth ? app.entry.campaignId || "phood" : "");
   const [preview, setPreview] = useState(false);
   useEffect(() => {
     if (!loc.hash) window.scrollTo(0, 0);
@@ -103,7 +103,7 @@ function Shell() {
         "/leaderboard": "Leaderboard",
       } as Record<string, string>
     )[loc.pathname];
-    document.title = `${globalTitle || campaigns.find((c) => c.id === cid)?.name || "Discover"} · PLAY TO LAUNCH`;
+    document.title = `${globalTitle || (liveAuth ? (cid ? "Campaign" : "Discover") : campaigns.find((c) => c.id === cid)?.name || "Discover")} · PLAY TO LAUNCH`;
   }, [cid, loc.pathname]);
   return (
     <div
@@ -250,7 +250,7 @@ function Shell() {
             path="/campaign/:id/leaderboard"
             element={liveAuth ? <LiveRankings /> : <LeaderboardPage />}
           />
-          <Route path="/campaign/:id/launch" element={walletAllowed(app.platform.runtime) ? <LaunchPage /> : <div className="empty-panel"><h1>This page is unavailable in this environment.</h1><Link to="/">Back to games</Link></div>} />
+          <Route path="/campaign/:id/launch" element={walletAllowed(app.platform.runtime) ? (liveAuth ? <LiveLaunch/> : <LaunchPage />) : <div className="empty-panel"><h1>This page is unavailable in this environment.</h1><Link to="/">Back to games</Link></div>} />
           <Route path="/teams" element={<MyTeamsPage />} />
           <Route path="/leaderboard" element={liveAuth ? <LiveRankings /> : <LeaderboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
