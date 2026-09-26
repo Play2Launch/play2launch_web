@@ -126,6 +126,7 @@ function Round({ slug }: { slug: string }) {
         slug,
       );
       if (run.status !== "accepted") throw new Error("Score was not accepted.");
+      window.dispatchEvent(new Event('p2l:points-changed'));
       if (alive.current)
         nav(`/campaign/${slug}/session/${run.id}`, { replace: true });
     } catch (e) {

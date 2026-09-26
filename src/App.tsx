@@ -9,6 +9,7 @@ import {
   FlaskConical,
   Globe2,
   LayoutGrid,
+  ListChecks,
   LogIn,
   Send,
   ShieldCheck,
@@ -46,6 +47,9 @@ import { AppProvider, useApp } from "./state";
 import { liveAuth } from "./lib/api";
 import { LiveAuthForm } from "./components/LiveAuthForm";
 import { HeaderWallet } from "./components/HeaderWallet";
+import { HeaderPoints } from "./components/HeaderPoints";
+import { PointsProvider } from "./components/PointsProvider";
+import Tasks from "./pages/Tasks";
 import { walletAllowed } from "./lib/walletPolicy";
 import { shareLinks } from "./lib/entry";
 import { campaigns, teams, type Stage } from "./data";
@@ -54,9 +58,13 @@ import { registerCampaignTools } from "./lib/webmcp";
 export default function App() {
   return (
     <AppProvider>
-      <Shell />
+      <PointsShell />
     </AppProvider>
   );
+}
+function PointsShell() {
+ const app=useApp();
+ return <PointsProvider userId={liveAuth&&app.user?.mode==='live'?app.user.id:undefined}><Shell/></PointsProvider>;
 }
 function Shell() {
   const app = useApp();
@@ -81,13 +89,14 @@ function Shell() {
     "phood";
   const [preview, setPreview] = useState(false);
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [loc.pathname]);
+    if (!loc.hash) window.scrollTo(0, 0);
+  }, [loc.pathname, loc.hash]);
   useEffect(() => {
     const globalTitle = (
       {
         "/": "Discover",
         "/teams": "My teams",
+        "/tasks": "Tasks",
         "/profile": "Profile",
         "/verification": "KOL verification",
         "/captain": "Captain studio",
@@ -116,6 +125,7 @@ function Shell() {
             Discover
           </NavLink>
           <NavLink to="/teams">My teams</NavLink>
+          <NavLink to="/tasks">Tasks</NavLink>
           <NavLink to="/leaderboard">Leaderboard</NavLink>
         </nav>
         <div className="header-right">
@@ -127,6 +137,7 @@ function Shell() {
               : "Web experience"}
             <Globe2 size={13} />
           </span>
+          {liveAuth && app.user?.mode==='live' && <HeaderPoints/>}
           {app.user ? (
             <Link to="/profile" className="profile-button">
               <span className="avatar tiny">{app.user.name[0]}</span>
@@ -245,6 +256,7 @@ function Shell() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/verification" element={<VerificationPage />} />
           <Route path="/captain" element={<CaptainPage />} />
+          <Route path="/tasks" element={<Tasks />} />
           <Route
             path="/entry/:channel/:to"
             element={<div className="empty-panel">Opening your campaign…</div>}
@@ -271,6 +283,10 @@ function Shell() {
         <NavLink to="/teams">
           <Users size={19} />
           My teams
+        </NavLink>
+        <NavLink to="/tasks">
+          <ListChecks size={19}/>
+          Tasks
         </NavLink>
         <NavLink to="/leaderboard">
           <Trophy size={19} />

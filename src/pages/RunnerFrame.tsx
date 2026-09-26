@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {Link} from 'react-router-dom';
 import {api,ApiError} from '../lib/api';
+import {notifyPointsChanged} from '../components/PointsProvider';
 import {checkRunner,runnerMessage,runnerURL,RUNNER_RULES,type RunnerSession} from '../lib/runner';
 
 export function RunnerFrame({slug}:{slug:string}) {
@@ -53,6 +54,7 @@ export function RunnerFrame({slug}:{slug:string}) {
     if(ctrl.signal.aborted)return;
     if(accepted.id!==session.id||accepted.status!=='accepted')throw Error('Score was not accepted.');
     session=accepted;setResult(accepted);setError('');setStatus('Score accepted');
+    notifyPointsChanged();
     send('p2l:result',{submission_id:d.submission_id,status:'accepted',score:accepted.score,message:'Score accepted by the platform.'});
    }catch(e){
     if(ctrl.signal.aborted)return;
