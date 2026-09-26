@@ -3989,3 +3989,12 @@ body:has(.game-embed) .page-container {
   background: #10150d;
 }
 .game-embed-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Platform points are a separate, private account ledger. */
+.platform-points{margin:24px 0;padding:24px;border:1px solid #354329;border-radius:12px;background:#131c10;min-width:0}
+.platform-points-balance{font-size:36px;color:#d2fa69}
+.platform-points p,.platform-points small{color:#b4c39c;line-height:1.7}
+.platform-points>small{display:block;margin-bottom:16px}
+.platform-points-history{list-style:none;padding:0;margin:16px 0}
+.platform-points-history li{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid #354329}
+.platform-points-history small{display:block;font-size:11px}
+.platform-points-history b{white-space:nowrap;color:#d2fa69}

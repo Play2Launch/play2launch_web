@@ -49,6 +49,7 @@ import { walletAllowed } from "../lib/walletPolicy";
 import { ProfileTools } from "../components/ProfileTools";
 import { VerifiedKol } from "../components/VerifiedKol";
 import { PublicProfileEditor } from "../components/PublicProfileEditor";
+import { PlatformPoints } from "../components/PlatformPoints";
 
 export function useCampaign() {
   const { id } = useParams();
@@ -1256,6 +1257,7 @@ export function ProfilePage() {
         </section>
         <section>
           {liveAuth && app.user && <PublicProfileEditor key={app.user.id} userId={app.user.id} />}
+          {liveAuth && app.user && <PlatformPoints key={`points-${app.user.id}`} />}
           <MyTeams compact />
           <div className="section-heading">
             <h2>
