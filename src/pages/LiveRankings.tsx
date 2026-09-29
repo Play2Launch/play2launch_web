@@ -428,6 +428,8 @@ function Board({
               ? "Loading membership…"
               : memberError && kind === "teams"
                 ? "Membership unavailable"
+                : kind === "teams" && teams.some(t=>t.id===membership&&t.team_type==='system_community')
+                  ? "P2L Community · Outside team rankings"
                 : ownIndex >= 0
                   ? `#${ownIndex + 1} · ${rows[ownIndex].score.toLocaleString()} pts`
                   : !data

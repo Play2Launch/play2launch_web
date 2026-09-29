@@ -164,7 +164,7 @@ function Directory({ slug }: { slug: string }) {
                 (!validInvitation
                   ? "Checking invitation…"
                   : teams.some((t) => t.id === app.entry.teamId)
-                    ? `You were invited to ${teams.find((t) => t.id === app.entry.teamId)!.name}. Sign in and confirm joining; your existing team will not be changed.`
+                    ? `You were invited to ${teams.find((t) => t.id === app.entry.teamId)!.name}. Confirm joining to move from P2L Community; previous scores stay with their original team.`
                     : "This invitation points to an unavailable team. Choose another team to continue.")}
               <Link to={`/campaign/${slug}/teams?src=direct`}>
                 Browse without invitation

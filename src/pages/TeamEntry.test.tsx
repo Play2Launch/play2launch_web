@@ -25,3 +25,10 @@ it("does not mistake ordinary membership for captain ownership",()=>{
  view([{...team,owner_id:"ur2"}],"tm1");
  expect(screen.getByRole("link",{name:"Create my team in New campaign"})).toBeTruthy();
 });
+it("allows Community members to join a regular team and shows activity separately",()=>{
+ const community={...team,id:"tmcommunity",name:"P2L Community",owner_id:"",team_type:"system_community"};
+ render(<MemoryRouter><TeamPage live={{campaign,teams:[community,{...team,owner_id:"ur2"}],member:community.id,closed:false,busy:false,join:vi.fn()}}/></MemoryRouter>);
+ expect(screen.getByRole("region",{name:"P2L Community activity"})).toBeTruthy();
+ expect((screen.getByRole("button",{name:/Join One/}) as HTMLButtonElement).disabled).toBe(false);
+ expect(screen.queryByText(/Team locked/)).toBeNull();
+});

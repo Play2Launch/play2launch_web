@@ -1,5 +1,7 @@
 import { api } from "./api";
 export type ServerTeam = {
+	team_type?: string;
+	activity?: {active_today:number;rounds_today:number;as_of:string};
   join_mode?: "public" | "invite_only";
   invites_paused?: boolean;
   version?: number;

@@ -33,7 +33,7 @@ function PreviewContent({ slug }: { slug: string }) {
         if (!snapshot || !Array.isArray(snapshot.teams) || !snapshot.teams.every(r =>
           r && typeof r.id === 'string' && Number.isSafeInteger(r.score) && r.score >= 0,
         ) || new Set(snapshot.teams.map(r => r.id)).size !== snapshot.teams.length) throw new Error('Invalid rankings');
-        const available = new Map(teams.map(t => [t.id, t]));
+        const available = new Map(teams.filter(t=>t.team_type!=='system_community').map(t => [t.id, t]));
         const preview: Preview[] = [];
         snapshot.teams.forEach((r, i) => {
           const team = available.get(r.id);

@@ -51,6 +51,7 @@ import { VerifiedKol } from "../components/VerifiedKol";
 import { PublicProfileEditor } from "../components/PublicProfileEditor";
 import { PlatformPoints } from "../components/PlatformPoints";
 import { CampaignTeamsPreview } from "../components/CampaignTeamsPreview";
+import { CommunityTeamCard } from "../components/CommunityTeamCard";
 
 export function useCampaign() {
   const { id } = useParams();
@@ -562,6 +563,8 @@ export function TeamPage({
   live?: {
     campaign: Campaign;
     teams: Array<{
+	  team_type?: string;
+	  activity?: {active_today:number;rounds_today:number;as_of:string};
       owner_id?: string;
       status?: "active" | "paused";
       id: string;
@@ -591,7 +594,10 @@ export function TeamPage({
   );
   if (!c) return <NotFound />;
   const member = live ? live.member : app.local.memberships[c.id];
-  const teams = live?.teams ?? app.standings(c.id).teams;
+  const community = live?.teams.find(t=>t.team_type==='system_community');
+  const communityMember = !!community && member===community.id;
+  const teams = live ? live.teams.filter(t=>t.team_type!=='system_community') : app.standings(c.id).teams;
+  const communityCard = live && <CommunityTeamCard slug={c.id} team={community} joined={communityMember}/>;
   const current = teams.find((t) => t.id === selected) || teams[0];
   const ownsTeam = !!app.user?.id && live?.teams.some(t => t.owner_id === app.user!.id);
   const captainAction = live && (
@@ -607,6 +613,7 @@ export function TeamPage({
     return (
       <>
         <CampaignNav campaign={c} live={!!live} />
+        {communityCard}
         <div className="empty-panel">
           <h2>No teams available yet</h2>
           {live && <p>Be the first captain to create a team for this campaign. Approved KOL verification is required.</p>}
@@ -643,6 +650,7 @@ export function TeamPage({
         </div>
       </section>
       <div className="team-page-layout">
+        {communityCard}
         {captainAction}
         <section>
           <div className="filter-row">
@@ -800,7 +808,7 @@ export function TeamPage({
                   live ? live.join(current.id) : app.join(c.id, current.id)
                 }
                 disabled={
-                  Boolean(member) ||
+                  (Boolean(member) && !communityMember) ||
                   (live
                     ? live.closed || live.busy || live.canJoin?.(current.id) === false
                     : Date.now() >= app.local.competition.deadlines[c.id])
@@ -809,7 +817,7 @@ export function TeamPage({
                 <Users size={17} />
                 {live?.busy
                   ? "Joining"
-                  : member
+                  : member && !communityMember
                     ? "Team locked ·"
                     : (
                           live

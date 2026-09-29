@@ -139,7 +139,7 @@ function Round({ slug }: { slug: string }) {
   if (!app.user)
     return (
       <div className="empty-panel">
-        <h1>Sign in to play for your team</h1>
+        <h1>Sign in to play and earn points</h1>
         {campaign && /^gx[0-9a-z]{1,13}$/.test(campaign.game_key||'') && <Link className="btn btn-secondary" to={`/campaign/${slug}/try`}>Try it first</Link>}
         <button
           className="btn btn-primary"
@@ -150,7 +150,6 @@ function Round({ slug }: { slug: string }) {
       </div>
     );
   if(campaign && /^gx[0-9a-z]{1,13}$/.test(campaign.game_key||'') && campaign.rules_version===RUNNER_RULES) {
-    if(!team)return <div className="empty-panel"><Link className="btn btn-primary" to={`/campaign/${slug}/teams`}>Choose a team first</Link><Link className="btn btn-secondary" to={`/campaign/${slug}/try`}>Try it first</Link></div>;
     return <RunnerFrame slug={slug}/>;
   }
   return (
@@ -175,7 +174,7 @@ function Round({ slug }: { slug: string }) {
       {session && campaign ? (
         <GamePage
           key={session.id}
-          live={{ campaign, seed: session.seed, team, finish: submit }}
+          live={{ campaign, seed: session.seed, team: team || "P2L Community", finish: submit }}
         />
       ) : (
         <div className="empty-panel">
@@ -183,10 +182,10 @@ function Round({ slug }: { slug: string }) {
           <p>Ranked round · 30 seconds · No pause or real rewards.</p>
           {campaign?.game_key !== "paperhood" || campaign?.rules_version !== "paperhood-v1" ? (
             <p>This game is not available yet.</p>
-          ) : team ? (
+          ) : (
             <>
               <p>
-                Playing for {team}. Your score is recalculated by the server.
+                {team ? `Playing for ${team}.` : 'You will join P2L Community automatically when you start.'} Your score is recalculated by the server.
               </p>
               <button
                 disabled={busy || !campaign}
@@ -196,10 +195,6 @@ function Round({ slug }: { slug: string }) {
                 Start ranked round
               </button>
             </>
-          ) : (
-            <Link className="btn btn-primary" to={`/campaign/${slug}/teams`}>
-              Choose a team first
-            </Link>
           )}
         </div>
       )}
@@ -218,6 +213,7 @@ export function LiveScore() {
   );
 }
 type Summary = {
+  community?: boolean;
   unlock_contribution?: number | null;
   round_unlock_improvement?: number | null;
   score_per_unlock_point?: number;
@@ -265,7 +261,7 @@ function Score({ slug, sessionId }: { slug: string; sessionId: string }) {
             d.team_contribution,
             d.team_total,
           ].every((v) => Number.isSafeInteger(v) && v >= 0) ||
-          d.team_contribution !== d.personal_best ||
+          d.team_contribution > d.personal_best ||
           d.team_total < d.team_contribution ||
           d.personal_best < s.score ||
           d.round_improvement !== Math.max(0, s.score - d.previous_best) ||
@@ -300,7 +296,7 @@ function Score({ slug, sessionId }: { slug: string; sessionId: string }) {
             <article className="membership-card">
               <span>Current personal best</span>
               <h2>{summary.personal_best.toLocaleString()}</h2>
-              <p>
+              <p hidden={summary.community}>
                 Your contribution to the team:{" "}
                 {summary.team_contribution.toLocaleString()} points.
               </p>
@@ -311,16 +307,17 @@ function Score({ slug, sessionId }: { slug: string; sessionId: string }) {
               <p>
                 {summary.round_improvement > 0
                   ? "Improved your previous best."
-                  : "No extra team points from this round."}{" "}
+                  : "Your personal best is unchanged."}{" "}
                 Previous best: {summary.previous_best.toLocaleString()}.
               </p>
             </article>
-            <article className="membership-card">
+            <article className="membership-card" hidden={summary.community}>
               <span>Current team total (game points)</span>
               <h2>{summary.team_total.toLocaleString()}</h2>
               <p>Sum of each member’s best accepted score, not all rounds.</p>
             </article>
           </div>
+          {summary.community&&<p>P2L Community · This round counts toward your personal ranking and campaign progress. Community activity does not enter team rankings.</p>}
           {Number.isSafeInteger(summary.unlock_contribution) &&
             Number.isSafeInteger(summary.round_unlock_improvement) &&
             (summary.score_per_unlock_point ?? 0) > 0 && (

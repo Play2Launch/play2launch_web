@@ -21,6 +21,13 @@ it('shows the top three in server ranking order with real links and scores', asy
   expect(screen.getByText(/Includes platform automated players/)).toBeTruthy();
   expect(request.mock.calls[0][0]).toBe('/campaigns/other/rankings');
 });
+it('excludes Community from the ranked and fallback team preview', async () => {
+  vi.mocked(listTeams).mockResolvedValue([{...teams[0],id:'tmcommunity',name:'P2L Community',team_type:'system_community'},...teams]);
+  vi.spyOn(api, 'request').mockResolvedValue({ teams: [] });
+  mount();
+  await screen.findByText('Team 1');
+  expect(screen.queryByText('P2L Community')).toBeNull();
+});
 it('falls back to existing teams without inventing ranks or scores', async () => {
   vi.mocked(listTeams).mockResolvedValue(teams);
   vi.spyOn(api, 'request').mockResolvedValue({ teams: [] });

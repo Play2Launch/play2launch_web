@@ -23,7 +23,7 @@ function Trial({slug}:{slug:string}){
   <div className="notice"><strong>FREE TRIAL</strong><span> · Trial scores stay local, not ranked.</span></div>
   {error?<p role="alert">{error}</p>:!src?<p role="status">Loading game…</p>:null}
   {src&&<iframe className="game-embed-frame" key={attempt} src={src} title="Game trial" sandbox="allow-scripts allow-same-origin" referrerPolicy="no-referrer"/>}
-  <div className="notice"><p>Ready to compete? Join a team and start a new ranked round. Trial scores cannot be transferred.</p>
+  <div className="notice"><p>Ready to compete? Sign in and start a ranked round. Players without a team join P2L Community automatically. Trial scores cannot be transferred.</p>
    <Link className="btn btn-primary" to={`/campaign/${slug}/compete`}>Play for your team</Link>
    <Link className="btn btn-secondary" to={`/campaign/${slug}`}>Return to campaign</Link>
    <button className="btn btn-secondary" onClick={()=>setAttempt(n=>n+1)}>Reload trial</button>

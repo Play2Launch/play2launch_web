@@ -766,6 +766,9 @@ footer > span:last-child {
   font-weight: 800;
 }
 
+.community-team-card { grid-column: 1 / -1; margin: 20px 0; }
+.community-team-card .eyebrow { display: flex; align-items: center; gap: 8px; }
+.server-result-stats [hidden] { display: none; }
 .community-links { display: flex; flex-wrap: wrap; gap: 8px; }
 .community-links a { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; color: inherit; }
 .community-links a:hover { border-color: #d2fa69; color: #d2fa69; }
