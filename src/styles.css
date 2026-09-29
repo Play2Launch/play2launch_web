@@ -740,6 +740,7 @@ button {
   letter-spacing: -0.3px;
 }
 footer {
+  flex-wrap: wrap;
   padding: 24px 0 30px;
   border-top: 1px solid var(--border);
   display: flex;
@@ -764,6 +765,12 @@ footer > span:last-child {
   color: #b5bfa8;
   font-weight: 800;
 }
+
+.community-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.community-links a { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; color: inherit; }
+.community-links a:hover { border-color: #d2fa69; color: #d2fa69; }
+.community-links a:focus-visible { outline: 2px solid #d2fa69; outline-offset: 3px; }
+@media(max-width:600px) { .community-links { width: 100%; } .community-links a { min-height: 44px; } }
 @media (min-width: 1600px) {
   .page-container {
     padding-top: 50px;

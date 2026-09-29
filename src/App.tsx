@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import InviteLanding from "./pages/InviteLanding";
+import { CommunityLinks } from "./components/CommunityLinks";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -271,6 +272,7 @@ function Shell() {
             <img src="/brand-mark.svg" width="28" height="28" alt="" /> P2L
           </Link>
           <span>Ideas become games. Communities unlock tokens.</span>
+          <CommunityLinks />
           <span>
             <Globe2 size={14} /> PLAY IT BEFORE YOU TRADE IT.{" "}
             <ArrowDownRight size={15} />
