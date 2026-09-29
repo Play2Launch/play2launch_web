@@ -1,5 +1,6 @@
 export type Runtime = "web" | "telegram";
 export type EntryContext = {
+  inviteToken?: string;
   campaignId?: string;
   teamId?: string;
   referrerId?: string;
@@ -21,6 +22,7 @@ export const defaultEntry: EntryContext = {
 const targets = ["campaign", "play", "teams", "leaderboard", "launch"];
 
 export function encodeStart(entry: EntryContext): string {
+  if (entry.inviteToken && /^[A-Za-z0-9_-]{32}$/.test(entry.inviteToken)) return `i_${entry.inviteToken}`;
   const params = new URLSearchParams();
   if (entry.campaignId) params.set("c", entry.campaignId);
   if (entry.teamId) params.set("t", entry.teamId);
@@ -33,6 +35,7 @@ export function encodeStart(entry: EntryContext): string {
 }
 
 export function decodeStart(token: string): EntryContext {
+  if (/^i_[A-Za-z0-9_-]{32}$/.test(token)) return {inviteToken:token.slice(2),source:"telegram",target:"teams"};
   if (
     !token.startsWith("v1_") ||
     token.length > 512 ||
@@ -65,6 +68,7 @@ export function decodeStart(token: string): EntryContext {
 }
 
 export function entryPath(entry: EntryContext): string {
+  if (entry.inviteToken && !entry.campaignId) return `/invite/${encodeURIComponent(entry.inviteToken)}`;
   if (!entry.campaignId) return "/";
   const base = `/campaign/${encodeURIComponent(entry.campaignId)}`;
   return entry.target === "campaign" ? base : `${base}/${entry.target}`;
@@ -96,6 +100,7 @@ export function resolveEntry(
     }
   }
   const parts = url.pathname.split("/").filter(Boolean);
+  if (parts[0] === "invite") return {context:{inviteToken:parts[1],source:"share",target:"teams"}};
   let campaignId: string | undefined;
   let teamId: string | undefined;
   let destination: string | undefined;
@@ -129,6 +134,7 @@ export function resolveEntry(
   }
   teamId = query.get("team") || teamId;
   const referrerId = query.get("ref") || undefined;
+  const inviteToken = query.get("invite") || undefined;
   const source = query.get("src") || query.get("utm_source") || undefined;
   if (
     [campaignId, teamId, referrerId, source].some(
@@ -139,7 +145,7 @@ export function resolveEntry(
       context: defaultEntry,
       error: "This link contains invalid campaign or referral information.",
     };
-  const explicit = Boolean(teamId || referrerId || source);
+  const explicit = Boolean(teamId || referrerId || source || inviteToken);
   const sameCampaign = !campaignId || previous?.campaignId === campaignId;
   const inherited = !explicit && sameCampaign ? previous : undefined;
   const context: EntryContext = {
@@ -147,6 +153,7 @@ export function resolveEntry(
     campaignId: campaignId || previous?.campaignId,
     teamId: explicit ? teamId : inherited?.teamId,
     referrerId: explicit ? referrerId : inherited?.referrerId,
+    inviteToken: explicit ? inviteToken : inherited?.inviteToken,
     source:
       source ||
       inherited?.source ||
@@ -163,8 +170,9 @@ export function shareLinks(
 ) {
   const target = entry.target === "teams" ? "teams" : "campaign";
   const url = new URL(entryPath({ ...entry, target }), origin);
-  if (entry.teamId) url.searchParams.set("team", entry.teamId);
-  if (entry.referrerId) url.searchParams.set("ref", entry.referrerId);
+  if (entry.inviteToken) url.pathname = `/invite/${encodeURIComponent(entry.inviteToken)}`;
+  if (!entry.inviteToken && entry.teamId) url.searchParams.set("team", entry.teamId);
+  if (!entry.inviteToken && entry.referrerId) url.searchParams.set("ref", entry.referrerId);
   url.searchParams.set("src", "share");
   const bot = config.bot?.replace(/^@/, "");
   const telegram =

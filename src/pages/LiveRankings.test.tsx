@@ -49,6 +49,11 @@ afterEach(() => {
   vi.restoreAllMocks();
   mock.request.mockReset();
 });
+it("discloses automated participation without adding per-player labels",async()=>{
+ mock.request.mockResolvedValue({...data,includes_auto_players:true});
+ render(<MemoryRouter><LiveRankings/></MemoryRouter>);
+ expect(await screen.findByText(/This leaderboard includes platform automated players/)).toBeTruthy();
+});
 it("renders real scores, own standing and team tab while retaining data on refresh failure", async () => {
   mock.request.mockResolvedValue(data);
   render(

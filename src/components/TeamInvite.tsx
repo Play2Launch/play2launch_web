@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../lib/api";
 import { shareLinks } from "../lib/entry";
 
 export function TeamInvite({
@@ -13,12 +14,34 @@ export function TeamInvite({
   referrer?: string;
 }) {
   const [notice, setNotice] = useState("");
+  const [token, setToken] = useState("");
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    if (!referrer) return;
+    const ctrl = new AbortController();
+    setToken("");
+    setNotice("");
+    api
+      .authenticated<{ token: string }>(
+        `/campaigns/${encodeURIComponent(slug)}/teams/${encodeURIComponent(team)}/invitation`,
+        {},
+        ctrl.signal,
+      )
+      .then((v) => {
+        if (!ctrl.signal.aborted) setToken(v.token);
+      })
+      .catch((e) => {
+        if (!ctrl.signal.aborted) setNotice(e.message);
+      });
+    return () => ctrl.abort();
+  }, [slug, team, referrer, retry]);
   const links = shareLinks(
     window.location.origin,
     {
       campaignId: slug,
       teamId: team,
       referrerId: referrer,
+      inviteToken: token,
       source: "share",
       target: "teams",
     },
@@ -35,6 +58,21 @@ export function TeamInvite({
       setNotice("Select and copy the link manually.");
     }
   }
+  if (!referrer) return null;
+  if (!token)
+    return (
+      <section className="team-invite-card">
+        <p role="status">{notice || "Loading your invitation…"}</p>
+        {notice && (
+          <button
+            className="btn btn-secondary"
+            onClick={() => setRetry((n) => n + 1)}
+          >
+            Retry invitation
+          </button>
+        )}
+      </section>
+    );
   return (
     <section className="team-invite-card" aria-label="Team invitation">
       <h3>Invite players to {name}</h3>
@@ -51,7 +89,8 @@ export function TeamInvite({
           onFocus={(e) => e.target.select()}
         />
       </label>
-      <button type="button"
+      <button
+        type="button"
         className="btn btn-secondary"
         onClick={() => void copy(links.web)}
       >
@@ -68,7 +107,8 @@ export function TeamInvite({
               onFocus={(e) => e.target.select()}
             />
           </label>
-          <button type="button"
+          <button
+            type="button"
             className="btn btn-secondary"
             onClick={() => void copy(links.telegram!)}
           >
@@ -83,8 +123,8 @@ export function TeamInvite({
       )}
       {!referrer && (
         <p className="small muted">
-          Sign in to generate your own referral link. This guest link opens
-          the team without recording an inviter.
+          Sign in to generate your own referral link. This guest link opens the
+          team without recording an inviter.
         </p>
       )}
       {notice && <p role="status">{notice}</p>}

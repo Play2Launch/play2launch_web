@@ -23,6 +23,7 @@ type Rank = {
   avatar_url?: string;
 };
 type Snapshot = {
+  includes_auto_players?: boolean;
   players: Rank[];
   teams: Rank[];
   qualified_players: number;
@@ -377,6 +378,7 @@ function Board({
           </small>
         </div>
       </div>
+      {/* {data?.includes_auto_players && <div className="notice" role="note">This leaderboard includes platform automated players. Their simulated scores do not earn P2L points, unlock progress or rewards.</div>} */}
       <div className="rankings-stats">
         <div>
           <span>Scoring players</span>

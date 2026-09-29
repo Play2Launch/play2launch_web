@@ -1320,6 +1320,9 @@ footer > span:last-child {
   border-radius: 12px;
   color: #f0f1e9;
 }
+.invitation-confirm::backdrop { background: #000a; backdrop-filter: blur(4px); }
+.invitation-confirm p { margin: 18px 0; line-height: 1.6; }
+.invitation-confirm .btn { margin: 6px 6px 0 0; }
 .wallet-panel { display: grid; gap: 16px; min-width: 0; width: 100%; margin-top: 24px; padding: 20px; border: 1px solid #49563d; border-radius: 12px; background: #131a10; text-align: left; }
 .wallet-panel h3 { font-size: 18px; }
 .profile-identity .wallet-panel p { margin: 0; font-size: 14px; line-height: 1.65; }
@@ -1411,7 +1414,8 @@ footer > span:last-child {
   font-size: 14px;
   font-weight: 500;
 }
-.team-invite-field input {
+.team-invite-field input,
+.team-invite-field select {
   display: block;
   width: 100%;
   min-width: 0;
@@ -1424,6 +1428,35 @@ footer > span:last-child {
   font-size: 16px;
   font-weight: 400;
 }
+.team-invite-field select {
+  color-scheme: dark;
+  appearance: none;
+  padding-right: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23b8c2ad' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  cursor: pointer;
+}
+.team-invite-field select option {
+  background: #0b1009;
+  color: #e3eccf;
+}
+.team-invite-field select:hover:not(:disabled) { border-color: #819563; }
+.team-invite-field select:focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.team-invite-field select:disabled { opacity: .55; cursor: not-allowed; }
+.my-teams-heading { margin-bottom: 24px; }
+.my-teams-heading h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; }
+.membership-filters { display: grid; grid-template-columns: minmax(180px, 2fr) minmax(160px, 1fr) minmax(140px, 1fr) auto; align-items: end; gap: 14px; }
+.membership-filters .btn { min-height: 46px; }
+.membership-results { margin-top: 24px; }
+.membership-card-compact { padding: 20px; }
+.membership-card-compact h2 { font-size: 21px; margin: 10px 0; }
+.membership-badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+@media(max-width:700px) { .membership-filters { grid-template-columns: 1fr 1fr; } .membership-filters > label:first-child { grid-column: 1 / -1; } .membership-filters > .btn { grid-column: 1 / -1; } }
 .team-invite-card > .btn {
   width: 100%;
   min-width: 0;

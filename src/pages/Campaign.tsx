@@ -50,6 +50,7 @@ import { ProfileTools } from "../components/ProfileTools";
 import { VerifiedKol } from "../components/VerifiedKol";
 import { PublicProfileEditor } from "../components/PublicProfileEditor";
 import { PlatformPoints } from "../components/PlatformPoints";
+import { CampaignTeamsPreview } from "../components/CampaignTeamsPreview";
 
 export function useCampaign() {
   const { id } = useParams();
@@ -213,16 +214,7 @@ export function CampaignPage({
               </Link>
             )}
           </div>
-          <div className="campaign-team-grid">
-            {live && (
-              <div className="empty-panel">
-                <Users />
-                <h3>Find your community</h3>
-                <Link to={`/campaign/${c.id}/teams`}>
-                  Browse campaign teams
-                </Link>
-              </div>
-            )}
+          {live ? <CampaignTeamsPreview slug={c.id} /> : <div className="campaign-team-grid">
             {teams.slice(0, 3).map((t, i) => (
               <Link
                 to={`/campaign/${c.id}/teams?selected=${t.id}`}
@@ -241,7 +233,7 @@ export function CampaignPage({
                 </div>
               </Link>
             ))}
-          </div>
+          </div>}
         </div>
         <aside className="campaign-aside">
           <section className={`unlock-panel unlock-${stage}`}>
@@ -550,13 +542,11 @@ export function MyTeams({ compact = false }: { compact?: boolean }) {
 export function MyTeamsPage() {
   return (
     <>
-      <div className="page-heading">
+      <div className={`page-heading ${liveAuth ? "my-teams-heading" : ""}`}>
         <div>
           <span className="eyebrow">YOUR COMMUNITIES</span>
           <h1>
-            Different campaigns.
-            <br />
-            Your people<span>.</span>
+            {liveAuth ? "My teams" : <>Different campaigns.<br />Your people<span>.</span></>}
           </h1>
           <p>One account. An independent team choice in every campaign.</p>
         </div>
@@ -587,6 +577,7 @@ export function TeamPage({
     member?: string;
     closed: boolean;
     busy: boolean;
+    canJoin?: (team: string) => boolean;
     join: (team: string) => void;
   };
 } = {}) {
@@ -602,12 +593,24 @@ export function TeamPage({
   const member = live ? live.member : app.local.memberships[c.id];
   const teams = live?.teams ?? app.standings(c.id).teams;
   const current = teams.find((t) => t.id === selected) || teams[0];
+  const ownsTeam = !!app.user?.id && live?.teams.some(t => t.owner_id === app.user!.id);
+  const captainAction = live && (
+    <Link
+      className="btn btn-secondary"
+      style={{ gridColumn: "1 / -1" }}
+      to={`/captain?campaign=${encodeURIComponent(c.id)}`}
+    >
+      {ownsTeam ? `Manage my team in ${c.name}` : `Create my team in ${c.name}`}
+    </Link>
+  );
   if (!current)
     return (
       <>
         <CampaignNav campaign={c} live={!!live} />
         <div className="empty-panel">
           <h2>No teams available yet</h2>
+          {live && <p>Be the first captain to create a team for this campaign. Approved KOL verification is required.</p>}
+          {captainAction}
         </div>
       </>
     );
@@ -640,15 +643,7 @@ export function TeamPage({
         </div>
       </section>
       <div className="team-page-layout">
-        {live && (
-          <Link
-            className="btn btn-secondary"
-            style={{ gridColumn: "1 / -1" }}
-            to={`/captain?campaign=${encodeURIComponent(c.id)}`}
-          >
-            Create my team in {c.name}
-          </Link>
-        )}
+        {captainAction}
         <section>
           <div className="filter-row">
             <div className="tabs">
@@ -744,6 +739,7 @@ export function TeamPage({
           <div className="team-detail-body">
             <h2>{current.name}</h2>
             {live &&
+              member === current.id &&
               current &&
               live.teams.find((t) => t.id === current.id)?.status !==
                 "paused" && (
@@ -806,7 +802,7 @@ export function TeamPage({
                 disabled={
                   Boolean(member) ||
                   (live
-                    ? live.closed || live.busy
+                    ? live.closed || live.busy || live.canJoin?.(current.id) === false
                     : Date.now() >= app.local.competition.deadlines[c.id])
                 }
               >
@@ -822,7 +818,7 @@ export function TeamPage({
                               app.local.competition.deadlines[c.id]
                         )
                       ? "Joining closed ·"
-                      : "Join"}{" "}
+                      : live?.canJoin?.(current.id) === false ? "Invitation required ·" : "Join"}{" "}
                 {current.name}
                 <ArrowUpRight size={17} />
               </button>

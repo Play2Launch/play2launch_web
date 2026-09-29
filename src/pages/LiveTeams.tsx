@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useApp } from "../state";
 import { getCampaign } from "../lib/catalog";
+import { api } from "../lib/api";
 import {
   listTeams,
   myMembership,
@@ -10,6 +11,7 @@ import {
   type ServerTeam,
   type Membership,
   type MyTeam,
+  type MembershipFilters,
 } from "../lib/teams";
 import type { Campaign } from "../data";
 import { TeamPage } from "./Campaign";
@@ -30,21 +32,60 @@ function Directory({ slug }: { slug: string }) {
   const [closed, setClosed] = useState(true);
   const request = useRef<AbortController | null>(null);
   const lock = useRef(false);
+  const [validInvitation, setValidInvitation] = useState("");
+  const [invitationError, setInvitationError] = useState("");
+  const incoming = app.entry.campaignId === slug ? app.entry : undefined;
+  useEffect(() => {
+    const ctrl = new AbortController();
+    setValidInvitation("");
+    setInvitationError("");
+    if (incoming?.inviteToken) {
+      api
+        .request<{ slug: string; team_id: string }>(
+          "/team-invites/resolve",
+          { token: incoming.inviteToken },
+          { signal: ctrl.signal },
+        )
+        .then((v) => {
+          if (ctrl.signal.aborted) return;
+          if (v.slug !== slug || v.team_id !== incoming.teamId)
+            throw new Error("This invitation does not match this team.");
+          setValidInvitation(incoming.inviteToken!);
+        })
+        .catch((e) => {
+          if (!ctrl.signal.aborted) setInvitationError(e.message);
+        });
+    } else if (incoming?.teamId)
+      setInvitationError(
+        "This old link has no invitation credential. Ask a current member for a new link, or browse without an invitation.",
+      );
+    return () => ctrl.abort();
+  }, [slug, incoming?.inviteToken, incoming?.teamId, retry]);
+  function canJoin(team: string) {
+    if (incoming?.teamId === team)
+      return (
+        !!incoming.inviteToken &&
+        validInvitation === incoming.inviteToken &&
+        !invitationError
+      );
+    return teams.find((t) => t.id === team)?.join_mode !== "invite_only";
+  }
   useEffect(() => {
     const ctrl = new AbortController();
     setReady(false);
     setError("");
-    getCampaign(slug, ctrl.signal).then(async c => {
-      if(ctrl.signal.aborted)throw new Error('Cancelled');
-      const [t,m]=await Promise.all([
-      listTeams(slug, ctrl.signal),
-      app.user ? myMembership(slug, ctrl.signal) : Promise.resolve(null),
-      ]);
-      return [c,t,m] as const;
-    })
+    getCampaign(slug, ctrl.signal)
+      .then(async (c) => {
+        if (ctrl.signal.aborted) throw new Error("Cancelled");
+        const [t, m] = await Promise.all([
+          listTeams(slug, ctrl.signal),
+          app.user ? myMembership(slug, ctrl.signal) : Promise.resolve(null),
+        ]);
+        return [c, t, m] as const;
+      })
       .then(([c, t, m]) => {
         if (ctrl.signal.aborted) return;
-        document.title=`${c.name} · Teams · PLAY TO LAUNCH`;
+        document.title = `${c.name} · Teams · PLAY TO LAUNCH`;
         setCampaign({
           ...c,
           id: c.slug,
@@ -68,6 +109,7 @@ function Directory({ slug }: { slug: string }) {
     };
   }, [slug, app.user?.id, retry]);
   async function join(team: string) {
+    if (!canJoin(team)) return;
     if (!app.user) {
       app.setAuthOpen(true);
       return;
@@ -83,7 +125,11 @@ function Directory({ slug }: { slug: string }) {
         app.entry.campaignId === slug && app.entry.teamId === team
           ? app.entry.referrerId
           : undefined;
-      const m = await joinTeam(slug, team, ctrl.signal, referrer);
+      const inviteToken =
+        app.entry.campaignId === slug && app.entry.teamId === team
+          ? app.entry.inviteToken
+          : undefined;
+      const m = await joinTeam(slug, team, ctrl.signal, referrer, inviteToken);
       if (ctrl.signal.aborted) return;
       setMember(m);
       app.setToast("Team joined. Your other campaign teams are unchanged.");
@@ -114,9 +160,12 @@ function Directory({ slug }: { slug: string }) {
         <>
           {app.entry.campaignId === slug && app.entry.teamId && (
             <div className="notice" role="status">
-              {teams.some((t) => t.id === app.entry.teamId)
-                ? `You were invited to ${teams.find((t) => t.id === app.entry.teamId)!.name}. Sign in and confirm joining; your existing team will not be changed.`
-                : "This invitation points to an unavailable team. Choose another team to continue."}
+              {invitationError ||
+                (!validInvitation
+                  ? "Checking invitation…"
+                  : teams.some((t) => t.id === app.entry.teamId)
+                    ? `You were invited to ${teams.find((t) => t.id === app.entry.teamId)!.name}. Sign in and confirm joining; your existing team will not be changed.`
+                    : "This invitation points to an unavailable team. Choose another team to continue.")}
               <Link to={`/campaign/${slug}/teams?src=direct`}>
                 Browse without invitation
               </Link>
@@ -133,6 +182,7 @@ function Directory({ slug }: { slug: string }) {
               member: member?.team_id,
               closed,
               busy,
+              canJoin,
               join,
             }}
           />
@@ -143,9 +193,86 @@ function Directory({ slug }: { slug: string }) {
 }
 export function LiveMemberships() {
   const app = useApp();
-  return <MembershipList key={app.user?.id || "guest"} />;
+  const [draft, setDraft] = useState("");
+  const [filters, setFilters] = useState<MembershipFilters>({
+    q: "",
+    status: "active",
+    role: "all",
+  });
+  return (
+    <>
+      {app.user && (
+        <form
+          className="membership-filters"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setFilters((f) => ({ ...f, q: draft.trim() }));
+          }}
+        >
+          <label className="team-invite-field">
+            Find your team
+            <input
+              type="search"
+              maxLength={80}
+              value={draft}
+              placeholder="Campaign or team name"
+              onChange={(e) => setDraft(e.target.value)}
+            />
+          </label>
+          <label className="team-invite-field">
+            Campaign status
+            <select
+              value={filters.status}
+              onChange={(e) =>
+                setFilters((f) => ({
+                  ...f,
+                  status: e.target.value as MembershipFilters["status"],
+                }))
+              }
+            >
+              <option value="active">Ongoing & upcoming</option>
+              <option value="ended">Ended</option>
+              <option value="all">All campaigns</option>
+            </select>
+          </label>
+          <label className="team-invite-field">
+            My role
+            <select
+              value={filters.role}
+              onChange={(e) =>
+                setFilters((f) => ({
+                  ...f,
+                  role: e.target.value as MembershipFilters["role"],
+                }))
+              }
+            >
+              <option value="all">All roles</option>
+              <option value="captain">Team captain</option>
+            </select>
+          </label>
+          <button className="btn btn-secondary" type="submit">
+            Search
+          </button>
+        </form>
+      )}
+      <MembershipList
+        key={`${app.user?.id || "guest"}:${JSON.stringify(filters)}`}
+        filters={filters}
+        reset={() => {
+          setDraft("");
+          setFilters({ q: "", status: "all", role: "all" });
+        }}
+      />
+    </>
+  );
 }
-function MembershipList() {
+function MembershipList({
+  filters,
+  reset,
+}: {
+  filters: MembershipFilters;
+  reset: () => void;
+}) {
   const app = useApp();
   const [items, setItems] = useState<MyTeam[]>([]);
   const [after, setAfter] = useState("");
@@ -158,7 +285,7 @@ function MembershipList() {
     const ctrl = new AbortController();
     setBusy(true);
     setError("");
-    memberships(after, ctrl.signal)
+    memberships(after, ctrl.signal, filters)
       .then((d) => {
         if (ctrl.signal.aborted) return;
         setItems((prev) =>
@@ -180,7 +307,7 @@ function MembershipList() {
         if (!ctrl.signal.aborted) setBusy(false);
       });
     return () => ctrl.abort();
-  }, [app.user?.id, after, retry]);
+  }, [app.user?.id, after, retry, filters]);
   if (!app.user)
     return (
       <div className="empty-panel">
@@ -194,10 +321,14 @@ function MembershipList() {
       </div>
     );
   return (
-    <section className="section">
+    <section className="section membership-results">
       <div className="section-heading">
         <h2>My teams by campaign</h2>
-        <span className="pill neutral">SERVER SAVED</span>
+        <span className="small muted">
+          {filters.status === "ended"
+            ? "Most recently ended first"
+            : "Ongoing first · Ending soonest first"}
+        </span>
       </div>
       {busy && <p role="status">Loading memberships…</p>}
       {error && (
@@ -210,25 +341,55 @@ function MembershipList() {
       )}
       <div className="membership-grid">
         {items.map((m) => (
-          <article className="membership-card" key={m.campaign_id}>
+          <article
+            className="membership-card membership-card-compact"
+            key={m.campaign_id}
+          >
             <Link to={`/campaign/${m.slug}`}>
               <h3>{m.name}</h3>
             </Link>
-            <span className="eyebrow">MY TEAM IN THIS CAMPAIGN</span>
+            <div className="membership-badges">
+              <span
+                className={`pill ${m.activity_status === "active" ? "acid" : "neutral"}`}
+              >
+                {m.activity_status === "ended"
+                  ? "ENDED"
+                  : m.activity_status === "upcoming"
+                    ? "UPCOMING"
+                    : "ONGOING"}
+              </span>
+              <span className="pill neutral">
+                {m.role === "captain" ? "CAPTAIN" : "MEMBER"}
+              </span>
+            </div>
             <h2>{m.team_name}</h2>
-            <p className="muted">Your choice is saved for this campaign.</p>
+            {m.scoring_ends_at && (
+              <p className="small muted">
+                {m.activity_status === "ended"
+                  ? "Scoring ended"
+                  : "Scoring ends"}{" "}
+                · {new Date(m.scoring_ends_at).toLocaleString()}
+              </p>
+            )}
             <Link
               className="btn btn-secondary full"
-              to={`/campaign/${m.slug}/teams?selected=${m.membership.team_id}`}
+              to={
+                m.role === "captain"
+                  ? `/captain?campaign=${encodeURIComponent(m.slug)}`
+                  : `/campaign/${m.slug}/teams?selected=${m.membership.team_id}`
+              }
             >
-              View my team
+              {m.role === "captain" ? "Manage my team" : "View my team"}
             </Link>
           </article>
         ))}
       </div>
       {!busy && !error && !items.length && (
         <div className="empty-panel">
-          <p>No campaign memberships yet.</p>
+          <p>No teams match these filters.</p>
+          <button className="btn btn-secondary" onClick={reset}>
+            Show all my teams
+          </button>
           <Link to="/">Explore campaigns</Link>
         </div>
       )}

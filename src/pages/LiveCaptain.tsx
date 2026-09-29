@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
+import { TeamJoinSettings } from "../components/TeamJoinSettings";
 import { getCampaign } from "../lib/catalog";
 import {
   listTeams,
@@ -162,6 +163,7 @@ export function LiveCaptain({ userId }: { userId: string }) {
             <p>Loading membership…</p>
           ) : owned ? (
             <>
+              <TeamJoinSettings key={`${owned.id}:${owned.version||0}`} slug={slug} team={owned} onChange={setTeams}/>
               <p>
                 You already lead {owned.name}. Each captain can create one team
                 per campaign.

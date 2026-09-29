@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
+import InviteLanding from "./pages/InviteLanding";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -236,6 +237,7 @@ function Shell() {
       <main className="page-container">
         <Routes>
           <Route path="/" element={liveAuth ? <LiveCatalog /> : <Discover />} />
+          <Route path="/invite/:token" element={<InviteLanding />} />
           <Route
             path="/campaign/:id"
             element={liveAuth ? <LiveCatalog /> : <CampaignPage />}

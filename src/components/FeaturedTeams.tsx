@@ -9,6 +9,7 @@ type Entry = { id: string; score: number; team?: ServerTeam };
 
 export function FeaturedTeams({ slug, name }: { slug: string; name: string }) {
   const [rows, setRows] = useState<Entry[]>();
+  const [automated,setAutomated]=useState(false);
   const [error, setError] = useState(false);
   const [retry, setRetry] = useState(0);
   useEffect(() => {
@@ -20,7 +21,7 @@ export function FeaturedTeams({ slug, name }: { slug: string; name: string }) {
       busy = true;
       try {
         const [snapshot, teams] = await Promise.all([
-          api.request<{ teams: Entry[] }>(
+          api.request<{ teams: Entry[]; includes_auto_players?: boolean }>(
             `/campaigns/${encodeURIComponent(slug)}/rankings`,
             undefined,
             { signal: ctrl.signal },
@@ -41,6 +42,7 @@ export function FeaturedTeams({ slug, name }: { slug: string; name: string }) {
         )
           throw new Error("Invalid rankings");
         if (!ctrl.signal.aborted) {
+          setAutomated(snapshot.includes_auto_players===true);
           setRows(
             snapshot.teams
               .slice(0, 3)
@@ -72,6 +74,7 @@ export function FeaturedTeams({ slug, name }: { slug: string; name: string }) {
         <span>TOP TEAMS / {name}</span>
         <span>TEAM SCORE</span>
       </div>
+      {automated && <p className="small muted">Includes platform automated players. Simulated scores do not earn rewards or unlock progress.</p>}
       {error && (
         <div className="notice" role="alert">
           <span>

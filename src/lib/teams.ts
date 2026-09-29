@@ -1,5 +1,8 @@
 import { api } from "./api";
 export type ServerTeam = {
+  join_mode?: "public" | "invite_only";
+  invites_paused?: boolean;
+  version?: number;
   referrals?: number;
   status?: "active" | "paused";
   owner_id?: string;
@@ -13,6 +16,9 @@ export type ServerTeam = {
 };
 export type Membership = { id: string; team_id: string; joined_at: string };
 export type MyTeam = {
+  role?: "captain" | "member";
+  activity_status?: "active" | "upcoming" | "ended";
+  scoring_ends_at?: string;
   campaign_id: string;
   slug: string;
   name: string;
@@ -65,18 +71,34 @@ export async function joinTeam(
   team: string,
   signal?: AbortSignal,
   referrerId?: string,
+  inviteToken?: string,
 ) {
   const d = await api.authenticated<Membership>(
     `/campaigns/${encodeURIComponent(slug)}/teams/${encodeURIComponent(team)}/join`,
-    referrerId ? { referrer_id: referrerId } : {},
+    inviteToken
+      ? { invite_token: inviteToken }
+      : referrerId
+        ? { referrer_id: referrerId }
+        : {},
     signal,
   );
   if (!validMembership(d) || d.team_id !== team) throw invalid();
   return d;
 }
-export async function memberships(after: string, signal?: AbortSignal) {
+export type MembershipFilters = {
+  q: string;
+  status: "active" | "ended" | "all";
+  role: "all" | "captain";
+};
+export async function memberships(
+  after: string,
+  signal?: AbortSignal,
+  filters?: MembershipFilters,
+) {
+  const params = new URLSearchParams(filters || {});
+  if (after) params.set("after", after);
   const d = await api.authenticated<{ items: MyTeam[]; next_cursor: string }>(
-    `/user/memberships${after ? `?after=${encodeURIComponent(after)}` : ""}`,
+    `/user/memberships${params.size ? `?${params}` : ""}`,
     undefined,
     signal,
   );
@@ -93,7 +115,7 @@ export async function memberships(after: string, signal?: AbortSignal) {
         validMembership(m.membership),
     ) ||
     typeof d.next_cursor !== "string" ||
-    (d.next_cursor !== "" && !/^[a-z0-9][a-z0-9-]{0,63}$/.test(d.next_cursor))
+    (d.next_cursor !== "" && !/^[A-Za-z0-9_-]{1,1024}$/.test(d.next_cursor))
   )
     throw invalid();
   return d;
