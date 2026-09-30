@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-import { loadTelegramBridge, localId, platformContext } from "./platform";
+import { loadTelegramBridge, localId, mountPlatform, platformContext } from "./platform";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -8,10 +8,56 @@ afterEach(() => {
   vi.useRealTimers();
   delete window.Telegram;
   sessionStorage.clear();
+  document.documentElement.style.removeProperty("--tg-top");
+  document.documentElement.style.removeProperty("--tg-bottom");
   document
     .querySelectorAll('script[src*="telegram.org"]')
     .forEach((script) => script.remove());
   window.history.replaceState({}, "", "/");
+});
+
+it("requests native fullscreen on supported Telegram entry and tracks safe areas", () => {
+  const app = {
+    initData: "signed", ready: vi.fn(), expand: vi.fn(),
+    isVersionAtLeast: vi.fn(() => true), requestFullscreen: vi.fn(),
+    safeAreaInset: { top: 24, bottom: 12 },
+    contentSafeAreaInset: { top: 40, bottom: 0 },
+    onEvent: vi.fn(), offEvent: vi.fn(),
+  };
+  const cleanup = mountPlatform(app, "telegram");
+  expect(app.ready).toHaveBeenCalledOnce();
+  expect(app.expand).toHaveBeenCalledOnce();
+  expect(app.isVersionAtLeast).toHaveBeenCalledWith("8.0");
+  expect(app.requestFullscreen).toHaveBeenCalledOnce();
+  expect(document.documentElement.style.getPropertyValue("--tg-top")).toBe("64px");
+  const changed = app.onEvent.mock.calls.find(([event]) => event === "fullscreenChanged")![1];
+  app.contentSafeAreaInset.top = 0;
+  changed();
+  expect(document.documentElement.style.getPropertyValue("--tg-top")).toBe("24px");
+  expect(app.requestFullscreen).toHaveBeenCalledOnce();
+  cleanup();
+  for (const [event, callback] of app.onEvent.mock.calls) {
+    expect(app.offEvent).toHaveBeenCalledWith(event, callback);
+  }
+});
+
+it("keeps older clients expanded and does not request fullscreen on ordinary Web", () => {
+  const app = { initData: "", expand: vi.fn(), requestFullscreen: vi.fn(), isVersionAtLeast: () => false };
+  mountPlatform(app, "web")();
+  expect(app.expand).not.toHaveBeenCalled();
+  mountPlatform(app, "telegram")();
+  expect(app.expand).toHaveBeenCalledOnce();
+  expect(app.requestFullscreen).not.toHaveBeenCalled();
+});
+
+it("does not request fullscreen again when already fullscreen, and tolerates client errors", () => {
+  const app = { initData: "", isFullscreen: true, isVersionAtLeast: () => true,
+    requestFullscreen: vi.fn(() => { throw new Error("unsupported"); }) };
+  mountPlatform(app, "telegram")();
+  expect(app.requestFullscreen).not.toHaveBeenCalled();
+  app.isFullscreen = false;
+  expect(() => mountPlatform(app, "telegram")()).not.toThrow();
+  expect(app.requestFullscreen).toHaveBeenCalledOnce();
 });
 
 it("does not load Telegram on an ordinary Web entry", async () => {

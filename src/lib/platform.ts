@@ -4,6 +4,9 @@ export type TelegramApp = {
   platform?: string;
   ready?: () => void;
   expand?: () => void;
+  isFullscreen?: boolean;
+  isVersionAtLeast?: (version: string) => boolean;
+  requestFullscreen?: () => void;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
   openTelegramLink?: (url: string) => void;
@@ -106,8 +109,19 @@ export function mountPlatform(app: TelegramApp | undefined, runtime: Runtime) {
   resize();
   app.onEvent?.("safeAreaChanged", resize);
   app.onEvent?.("contentSafeAreaChanged", resize);
+  app.onEvent?.("fullscreenChanged", resize);
+  // expand() is only the expanded sheet. Native fullscreen needs Bot API 8.0.
+  // Request once on entry; do not force users back in after they exit fullscreen.
+  try {
+    if (!app.isFullscreen && app.isVersionAtLeast?.("8.0")) {
+      app.requestFullscreen?.();
+    }
+  } catch {
+    /* Unsupported clients keep the expanded sheet; authentication is unaffected. */
+  }
   return () => {
     app.offEvent?.("safeAreaChanged", resize);
     app.offEvent?.("contentSafeAreaChanged", resize);
+    app.offEvent?.("fullscreenChanged", resize);
   };
 }
