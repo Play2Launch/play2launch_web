@@ -4,6 +4,7 @@ import { ArrowUpRight, Users } from "lucide-react";
 import { api } from "../lib/api";
 import { listTeams, type ServerTeam } from "../lib/teams";
 import { number, short } from "../data";
+import { TeamBadge } from './TeamBadge';
 
 type Entry = { id: string; score: number; team?: ServerTeam };
 
@@ -106,8 +107,9 @@ export function FeaturedTeams({ slug, name }: { slug: string; name: string }) {
           className="mini-team"
         >
           <span className="rank">0{i + 1}</span>
-          <span className="avatar" style={{ background: r.team?.color }}>
+          <span className="avatar team-avatar" style={{ background: r.team?.color }}>
             {r.team?.initial || "T"}
+            <TeamBadge />
           </span>
           <span className="team-name">
             <strong>{r.team?.name || r.id}</strong>

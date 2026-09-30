@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { campaignBackPath } from "./lib/campaignNavigation";
+import { publicAvatarURL } from './lib/avatar';
 import { campaigns, teams, type Stage } from "./data";
 import {
   defaultEntry,
@@ -471,7 +472,7 @@ function useAppState() {
   };
   return {
     local,
-    updatePublicName: (id: string, name: string, handle?: string) => setUser(current => current?.id === id ? {...current, name, ...(handle !== undefined ? {handle} : {})} : current),
+    updatePublicName: (id: string, name: string, handle?: string, avatarUrl?: string) => setUser(current => current?.id === id ? {...current, name, ...(handle !== undefined ? {handle} : {}), ...(avatarUrl !== undefined ? {avatarUrl:publicAvatarURL(avatarUrl)} : {})} : current),
     demoTools: !liveAuth && demoTools,
     demoToolsAvailable: !liveAuth,
     toggleDemoTools: (enabled: boolean) => {

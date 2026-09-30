@@ -1,3 +1,4 @@
+import { TeamBadge } from '../components/TeamBadge';
 import {
   ArrowDownRight,
   ArrowRight,
@@ -401,8 +402,9 @@ export default function Discover({
                   className="mini-team"
                 >
                   <span className="rank">0{i + 1}</span>
-                  <span className="avatar" style={{ background: t.color }}>
+                  <span className="avatar team-avatar" style={{ background: t.color }}>
                     {t.initial}
+                    <TeamBadge />
                   </span>
                   <span className="team-name">
                     <strong>{t.name}</strong>

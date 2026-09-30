@@ -39,6 +39,14 @@ function memoryStorage() {
   };
 }
 describe("DashFun authentication contract", () => {
+  it('retains the public avatar for account and Telegram login',async()=>{
+    const transport=vi.fn().mockResolvedValueOnce(response(account)).mockResolvedValueOnce(response({...user,avatar_url:'https://example.com/avatar.png'})).mockResolvedValueOnce(response({...user,avatar_url:'https://example.com/tg.png'}));
+    const client=new ApiClient('https://api.test',transport);
+    const result=await client.login('p','pass',context);
+    expect(result.kind==='authenticated'&&result.user.avatarUrl).toBe('https://example.com/avatar.png');
+    const tg=await client.telegram('signed-init-data',context);
+    expect(tg.user.avatarUrl).toBe('https://example.com/tg.png');
+  });
   it("uses account password login then bearer user login; stores only on commit", async () => {
     const transport = vi
       .fn()

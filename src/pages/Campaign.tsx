@@ -48,6 +48,8 @@ import { WalletPanel } from "../components/WalletPanel";
 import { walletAllowed } from "../lib/walletPolicy";
 import { ProfileTools } from "../components/ProfileTools";
 import { VerifiedKol } from "../components/VerifiedKol";
+import { TeamBadge } from "../components/TeamBadge";
+import { UserAvatar } from '../components/UserAvatar';
 import { PublicProfileEditor } from "../components/PublicProfileEditor";
 import { PlatformPoints } from "../components/PlatformPoints";
 import { CampaignTeamsPreview } from "../components/CampaignTeamsPreview";
@@ -223,8 +225,9 @@ export function CampaignPage({
                 key={t.id}
               >
                 <span className="eyebrow">#{i + 1} IN THE BATTLE</span>
-                <span className="avatar large" style={{ background: t.color }}>
+                <span className="avatar large team-avatar" style={{ background: t.color }}>
                   {t.initial}
+                  <TeamBadge />
                 </span>
                 <h3>{t.name}</h3>
                 <span className="muted">{short(t.players)} players</span>
@@ -384,10 +387,11 @@ export function CampaignPage({
               <>
                 <div className="your-team">
                   <span
-                    className="avatar"
+                    className="avatar team-avatar"
                     style={{ background: (joined || invited)!.color }}
                   >
                     {(joined || invited)!.initial}
+                    <TeamBadge />
                   </span>
                   <div>
                     <h3>{(joined || invited)!.name}</h3>
@@ -682,10 +686,11 @@ export function TeamPage({
                 >
                   <span className="rank">0{i + 1}</span>
                   <span
-                    className="avatar large"
+                    className="avatar large team-avatar"
                     style={{ background: t.color }}
                   >
                     {t.initial}
+                    <TeamBadge />
                   </span>
                   <span className="team-name">
                     <strong>
@@ -732,10 +737,11 @@ export function TeamPage({
               THE {current.initial} SIDE OF THE STORY
             </span>
             <span
-              className="avatar jumbo"
+              className="avatar jumbo team-avatar"
               style={{ background: current.color }}
             >
               {current.initial}
+              <TeamBadge />
             </span>
             <span className="team-detail-rank">
               <Crown size={16} />{" "}
@@ -891,8 +897,9 @@ export function LeaderboardPage() {
                 <>0{teams.indexOf(t) + 1}</>
               )}
             </span>
-            <span className="avatar jumbo" style={{ background: t.color }}>
+            <span className="avatar jumbo team-avatar" style={{ background: t.color }}>
               {t.initial}
+              <TeamBadge />
             </span>
             <h3>{t.name}</h3>
             <strong>{short(t.score)}</strong>
@@ -946,8 +953,9 @@ export function LeaderboardPage() {
                       to={`/campaign/${c.id}/teams?selected=${t.id}`}
                       className="table-team"
                     >
-                      <span className="avatar" style={{ background: t.color }}>
+                      <span className="avatar team-avatar" style={{ background: t.color }}>
                         {t.initial}
+                        <TeamBadge />
                       </span>
                       <span>
                         {t.name}
@@ -994,7 +1002,7 @@ export function LeaderboardPage() {
                   <td>
                     <span className="table-team">
                       <span
-                        className="avatar"
+                        className="avatar player-avatar"
                         style={{ background: teams[i % 4].color }}
                       >
                         {p.name[0].toUpperCase()}
@@ -1013,7 +1021,7 @@ export function LeaderboardPage() {
         </div>
       )}
       <div className="your-ranking">
-        <span className="avatar">{app.user?.name[0] || "?"}</span>
+        <span className="avatar player-avatar"><UserAvatar key={app.user?.id} name={app.user?.name} src={app.user?.avatarUrl}/></span>
         <div>
           <strong>{app.user?.name || "Your next great bad trade"}</strong>
           <p>
@@ -1197,7 +1205,7 @@ export function ProfilePage() {
       </div>
       <div className="profile-grid">
         <section className="profile-identity">
-          <span className="avatar jumbo kol-avatar-host">{app.user?.name[0] || "?"}{verified && <VerifiedKol avatar />}</span>
+          <span className="avatar jumbo kol-avatar-host player-avatar"><UserAvatar key={app.user?.id} name={app.user?.name} src={app.user?.avatarUrl}/>{verified && <VerifiedKol avatar />}</span>
           <h2>{app.user?.name || "Guest player"} {verified && <VerifiedKol />}</h2>
           {app.user?.handle && <div className="profile-username">@{app.user.handle}</div>}
           <KolBadge />

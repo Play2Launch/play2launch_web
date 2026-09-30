@@ -6,6 +6,22 @@ vi.mock('../lib/api',async(importOriginal)=>({...await importOriginal<typeof imp
 vi.mock('../state',()=>({useApp:()=>({updatePublicName:mock.update})}));
 import {PublicProfileEditor} from './PublicProfileEditor';
 afterEach(()=>{cleanup();vi.clearAllMocks();});
+it('synchronizes the server avatar on load, save and removal',async()=>{
+ mock.request.mockResolvedValueOnce({id:'ur1',nickname:'Bee',avatar_url:'https://example.com/old.png'})
+ .mockResolvedValueOnce({id:'ur1',nickname:'Bee',avatar_url:'https://example.com/new.png'})
+ .mockResolvedValueOnce({id:'ur1',nickname:'Bee',avatar_url:''});
+ render(<PublicProfileEditor userId="ur1"/>);
+ const avatar=await screen.findByPlaceholderText('https://… (optional)');
+ expect(mock.update).toHaveBeenLastCalledWith('ur1','Bee','','https://example.com/old.png');
+ fireEvent.change(avatar,{target:{value:'https://example.com/new.png'}});
+ fireEvent.click(screen.getByRole('button',{name:'Save public profile'}));
+ await screen.findByText(/Public profile saved/);
+ expect(mock.update).toHaveBeenLastCalledWith('ur1','Bee','','https://example.com/new.png');
+ fireEvent.change(avatar,{target:{value:''}});
+ fireEvent.click(screen.getByRole('button',{name:'Save public profile'}));
+ await screen.findByText(/Public profile saved/);
+ expect(mock.update).toHaveBeenLastCalledWith('ur1','Bee','','');
+});
 it('loads and saves only public fields',async()=>{
  mock.request.mockResolvedValueOnce({id:'ur1',nickname:'Player #ur1',avatar_url:''}).mockResolvedValueOnce({id:'ur1',nickname:'Captain Bee',avatar_url:''});
  render(<PublicProfileEditor userId="ur1"/>);
@@ -14,7 +30,7 @@ it('loads and saves only public fields',async()=>{
  fireEvent.click(screen.getByRole('button',{name:'Save public profile'}));
  await screen.findByText(/Public profile saved/);
  expect(mock.request).toHaveBeenLastCalledWith('/user/profile',{nickname:'Captain Bee',avatar_url:''});
- expect(mock.update).toHaveBeenLastCalledWith('ur1','Captain Bee','');
+ expect(mock.update).toHaveBeenLastCalledWith('ur1','Captain Bee','','');
 });
 it('saves a lowercase username separately from the display name',async()=>{
  mock.request.mockResolvedValueOnce({id:'ur1',nickname:'Bee',avatar_url:'',handle:'',handle_changes_remaining:1}).mockResolvedValueOnce({id:'ur1',nickname:'Bee',avatar_url:'',handle:'captain_bee',handle_changes_remaining:1});
@@ -23,7 +39,7 @@ it('saves a lowercase username separately from the display name',async()=>{
  fireEvent.click(screen.getByRole('button',{name:'Save public profile'}));
  await screen.findByText(/Public profile saved/);
  expect(mock.request).toHaveBeenLastCalledWith('/user/profile',{nickname:'Bee',avatar_url:'',handle:'captain_bee'});
- expect(mock.update).toHaveBeenLastCalledWith('ur1','Bee','captain_bee');
+ expect(mock.update).toHaveBeenLastCalledWith('ur1','Bee','captain_bee','');
 });
 it('locks username after one rename but keeps display name editable',async()=>{
  mock.request.mockResolvedValueOnce({id:'ur1',nickname:'Bee',avatar_url:'',handle:'captain_bee',handle_changes_remaining:0});

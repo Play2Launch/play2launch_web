@@ -37,7 +37,7 @@ export function PublicProfileEditor({ userId }: { userId: string }) {
         setHandle(p.handle ?? "");
         setAvatar(p.avatar_url);
         setError("");
-        app.updatePublicName(userId, p.nickname, p.handle ?? "");
+        app.updatePublicName(userId, p.nickname, p.handle ?? "", p.avatar_url);
       })
       .catch(() => {
         if (!ctrl.signal.aborted) setError("Could not load public profile.");
@@ -64,7 +64,7 @@ export function PublicProfileEditor({ userId }: { userId: string }) {
       if (!valid(p)) throw new Error();
       setProfile(p);
       setHandle(p.handle ?? "");
-      app.updatePublicName(userId, p.nickname, p.handle ?? "");
+      app.updatePublicName(userId, p.nickname, p.handle ?? "", p.avatar_url);
       setSaved(true);
     } catch (e) {
       setError(

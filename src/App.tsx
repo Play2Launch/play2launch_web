@@ -52,6 +52,8 @@ import { HeaderWallet } from "./components/HeaderWallet";
 import { HeaderPoints } from "./components/HeaderPoints";
 import { PointsProvider } from "./components/PointsProvider";
 import Tasks from "./pages/Tasks";
+import PublicPlayer from "./pages/PublicPlayer";
+import { UserAvatar } from './components/UserAvatar';
 import LiveLaunch from "./pages/LiveLaunch";
 import { walletAllowed } from "./lib/walletPolicy";
 import { shareLinks } from "./lib/entry";
@@ -142,7 +144,7 @@ function Shell() {
           {liveAuth && app.user?.mode==='live' && <HeaderPoints/>}
           {app.user ? (
             <Link to="/profile" className="profile-button">
-              <span className="avatar tiny">{app.user.name[0]}</span>
+              <span className="avatar tiny player-avatar"><UserAvatar key={app.user.id} name={app.user.name} src={app.user.avatarUrl}/></span>
               <span>{app.user.name}</span>
               {app.user.mode === "demo" && <small>DEMO</small>}
             </Link>
@@ -257,6 +259,7 @@ function Shell() {
           <Route path="/teams" element={<MyTeamsPage />} />
           <Route path="/leaderboard" element={liveAuth ? <LiveRankings /> : <LeaderboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          {liveAuth && <Route path="/players/:userId" element={<PublicPlayer />} />}
           <Route path="/verification" element={<VerificationPage />} />
           <Route path="/captain" element={<CaptainPage />} />
           <Route path="/tasks" element={<Tasks />} />

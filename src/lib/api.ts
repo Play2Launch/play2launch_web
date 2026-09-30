@@ -1,5 +1,6 @@
 import type { EntryContext } from "./entry";
-export type User = { id: string; name: string; handle?: string; mode: "demo" | "live" };
+import { publicAvatarURL } from './avatar';
+export type User = { id: string; name: string; handle?: string; avatarUrl?: string; mode: "demo" | "live" };
 export type AuthContext = { guestId: string; entry: EntryContext };
 export type Account = {
   account_id: string;
@@ -200,6 +201,7 @@ export class ApiClient {
       display_name?: string;
       user_name?: string;
       nickname?: string;
+      avatar_url?: string;
       handle?: string;
       from?: number;
     }>("/user/tg_login", new URLSearchParams({ referrer_id: referrer }), {
@@ -210,7 +212,7 @@ export class ApiClient {
     const name = [data.nickname, data.from === 1 ? data.display_name : undefined].find(
       (value) => typeof value === "string" && value.trim() && !value.includes("@") && !/[\u0000-\u001f\u007f]/.test(value),
     );
-    return { id: data.id, name: name?.trim() || `Player #${data.id}`, ...(typeof data.handle === "string" && /^[a-z][a-z0-9_]{2,23}$/.test(data.handle) ? {handle:data.handle} : {}), mode: "live" };
+    return { id: data.id, name: name?.trim() || `Player #${data.id}`, ...(publicAvatarURL(data.avatar_url) ? {avatarUrl:publicAvatarURL(data.avatar_url)} : {}), ...(typeof data.handle === "string" && /^[a-z][a-z0-9_]{2,23}$/.test(data.handle) ? {handle:data.handle} : {}), mode: "live" };
   }
   private async finish(
     account: Account,

@@ -13,6 +13,7 @@ import { useApp } from "../state";
 import { safeImageSource } from "../components/CampaignArtwork";
 import { stageLabel } from "../data";
 import { VerifiedKol } from "../components/VerifiedKol";
+import { TeamBadge } from "../components/TeamBadge";
 type Rank = {
   id: string;
   score: number;
@@ -474,7 +475,7 @@ function Board({
                   <Trophy size={18} />0{i + 1}
                 </span>
                 <span
-                  className="rankings-avatar"
+                  className={`rankings-avatar ${kind === 'teams' ? 'team-avatar' : 'player-avatar'}`}
                   style={{
                     background:
                       kind === "teams"
@@ -483,17 +484,17 @@ function Board({
                   }}
                 >
                   {kind === "teams" ? (
-                    teams.find((t) => t.id === r.id)?.initial || "T"
+                    <>{teams.find((t) => t.id === r.id)?.initial || "T"}<TeamBadge /></>
                   ) : (
-                    <PlayerAvatar
+                    <Link to={`/players/${encodeURIComponent(r.id)}`} aria-label={`View ${label(r)} profile`}><PlayerAvatar
                       key={r.avatar_url || r.id}
                       rank={r}
                       name={label(r)}
-                    />
+                    /></Link>
                   )}
                 </span>
                 <h3>
-                  {label(r)}{" "}
+                  {kind === "players" ? <Link to={`/players/${encodeURIComponent(r.id)}`}>{label(r)}</Link> : label(r)}{" "}
                   {kind === "players" && r.kol_verified === true && (
                     <VerifiedKol />
                   )}
@@ -536,11 +537,12 @@ function Board({
                     <th scope="row">
                       {kind === "teams" ? (
                         <Link to={`/campaign/${slug}/teams?selected=${r.id}`}>
+                          <span className="rankings-avatar rankings-avatar-small team-avatar" style={{background:teams.find(t=>t.id===r.id)?.color}}>{teams.find(t=>t.id===r.id)?.initial||'T'}<TeamBadge /></span>{' '}
                           {label(r)}
                         </Link>
                       ) : (
-                        <span className="rankings-player-name">
-                          <span className="rankings-avatar rankings-avatar-small">
+                        <Link to={`/players/${encodeURIComponent(r.id)}`} className="rankings-player-name">
+                          <span className="rankings-avatar rankings-avatar-small player-avatar">
                             <PlayerAvatar
                               key={r.avatar_url || r.id}
                               rank={r}
@@ -558,7 +560,7 @@ function Board({
                               </span>
                             )}
                           </span>
-                        </span>
+                        </Link>
                       )}
                       {r.id === ownId && (
                         <span className="pill acid">
