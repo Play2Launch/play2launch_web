@@ -207,6 +207,33 @@ button {
   padding: 40px 4.2% 0;
   margin: auto;
 }
+.discover-heading p { max-width: 680px; }
+.discover-explore { margin-top: 20px; }
+.platform-vision {
+  margin-bottom: 32px;
+  padding: 20px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.platform-vision h2 { margin: 0 0 16px; }
+.platform-vision ol {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 20px; list-style: none; margin: 0; padding: 0;
+}
+.platform-vision li { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.platform-vision li > svg { flex-shrink: 0; opacity: .45; margin-left: 12px; }
+.vision-number { color: var(--accent); font-size: 10px; letter-spacing: .08em; }
+#campaigns { scroll-margin-top: 140px; }
+@media (max-width: 900px) {
+  .platform-vision ol { flex-wrap: wrap; justify-content: flex-start; gap: 16px 24px; }
+}
+@media (max-width: 540px) {
+  .platform-vision { margin-bottom: 24px; padding: 18px 0; }
+  .platform-vision ol { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 12px; }
+  .platform-vision li:first-child { grid-column: 1 / -1; }
+  .platform-vision li { font-size: 13px; }
+  .platform-vision li > svg { display: none; }
+}
 .page-heading {
   display: flex;
   justify-content: space-between;

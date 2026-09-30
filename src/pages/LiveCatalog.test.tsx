@@ -78,7 +78,8 @@ it("loads server catalog and arbitrary slug detail without prototype counts", as
   expect(screen.getByText("/ 1,234 unlock points")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Trending" })).toBeNull();
   expect(screen.queryByRole("button", { name: "New arrivals" })).toBeNull();
-  fireEvent.click(screen.getByRole("link", { name: /Explore campaign/ }));
+  expect(screen.getByRole("link", { name: "Explore campaigns" }).getAttribute("href")).toBe("#campaigns");
+  fireEvent.click(screen.getByRole("link", { name: /Explore campaign\b/ }));
   await screen.findByRole("heading", { level: 1, name: campaign.name });
   expect(screen.queryByRole("button", { name: "Share campaign" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Explore launch details" })).toBeNull();

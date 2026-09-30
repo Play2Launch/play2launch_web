@@ -27,6 +27,7 @@ import { useState } from "react";
 import { useApp } from "../state";
 import { CampaignArtwork } from "../components/CampaignArtwork";
 import { FeaturedTeams } from "../components/FeaturedTeams";
+import { PlatformVision } from "../components/PlatformVision";
 import { walletAllowed } from "../lib/walletPolicy";
 import { launchCopy, launchPlayers, launchPoints } from "../lib/launch";
 
@@ -60,17 +61,21 @@ export default function Discover({
   const items = filter === "New arrivals" ? [...filtered].reverse() : filtered;
   return (
     <>
-      <div className="page-heading">
+      <div className="page-heading discover-heading">
         <div>
           <div className="eyebrow">THE NEXT WAVE STARTS HERE</div>
           <h1>
             Early looks good on you<span>.</span>
           </h1>
           <p>
-            Find your next obsession. Play for your team. Unlock what’s next.
+            P2L is the social layer for discovering, validating, launching and trading new on-chain assets.
           </p>
+          <a href="#campaigns" className="btn btn-primary discover-explore">
+            Explore campaigns <ArrowRight size={18} aria-hidden="true" />
+          </a>
         </div>
       </div>
+      <PlatformVision />
       <section className="feature-grid">
         {featured ? (
           <Link
@@ -225,7 +230,7 @@ export default function Discover({
           )}
         </div>
       </section>
-      <section className="section">
+      <section className="section" id="campaigns" aria-label="Campaigns">
         <div className="section-heading">
           <h2>
             <Flame size={22} className="accent" /> Pre-launch radar{" "}
