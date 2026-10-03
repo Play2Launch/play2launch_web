@@ -3,16 +3,28 @@ import {Link} from "react-router-dom";
 import {api} from '../lib/api';
 type Application={id:string;status:string;version:number;code:string;expires_at:string;name:string;avatar:string;social_url:string;introduction:string;proof_url:string;history:{id:string;status:string;reason:string;at:string}[]};
 const labels:Record<string,string>={draft:'Verify account ownership',pending:'Under review',approved:'Approved captain',rejected:'Changes requested',revoked:'Verification revoked'};
+function checkSocialLink(value:string,profile:boolean):boolean {
+ try {
+  const url=new URL(value.trim());
+  if(url.protocol!=='https:'||url.username||url.password||!['x.com','twitter.com','t.me'].includes(url.host)||value.trim().length>2048)return false;
+  if(url.host==='t.me'&&(url.search||url.hash))return false;
+  return !profile||/^\/[A-Za-z0-9_]{1,32}\/?$/.test(url.pathname);
+ }catch{return false;}
+}
 export function LiveVerification({userId}:{userId:string}){
  const [data,setData]=useState<Application|null>(null);const [busy,setBusy]=useState(false);const [loaded,setLoaded]=useState(false);const [error,setError]=useState('');const [retry,setRetry]=useState(0);
  useEffect(()=>{const controller=new AbortController();setLoaded(false);api.authenticated<Application|null>('/kol/me',undefined,controller.signal).then(v=>{if(!controller.signal.aborted){setData(v);setLoaded(true);setError('');}}).catch(e=>{if(!controller.signal.aborted)setError(e.message);});return ()=>controller.abort();},[userId,retry]);
  async function send(path:string,body:unknown){setBusy(true);setError('');try{await api.authenticated(path,body);setRetry(v=>v+1);}catch(e){setError(e instanceof Error?e.message:'Request failed');}finally{setBusy(false);}}
  const expired=!!data&&Date.parse(data.expires_at)<=Date.now();
- return <div><h2>{data?labels[data.status]:'Become a verified captain'}</h2>{error&&<div role="alert" className="inline-note">{error}<button className="btn" onClick={()=>setRetry(v=>v+1)}>Retry</button></div>}
+ return <div><h2>{data?labels[data.status]:'Become a verified captain'}</h2>{error&&<div role="alert" className="inline-note">{error}{!loaded&&<button className="btn" onClick={()=>setRetry(v=>v+1)}>Retry</button>}</div>}
  {!loaded?<p>Loading verification…</p>:<><p>Platform review verifies your social account ownership. It does not endorse investments or grant campaign publishing access.</p>
  {(!data||['rejected','revoked'].includes(data.status)||(data.status==='draft'&&expired))&&<button className="btn btn-primary" disabled={busy} onClick={()=>send('/kol/challenge',{})}>{data?'Start a new verification':'Get ownership code'}</button>}
  {data?.status==='draft'&&!expired&&<><div className="inline-note"><div><strong>{data.code}</strong><p>Put this exact code in your X / Telegram profile bio or a public post. Keep it visible until review. A Telegram login alone does not verify group/channel ownership.</p><p>Expires: {new Date(data.expires_at).toLocaleString()}</p></div></div>
- <form className="verification-form" key={`${data.id}:${data.version}`} onSubmit={e=>{e.preventDefault();const values=Object.fromEntries(new FormData(e.currentTarget));void send('/kol/apply',{...values,version:data.version});}}>
+ <form className="verification-form" key={`${data.id}:${data.version}`} onSubmit={e=>{e.preventDefault();const values=Object.fromEntries(new FormData(e.currentTarget));
+ if(!checkSocialLink(String(values.social_url),true)){setError('Public profile: enter an HTTPS X or Telegram profile URL, such as https://x.com/yourname.');return;}
+ if(!checkSocialLink(String(values.proof_url),false)){setError('Proof link: enter an HTTPS X or Telegram profile or public post URL. X share parameters are supported.');return;}
+ if(String(values.avatar).trim()){try{const avatar=new URL(String(values.avatar));if(avatar.protocol!=='https:'||avatar.username||avatar.password)throw new Error();}catch{setError('Avatar URL: use an HTTPS image URL, or leave it blank.');return;}}
+ void send('/kol/apply',{...values,version:data.version});}}>
  <fieldset disabled={busy} style={{border:0,padding:0,display:'grid',gap:16}}>
  <label>Captain name<input name="name" required minLength={2} maxLength={60} defaultValue={data.name}/></label>
  <label>Avatar URL (optional, HTTPS)<input name="avatar" type="url" defaultValue={data.avatar}/></label>

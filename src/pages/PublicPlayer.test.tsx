@@ -5,6 +5,7 @@ import {MemoryRouter,Route,Routes} from 'react-router-dom';
 import {api} from '../lib/api';
 import PublicPlayer from './PublicPlayer';
 vi.mock('../lib/api',()=>({api:{request:vi.fn()}}));
+vi.mock('../state',()=>({useApp:()=>({user:null,setAuthOpen:vi.fn()})}));
 const profile={id:'ur1',display_name:'Public Captain',handle:'captain',avatar_url:'',kol_verified:true,campaigns:[{id:'cp1',slug:'hello',name:'Hello campaign',stage:'prelaunch',team:{id:'tmnew',name:'Current team'},games:[{game_key:'gx1',name:'Flying game',rules:'v1',best:200,rounds:2,last_played:'2026-09-01T00:00:00Z'},{game_key:'gx1',name:'Flying game',rules:'v2',best:900,rounds:1,last_played:null}]}],next_cursor:''};
 function mount(){render(<MemoryRouter initialEntries={['/players/ur1']}><Routes><Route path='/players/:userId' element={<PublicPlayer/>}/></Routes></MemoryRouter>)}
 afterEach(()=>{cleanup();vi.mocked(api.request).mockReset()});

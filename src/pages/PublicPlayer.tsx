@@ -2,6 +2,8 @@ import {useEffect,useRef,useState} from 'react';
 import {Link,useParams} from 'react-router-dom';
 import {api} from '../lib/api';
 import {VerifiedKol} from '../components/VerifiedKol';
+import {FollowButton} from '../components/FollowButton';
+import {ActivityFeed} from '../components/ActivityFeed';
 
 type PlayedGame={game_key:string;name:string;rules:string;best:number;rounds:number;last_played:string|null};
 type Participation={id:string;slug:string;name:string;stage:string;team:{id:string;name:string;type?:string}|null;games:PlayedGame[]};
@@ -11,6 +13,7 @@ export default function PublicPlayer(){
  return <Player key={userId} userId={userId}/>;
 }
 function Player({userId}:{userId:string}){
+ const [tab,setTab]=useState<'games'|'posts'>('games');
  const [data,setData]=useState<PublicPlayerData>();
  const [error,setError]=useState('');
  const [busy,setBusy]=useState(false);
@@ -40,7 +43,10 @@ function Player({userId}:{userId:string}){
     {data?.kol_verified&&<VerifiedKol avatar/>}
    </span>
    <div><span className="eyebrow">PLAYER PROFILE</span><h1>{data?name:'Player profile'}</h1>{data?.handle&&<p className="accent">@{data.handle}</p>}{data?.kol_verified&&<VerifiedKol/>}</div>
+   {data&&<FollowButton kind="user" targetId={data.id}/>}
   </header>
+  <div className="tabs"><button className={tab==='games'?'selected':''} onClick={()=>setTab('games')}>Campaigns & games</button><button className={tab==='posts'?'selected':''} onClick={()=>setTab('posts')}>Posts</button></div>
+  {tab==='posts'?<ActivityFeed key={userId} kind="user" authorId={userId}/>:<>
   <h2>Campaigns & games</h2>
   <p className="muted">Published campaigns only. Best scores are separate for each campaign, game and rules version. Trial rounds are not included.</p>
   {error&&<div className="notice" role="alert">{error} <button className="btn btn-secondary" onClick={()=>void load(data?.next_cursor||'')}>Retry</button></div>}
@@ -57,5 +63,6 @@ function Player({userId}:{userId:string}){
    </article>)}
   </div>
   {data?.next_cursor&&<button className="btn btn-secondary" disabled={busy} onClick={()=>void load(data.next_cursor)}>Load more campaigns</button>}
+  </>}
  </section>;
 }

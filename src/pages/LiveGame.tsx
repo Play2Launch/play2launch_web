@@ -5,6 +5,7 @@ import { getCampaign } from "../lib/catalog";
 import { myMembership, listTeams } from "../lib/teams";
 import { useApp } from "../state";
 import { GamePage } from "./Game";
+import { PostComposer } from '../components/PostComposer';
 import type { Campaign } from "../data";
 import { RunnerFrame } from './RunnerFrame';
 import { RUNNER_RULES } from '../lib/runner';
@@ -361,6 +362,7 @@ function Score({ slug, sessionId }: { slug: string; sessionId: string }) {
         View leaderboard
       </Link>
       <Link to={`/campaign/${slug}/compete`}>Play again</Link>
+      {run?.status === 'accepted' && app.user?.mode === 'live' && <PostComposer key={sessionId} sessionId={sessionId} />}
     </section>
   );
 }

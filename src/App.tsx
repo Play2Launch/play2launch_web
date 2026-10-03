@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Trophy,
   Users,
+  Radio,
   X,
 } from "lucide-react";
 import {
@@ -53,6 +54,8 @@ import { HeaderPoints } from "./components/HeaderPoints";
 import { PointsProvider } from "./components/PointsProvider";
 import Tasks from "./pages/Tasks";
 import PublicPlayer from "./pages/PublicPlayer";
+import Following from "./pages/Following";
+import PostDetail from "./pages/PostDetail";
 import { UserAvatar } from './components/UserAvatar';
 import LiveLaunch from "./pages/LiveLaunch";
 import { walletAllowed } from "./lib/walletPolicy";
@@ -100,6 +103,7 @@ function Shell() {
       {
         "/": "Discover",
         "/teams": "My teams",
+        "/following": "Feed",
         "/tasks": "Tasks",
         "/profile": "Profile",
         "/verification": "KOL verification",
@@ -128,7 +132,7 @@ function Shell() {
           <NavLink to="/" end>
             Discover
           </NavLink>
-          <NavLink to="/teams">My teams</NavLink>
+          <NavLink to="/following">Feed</NavLink>
           <NavLink to="/tasks">Tasks</NavLink>
           <NavLink to="/leaderboard">Leaderboard</NavLink>
         </nav>
@@ -257,6 +261,8 @@ function Shell() {
           />
           <Route path="/campaign/:id/launch" element={walletAllowed(app.platform.runtime) ? (liveAuth ? <LiveLaunch/> : <LaunchPage />) : <div className="empty-panel"><h1>This page is unavailable in this environment.</h1><Link to="/">Back to games</Link></div>} />
           <Route path="/teams" element={<MyTeamsPage />} />
+          <Route path="/following" element={<Following />} />
+          <Route path="/posts/:postId" element={<PostDetail />} />
           <Route path="/leaderboard" element={liveAuth ? <LiveRankings /> : <LeaderboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           {liveAuth && <Route path="/players/:userId" element={<PublicPlayer />} />}
@@ -287,9 +293,9 @@ function Shell() {
           <LayoutGrid size={19} />
           Discover
         </NavLink>
-        <NavLink to="/teams">
-          <Users size={19} />
-          My teams
+        <NavLink to="/following">
+          <Radio size={19} />
+          Feed
         </NavLink>
         <NavLink to="/tasks">
           <ListChecks size={19}/>

@@ -53,6 +53,7 @@ import { UserAvatar } from '../components/UserAvatar';
 import { PublicProfileEditor } from "../components/PublicProfileEditor";
 import { PlatformPoints } from "../components/PlatformPoints";
 import { CampaignTeamsPreview } from "../components/CampaignTeamsPreview";
+import { FollowButton } from "../components/FollowButton";
 import { CommunityTeamCard } from "../components/CommunityTeamCard";
 
 export function useCampaign() {
@@ -117,7 +118,8 @@ export function CampaignNav({
 }
 export function CampaignPage({
   liveCampaign,
-}: { liveCampaign?: Campaign } = {}) {
+  liveCampaignId,
+}: { liveCampaign?: Campaign; liveCampaignId?: string } = {}) {
   const demoCampaign = useCampaign();
   const c = liveCampaign ?? demoCampaign;
   const live = liveCampaign !== undefined;
@@ -164,6 +166,7 @@ export function CampaignPage({
               </span>
             </div>
           </section>
+          {live && liveCampaignId && <div className="campaign-follow-row"><span className="muted">Keep this campaign on your radar.</span><FollowButton kind="campaign" targetId={liveCampaignId} /></div>}
           <div className="campaign-description">
             {!live && <CompetitionRules campaignId={c.id} />}
             <div>

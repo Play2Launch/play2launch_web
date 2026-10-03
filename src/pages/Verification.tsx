@@ -121,7 +121,7 @@ export default function VerificationPage() {
       </div>
       <div className="verification-layout">
         <section className="membership-card verification-content">
-          <span className="pill neutral">LOCAL APPLICATION · DEMO</span>
+          <span className="pill neutral">{liveAuth ? 'KOL VERIFICATION' : 'LOCAL APPLICATION · DEMO'}</span>
           {!app.user ? (
             <>
               <h2>Sign in to apply</h2>
@@ -202,15 +202,16 @@ export default function VerificationPage() {
         <aside className="membership-card verification-content">
           <h2>What the badge means</h2>
           <p>
-            In production, P2L will review account ownership and community
-            identity. A social link alone is not proof of ownership.
+            P2L reviews account ownership and community identity. A social link
+            alone is not proof of ownership.
           </p>
           <div className="verification-permission">
             <BadgeCheck size={20} />
             <div>
               <strong>KOL / Captain</strong>
               <p>
-                {app.kolPermissions.canCreateTeam
+                {liveAuth ? "Approved KOL captains can create one team per campaign."
+                  : app.kolPermissions.canCreateTeam
                   ? "Eligible to create a campaign team · demo."
                   : "Team creation stays locked until KOL approval."}
               </p>
@@ -227,7 +228,7 @@ export default function VerificationPage() {
             </div>
           </div>
           <p className="small muted">
-            Demo badges are not real verification. No guarantee of token safety,
+            {!liveAuth && 'Demo badges are not real verification. '}No guarantee of token safety,
             returns or rewards. Never submit passwords, private keys or identity
             documents here.
           </p>

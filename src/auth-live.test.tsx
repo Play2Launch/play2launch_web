@@ -202,7 +202,9 @@ describe("live client flows without sending mail", () => {
     )![1] as RequestInit;
     expect(JSON.parse(options.body as string).code).toBe("AB2CD3");
   });
-  it("registers without automatically sending email, and reports disabled email delivery honestly", async () => {
+  it("automatically requests activation email and reports disabled delivery honestly", async () => {
+    const defaultTransport = transport.getMockImplementation()!;
+    transport.mockImplementation((url: string) => url.endsWith("/acc/send_email") ? Promise.resolve(reply(null, 503, 11006)) : defaultTransport(url));
     mount();
     await open();
     click("Create an account");
@@ -211,12 +213,9 @@ describe("live client flows without sending mail", () => {
     field("Confirm password", "password123");
     click("Create account");
     await screen.findByRole("heading", { name: "Activate your email" });
-    expect(
-      transport.mock.calls.some(([url]) => url.endsWith("/acc/send_email")),
-    ).toBe(false);
-    transport.mockResolvedValueOnce(reply(null, 503, 11006));
-    click("Send activation code");
     await screen.findByRole("alert");
+    expect(transport.mock.calls.filter(([url]) => url.endsWith("/acc/send_email"))).toHaveLength(1);
+    expect((screen.getByRole("button", {name: /Resend code in/}) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByRole("alert").textContent).toContain(
       "Email delivery is currently unavailable",
     );

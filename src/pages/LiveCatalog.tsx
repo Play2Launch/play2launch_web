@@ -137,7 +137,7 @@ function CatalogContent({ slug }: { slug?: string }) {
       )}
       {slug ? (
         selected ? (
-          <CampaignPage liveCampaign={present(selected)} />
+          <CampaignPage liveCampaign={present(selected)} liveCampaignId={selected.id} />
         ) : (
           <div className="empty-panel">
             <Link to="/">All campaigns</Link>

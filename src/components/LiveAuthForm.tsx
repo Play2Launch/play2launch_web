@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowUpRight, Send } from "lucide-react";
 import { api, type Account, type LoginResult } from "../lib/api";
 import { useApp } from "../state";
@@ -20,6 +20,41 @@ export function LiveAuthForm() {
   const [code, setCode] = useState("");
   const [account, setAccount] = useState<Account | null>(null);
   const [message, setMessage] = useState("");
+  const sentUntil = useRef<Record<string, number>>({});
+  const autoSentFor = useRef<string | null>(null);
+  const [now, setNow] = useState(Date.now());
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const remaining = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
+  const sendActivation = () => {
+    if (!account || app.authBusy || (sentUntil.current[account.account_id] || 0) > Date.now()) return;
+    sentUntil.current[account.account_id] = Date.now() + 60_000;
+    setCooldownUntil(sentUntil.current[account.account_id]);
+    setNow(Date.now());
+    setMessage("Sending activation code…");
+    void app.executeAuth(
+      async (signal) => {
+        try { return await api.sendVerification(account.account_id, signal); }
+        catch (error) {
+          if (!signal.aborted) setMessage("Could not confirm delivery. Check your inbox and spam folder, or resend when the countdown ends.");
+          throw error;
+        }
+      },
+      () => setMessage("Activation code sent. Check your inbox and spam folder. It expires in 5 minutes."),
+    );
+  };
+  useEffect(() => {
+    if (step !== "verify") { autoSentFor.current = null; return; }
+    if (!account || app.authBusy || app.platform.runtime === "telegram" || autoSentFor.current === account.account_id) return;
+    autoSentFor.current = account.account_id;
+    setCooldownUntil(sentUntil.current[account.account_id] || 0);
+    sendActivation();
+  });
+  useEffect(() => {
+    if (step !== "verify") return;
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [step]);
   const change = (next: Step) => {
     setStep(next);
     setPassword("");
@@ -64,7 +99,7 @@ export function LiveAuthForm() {
           setAccount(created);
           change("verify");
           setMessage(
-            "Account created. Verify your email to activate it. No code has been sent yet.",
+            "Account created. We’ll send an activation code to your email.",
           );
         },
       );
@@ -202,19 +237,10 @@ export function LiveAuthForm() {
         <button
           type="button"
           className="btn btn-secondary full"
-          disabled={app.authBusy}
-          onClick={() => {
-            setMessage("");
-            void app.executeAuth(
-              (signal) => api.sendVerification(account.account_id, signal),
-              () =>
-                setMessage(
-                  "Activation code sent. Check your inbox. It expires in 5 minutes.",
-                ),
-            );
-          }}
+          disabled={app.authBusy || remaining > 0}
+          onClick={sendActivation}
         >
-          Send activation code
+          {remaining > 0 ? `Resend code in ${remaining}s` : "Resend code"}
         </button>
       )}
       {message && (
