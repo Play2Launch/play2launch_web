@@ -10,6 +10,21 @@ vi.mock('../state',()=>({useApp:()=>state}));
 vi.mock('../lib/api',()=>({api:{authenticated:vi.fn()}}));
 const item={id:'sp'+'a'.repeat(64),type:'post',user_id:'ur1',author:'Player',text:'<img src=x onerror=alert(1)>',at:'2026-09-30T10:00:00Z'} as Activity;
 afterEach(()=>{cleanup();vi.mocked(api.authenticated).mockReset();state.user.id='ur1'});
+it('uses campaign artwork as a decorative watermark and removes broken images',()=>{
+ const result={...item,session_id:'gs1',name:'PAPERHOOD',slug:'phood',score:18418,played_at:item.at,cover_image:'/images/paperhood.png'};
+ const {container,rerender}=render(<MemoryRouter><PostCard item={result} removed={vi.fn()}/></MemoryRouter>);
+ const image=container.querySelector<HTMLImageElement>('.result-watermark')!;
+ expect(image.getAttribute('src')).toBe('/images/paperhood.png');
+ expect(image.alt).toBe('');
+ expect(image.getAttribute('aria-hidden')).toBe('true');
+ fireEvent.error(image);
+ expect(container.querySelector('.result-watermark')).toBeNull();
+ expect(screen.getByText('18,418 game points')).toBeTruthy();
+ rerender(<MemoryRouter><PostCard item={{...result,cover_image:'javascript:alert(1)'}} removed={vi.fn()}/></MemoryRouter>);
+ expect(container.querySelector('.result-watermark')).toBeNull();
+ rerender(<MemoryRouter><PostCard item={{...result,cover_image:undefined}} removed={vi.fn()}/></MemoryRouter>);
+ expect(container.querySelector('.result-watermark')).toBeNull();
+});
 it('shows a compact game icon and name without technical identifiers',()=>{
  const {container}=render(<MemoryRouter><PostCard item={{...item,session_id:'gs1',name:'PAPERHOOD',slug:'phood',score:18418,game_key:'gx123',rules:'paper-run-practice-v5',played_at:item.at}} removed={vi.fn()}/></MemoryRouter>);
  expect(screen.getByText('PAPERHOOD')).toBeTruthy();

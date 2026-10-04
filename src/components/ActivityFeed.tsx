@@ -9,7 +9,7 @@ import { CampaignActivity, type CampaignEvent } from './CampaignActivity';
 import { useApp } from '../state';
 import type { TeamAttachment, TeamEntryAction } from './TeamPost';
 
-export type Activity = { event?: CampaignEvent; scoring_ends_at?: string; author_kol_verified?: boolean; author_avatar_url?: string; team?: TeamAttachment; team_action?: TeamEntryAction; type?: 'score' | 'post' | 'campaign'; text?: string; session_id?: string; played_at?: string; user_id?: string; author?: string; score?: number; game_key?: string; rules?: string; id: string; campaign_id: string; name: string; slug: string; milestone: number; points: number; target: number; score_per_point: number; reason: 'participation' | 'goal_adjusted'; at: string };
+export type Activity = { cover_image?: string; event?: CampaignEvent; scoring_ends_at?: string; author_kol_verified?: boolean; author_avatar_url?: string; team?: TeamAttachment; team_action?: TeamEntryAction; type?: 'score' | 'post' | 'campaign'; text?: string; session_id?: string; played_at?: string; user_id?: string; author?: string; score?: number; game_key?: string; rules?: string; id: string; campaign_id: string; name: string; slug: string; milestone: number; points: number; target: number; score_per_point: number; reason: 'participation' | 'goal_adjusted'; at: string };
 type FeedPage = { items: Activity[]; next_cursor: string };
 function valid(page: FeedPage): boolean {
   return !!page && typeof page.next_cursor === 'string' && Array.isArray(page.items) && page.items.every(i => {

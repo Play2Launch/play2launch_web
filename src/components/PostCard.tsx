@@ -9,6 +9,7 @@ import { VerifiedKol } from './VerifiedKol';
 import { FollowButton } from './FollowButton';
 import { PostShare } from './PostShare';
 import { ResultGameLabel } from './ResultGameLabel';
+import { ResultWatermark } from './ResultWatermark';
 import { Trash2, Flag, MoreHorizontal } from 'lucide-react';
 
 export function PostCard({ item, removed, discover = false, following = false, onFollowChange }: { item: Activity; removed: () => void; discover?: boolean; following?: boolean; onFollowChange?: (value: boolean) => void }) {
@@ -26,7 +27,7 @@ export function PostCard({ item, removed, discover = false, following = false, o
     {discover && !own && item.user_id && <div className="post-follow"><FollowButton kind="user" targetId={item.user_id} initialFollowing={following} onChange={onFollowChange}/></div>}
     <p className="post-body">{item.text}</p>
     {item.team&&<TeamPostCard item={item}/>}
-    {item.session_id && <div className="post-result"><span className="eyebrow">VERIFIED GAME RESULT</span><h2>{item.score?.toLocaleString()} game points</h2><p><ResultGameLabel name={item.name}/></p><p className="small muted">Played {new Date(item.played_at!).toLocaleString()} · Not P2L Points</p><Link className="text-link" to={`/campaign/${encodeURIComponent(item.slug)}`}>View campaign ↗</Link></div>}
+    {item.session_id && <div className="post-result post-result-watermarked"><ResultWatermark src={item.cover_image}/><span className="eyebrow">VERIFIED GAME RESULT</span><h2>{item.score?.toLocaleString()} game points</h2><p><ResultGameLabel name={item.name}/></p><p className="small muted">Played {new Date(item.played_at!).toLocaleString()} · Not P2L Points</p><Link className="text-link" to={`/campaign/${encodeURIComponent(item.slug)}`}>View campaign ↗</Link></div>}
     {(own || app.user?.mode === 'live' && !sent) && <details className="post-options"><summary aria-label="Post options" title="Post options"><MoreHorizontal size={18}/></summary><div className="post-options-menu">{own ? <button className="post-action post-action-delete" disabled={busy} onClick={e => {setConfirm(v => !v);e.currentTarget.closest('details')?.removeAttribute('open');}}><Trash2 size={14} aria-hidden="true"/>Delete post</button> : <button className="post-action" disabled={busy} onClick={e => {setReport(v => !v);e.currentTarget.closest('details')?.removeAttribute('open');}}><Flag size={14} aria-hidden="true"/>Report post</button>}</div></details>}
     {confirm && <div className="notice">Delete this public post? Your score and ranking stay unchanged.<div className="following-links"><button className="btn btn-secondary" disabled={busy} onClick={() => void act('delete')}>Confirm delete</button><button className="text-link" disabled={busy} onClick={() => setConfirm(false)}>Cancel</button></div></div>}
     {report && <div className="notice"><label>Report reason <select value={reason} disabled={busy} onChange={e => setReason(e.target.value)}><option value="spam">Spam</option><option value="abuse">Abuse</option><option value="misleading">Misleading</option><option value="other">Other</option></select></label><div className="following-links"><button className="btn btn-secondary" disabled={busy} onClick={() => void act('report')}>Submit report</button><button className="text-link" disabled={busy} onClick={() => setReport(false)}>Cancel</button></div></div>}
