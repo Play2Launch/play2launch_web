@@ -40,6 +40,7 @@ export type PointsPage = {
   server_time: string;
 };
 export const pointLabels: Record<string, string> = {
+  referral: "New player referral",
   first_game: "First qualifying game",
   daily_game: "Daily play",
   daily_three: "Three games in a day",

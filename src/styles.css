@@ -4084,6 +4084,8 @@ footer > span:last-child {
 .rankings-player-name { display: inline-flex; align-items: center; gap: 12px; overflow-wrap: anywhere; }
 .rankings-identity { display: flex; align-items: center; gap: 10px; }
 .result-game-label { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.referral-records { margin-top:16px; }
+.referral-record { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #303729; }
 .result-game-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; background: rgba(210,250,105,.12); color: var(--acid, #d2fa69); }
 .rankings-identity > .rankings-player-name { min-width: 0; }
 .rankings-table .rankings-identity > .pill { margin-left: 0; flex-shrink: 0; }

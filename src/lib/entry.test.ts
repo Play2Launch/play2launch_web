@@ -7,6 +7,16 @@ import {
   type EntryContext,
 } from "./entry";
 import { platformContext } from "./platform";
+it('round trips a campaign-independent friend invitation and clears stale team context',()=>{
+ const friend:EntryContext={referrerId:'ur123',source:'share',target:'campaign'};
+ const links=shareLinks('https://www.play2launch.com',friend,{bot:'p2l_bot'});
+ expect(new URL(links.web).pathname).toBe('/');
+ expect(new URL(links.web).searchParams.get('team')).toBeNull();
+ expect(decodeStart(encodeStart(friend))).toEqual({...friend,source:'telegram'});
+ const resolved=resolveEntry(new URL(links.web),'web',{campaignId:'old',teamId:'oldteam',inviteToken:'oldtoken',source:'share',target:'teams'});
+ expect(resolved.context).toEqual(friend);
+ expect(links.telegram).toContain('startapp=r_ur123');
+});
 const entry: EntryContext = {
   campaignId: "phood",
   teamId: "alice",

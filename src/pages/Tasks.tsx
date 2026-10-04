@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Check, ListChecks } from "lucide-react";
+import { FriendInvite } from '../components/FriendInvite';
 import { PointsIcon as BadgeCheck } from "../components/PointsIcon";
 import { useApp } from "../state";
 import { liveAuth } from "../lib/api";
@@ -46,6 +47,7 @@ export default function Tasks() {
           <span>P2L Points</span>
         </div>
       </div>
+      {liveAuth && app.user?.mode === 'live' && <FriendInvite key={app.user.id} userId={app.user.id}/>}
       {!app.user || !liveAuth ? (
         <div className="task-notice">
           <h2>Make every qualifying game count</h2>
@@ -160,7 +162,7 @@ export default function Tasks() {
         </p>
         <p>
           P2L Points are separate from game scores and do not guarantee tokens
-          or redemption. Referral and team bonuses are not enabled.
+          or redemption. Referral rewards require a new player’s first qualifying game. Team bonuses are not enabled.
         </p>
         <Link to="/profile#p2l-points">View your points history →</Link>
       </aside>

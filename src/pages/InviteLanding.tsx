@@ -8,7 +8,7 @@ export default function InviteLanding() {
   useEffect(() => {
     const ctrl = new AbortController();
     api
-      .request<{ slug: string; team_id: string }>(
+      .request<{ slug: string; team_id: string; referrer_id?: string }>(
         "/team-invites/resolve",
         { token },
         { signal: ctrl.signal },
@@ -16,7 +16,7 @@ export default function InviteLanding() {
       .then((v) => {
         if (!ctrl.signal.aborted)
           navigate(
-            `/campaign/${encodeURIComponent(v.slug)}/teams?team=${encodeURIComponent(v.team_id)}&invite=${encodeURIComponent(token)}&src=share`,
+            `/campaign/${encodeURIComponent(v.slug)}/teams?team=${encodeURIComponent(v.team_id)}&invite=${encodeURIComponent(token)}&src=share${/^ur[0-9a-z]{1,32}$/.test(v.referrer_id || '') ? `&ref=${encodeURIComponent(v.referrer_id!)}` : ''}`,
             { replace: true },
           );
       })

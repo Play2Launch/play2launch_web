@@ -44,6 +44,7 @@ import { LaunchTimer } from "../LaunchTimer";
 import { CompetitionRules } from "../CompetitionRules";
 import { KolBadge } from "./Verification";
 import { TeamInvite } from "../components/TeamInvite";
+import { FriendInvite } from "../components/FriendInvite";
 import { WalletPanel } from "../components/WalletPanel";
 import { walletAllowed } from "../lib/walletPolicy";
 import { ProfileTools } from "../components/ProfileTools";
@@ -1227,6 +1228,7 @@ export function ProfilePage() {
               : "Signed-in identity and team memberships are saved by the server. Accepted game scores appear on campaign leaderboards. The practice history below is stored only on this device."}
           </p>
           <ProfileTools onVerified={setKolIdentity} />
+          {liveAuth && app.user?.mode === 'live' && <FriendInvite key={app.user.id} userId={app.user.id}/>}
           {app.demoToolsAvailable && (
             <details className="demo-settings">
               <summary>Prototype settings</summary>

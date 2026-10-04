@@ -22,6 +22,7 @@ export const defaultEntry: EntryContext = {
 const targets = ["campaign", "play", "teams", "leaderboard", "launch"];
 
 export function encodeStart(entry: EntryContext): string {
+  if (!entry.campaignId && !entry.teamId && !entry.inviteToken && /^ur[0-9a-z]{1,32}$/.test(entry.referrerId || '')) return `r_${entry.referrerId}`;
   if (entry.inviteToken && /^[A-Za-z0-9_-]{32}$/.test(entry.inviteToken)) return `i_${entry.inviteToken}`;
   const params = new URLSearchParams();
   if (entry.campaignId) params.set("c", entry.campaignId);
@@ -35,6 +36,7 @@ export function encodeStart(entry: EntryContext): string {
 }
 
 export function decodeStart(token: string): EntryContext {
+  if (/^r_ur[0-9a-z]{1,32}$/.test(token)) return {referrerId:token.slice(2),source:'telegram',target:'campaign'};
   if (/^i_[A-Za-z0-9_-]{32}$/.test(token)) return {inviteToken:token.slice(2),source:"telegram",target:"teams"};
   if (
     !token.startsWith("v1_") ||
@@ -146,6 +148,7 @@ export function resolveEntry(
       error: "This link contains invalid campaign or referral information.",
     };
   const explicit = Boolean(teamId || referrerId || source || inviteToken);
+  if (referrerId && !campaignId && !teamId && !inviteToken) return {context:{referrerId,source:source||'share',target:'campaign'}};
   const sameCampaign = !campaignId || previous?.campaignId === campaignId;
   const inherited = !explicit && sameCampaign ? previous : undefined;
   const context: EntryContext = {

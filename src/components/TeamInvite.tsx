@@ -75,10 +75,11 @@ export function TeamInvite({
     );
   return (
     <section className="team-invite-card" aria-label="Team invitation">
-      <h3>Invite players to {name}</h3>
+      <h3>Invite to team · {name}</h3>
       <p>
-        Players confirm joining after signing in. Only successful first-time
-        joins count; invitations add no unlock points.
+        Invite friends to P2L and this team. Players confirm joining after signing in.
+        Existing players can join if eligible, but are not new referrals. Joining
+        adds no unlock points. Your link stops working if you leave or switch teams.
       </p>
       <label className="team-invite-field">
         Web invitation
