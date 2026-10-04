@@ -535,8 +535,9 @@ function Board({
                   <tr key={r.id} className={r.id === ownId ? "is-mine" : ""}>
                     <td>#{i + 1}</td>
                     <th scope="row">
+                      <div className="rankings-identity">
                       {kind === "teams" ? (
-                        <Link to={`/campaign/${slug}/teams?selected=${r.id}`}>
+                        <Link className="rankings-player-name" to={`/campaign/${slug}/teams?selected=${r.id}`}>
                           <span className="rankings-avatar rankings-avatar-small team-avatar" style={{background:teams.find(t=>t.id===r.id)?.color}}>{teams.find(t=>t.id===r.id)?.initial||'T'}<TeamBadge /></span>{' '}
                           {label(r)}
                         </Link>
@@ -567,6 +568,7 @@ function Board({
                           {kind === "players" ? "YOU" : "YOUR TEAM"}
                         </span>
                       )}
+                      </div>
                     </th>
                     <td>
                       {kind === "players"

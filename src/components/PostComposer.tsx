@@ -3,6 +3,7 @@ import { Gamepad2, ArrowLeftRight, Flag, Users } from 'lucide-react';
 import { api } from '../lib/api';
 import { CampaignPicker, type CaptainCampaign } from './CampaignPicker';
 import { TeamPostPicker, type TeamChoice } from './TeamPost';
+import { ResultGameLabel } from './ResultGameLabel';
 
 type Result = { id: string; session_id: string; campaign_id: string; name: string; slug: string; score: number; game_key: string; rules: string; played_at: string };
 type Results = { items: Result[]; next_cursor: string };
@@ -52,7 +53,7 @@ function Editor({ sessionId, close, published }: { sessionId?: string; close: ()
     <textarea id="post-text" autoFocus rows={4} value={text} disabled={busy} onChange={e => setText(e.target.value)} placeholder="Tell your story…" />
     <span className="small muted">{Array.from(text).length} / 500 characters</span>
     {initialBusy && <p role="status">Loading accepted result…</p>}
-    {selected && <div className="post-result"><strong>{selected.score.toLocaleString()} game points</strong><p>{selected.name} · {selected.game_key} · {selected.rules}</p><small>{new Date(selected.played_at).toLocaleString()}</small><button className="text-link" disabled={busy} onClick={() => setSelected(undefined)}>Remove score</button></div>}
+    {selected && <div className="post-result"><strong>{selected.score.toLocaleString()} game points</strong><p><ResultGameLabel name={selected.name}/></p><small>{new Date(selected.played_at).toLocaleString()}</small><button className="text-link" disabled={busy} onClick={() => setSelected(undefined)}>Remove score</button></div>}
     {team&&<div className="post-result"><strong>{team.team_name}</strong><p>{team.name}</p><small>Your personal invitation and a verified team snapshot will be attached when you publish.</small><button className="text-link" disabled={busy} onClick={()=>setTeam(undefined)}>Remove team</button></div>}
     <div className="post-attachments" role="group" aria-label="Post attachment types">
       <div className="post-attachments-heading"><strong>Add a card</strong><span className="small muted">Optional · One card per post</span></div>
@@ -94,7 +95,7 @@ function ResultPicker({ campaign, select }: { campaign?: string; select: (r: Res
   }
   useEffect(() => { void load(); return () => ctrl.current?.abort(); }, [campaign]);
   return <><p className="small muted">Your server-accepted rounds, newest first. Trial rounds are not included.</p>
-    {rows.map(r => <button className="post-result post-result-choice" key={r.id} onClick={() => select(r)}><strong>{r.score.toLocaleString()} game points · {r.name}</strong><span>{r.game_key} · {r.rules} · {new Date(r.played_at).toLocaleString()}</span></button>)}
+    {rows.map(r => <button className="post-result post-result-choice" key={r.id} onClick={() => select(r)}><strong>{r.score.toLocaleString()} game points</strong><ResultGameLabel name={r.name}/><span>{new Date(r.played_at).toLocaleString()}</span></button>)}
     {busy && <p role="status">Loading results…</p>}{loaded && !rows.length && <p>No accepted rounds in this selection.</p>}
     {error && <p role="alert">{error} <button className="text-link" onClick={() => void load(retry.current)}>Retry results</button></p>}
     {next && <button className="btn btn-secondary" disabled={busy} onClick={() => void load(next)}>Load more results</button>}

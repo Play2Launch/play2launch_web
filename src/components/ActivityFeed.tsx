@@ -4,6 +4,7 @@ import { Flag, ArrowUpRight, RefreshCw } from 'lucide-react';
 import { api } from '../lib/api';
 import type { FollowKind } from '../lib/follow';
 import { PostCard } from './PostCard';
+import { ResultGameLabel } from './ResultGameLabel';
 import { CampaignActivity, type CampaignEvent } from './CampaignActivity';
 import { useApp } from '../state';
 import type { TeamAttachment, TeamEntryAction } from './TeamPost';
@@ -83,7 +84,7 @@ export function ActivityFeed({ kind, authorId, discover = false, filters, postId
         <header><span className="eyebrow">VERIFIED GAME RESULT</span><time className="small muted" dateTime={item.at}>{new Date(item.at).toLocaleString()}</time></header>
         <Link className="activity-campaign" to={`/players/${item.user_id}`}>{item.author}</Link>
         <h2>{item.score?.toLocaleString()} game points</h2>
-        <p>{item.name} · {item.game_key} · {item.rules}</p>
+        <p><ResultGameLabel name={item.name}/></p>
         <p className="small muted">Shared by the player. Server-accepted result, not P2L Points.</p>
         <Link className="text-link" to={`/campaign/${encodeURIComponent(item.slug)}`}>View campaign <ArrowUpRight size={16} /></Link>
       </> : item.type === 'campaign' ? <CampaignActivity item={item}/> : <>

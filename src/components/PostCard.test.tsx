@@ -10,6 +10,12 @@ vi.mock('../state',()=>({useApp:()=>state}));
 vi.mock('../lib/api',()=>({api:{authenticated:vi.fn()}}));
 const item={id:'sp'+'a'.repeat(64),type:'post',user_id:'ur1',author:'Player',text:'<img src=x onerror=alert(1)>',at:'2026-09-30T10:00:00Z'} as Activity;
 afterEach(()=>{cleanup();vi.mocked(api.authenticated).mockReset();state.user.id='ur1'});
+it('shows a compact game icon and name without technical identifiers',()=>{
+ const {container}=render(<MemoryRouter><PostCard item={{...item,session_id:'gs1',name:'PAPERHOOD',slug:'phood',score:18418,game_key:'gx123',rules:'paper-run-practice-v5',played_at:item.at}} removed={vi.fn()}/></MemoryRouter>);
+ expect(screen.getByText('PAPERHOOD')).toBeTruthy();
+ expect(container.querySelector('.result-game-icon svg')).toBeTruthy();
+ expect(screen.queryByText(/gx123|paper-run-practice-v5/)).toBeNull();
+});
 it('shows KOL certification only when confirmed by the server',()=>{
  const {rerender}=render(<MemoryRouter><PostCard item={{...item,author_kol_verified:true}} removed={vi.fn()}/></MemoryRouter>);
  expect(screen.getByRole('img',{name:'Verified KOL'})).toBeTruthy();

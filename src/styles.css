@@ -4082,6 +4082,11 @@ footer > span:last-child {
   grid-column: 1 / -1;
 }
 .rankings-player-name { display: inline-flex; align-items: center; gap: 12px; overflow-wrap: anywhere; }
+.rankings-identity { display: flex; align-items: center; gap: 10px; }
+.result-game-label { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.result-game-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; background: rgba(210,250,105,.12); color: var(--acid, #d2fa69); }
+.rankings-identity > .rankings-player-name { min-width: 0; }
+.rankings-table .rankings-identity > .pill { margin-left: 0; flex-shrink: 0; }
 .rankings-player-label { display:flex; flex-direction:column; gap:4px; min-width:0; }
 .kol-avatar-host, .rankings-avatar { position:relative; overflow:visible; }
 .kol-avatar-badge { position:absolute; right:-6px; bottom:-5px; display:grid; place-items:center; width:25px; height:25px; border-radius:50%; background:#182011; color:var(--accent); border:2px solid #11160e; z-index:1; }
