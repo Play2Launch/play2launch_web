@@ -102,6 +102,7 @@ export function resolveEntry(
     }
   }
   const parts = url.pathname.split("/").filter(Boolean);
+  if (parts[0] === 'ref') return /^ur[0-9a-z]{1,32}$/.test(parts[1] || '') && parts.length === 2 ? {context:{referrerId:parts[1],source:'share',target:'campaign'}} : {context:defaultEntry,error:'This invitation is invalid.'};
   if (parts[0] === "invite") return {context:{inviteToken:parts[1],source:"share",target:"teams"}};
   let campaignId: string | undefined;
   let teamId: string | undefined;
@@ -173,9 +174,10 @@ export function shareLinks(
 ) {
   const target = entry.target === "teams" ? "teams" : "campaign";
   const url = new URL(entryPath({ ...entry, target }), origin);
+  if (!entry.campaignId && !entry.teamId && !entry.inviteToken && /^ur[0-9a-z]{1,32}$/.test(entry.referrerId || '')) url.pathname = `/ref/${entry.referrerId}`;
   if (entry.inviteToken) url.pathname = `/invite/${encodeURIComponent(entry.inviteToken)}`;
   if (!entry.inviteToken && entry.teamId) url.searchParams.set("team", entry.teamId);
-  if (!entry.inviteToken && entry.referrerId) url.searchParams.set("ref", entry.referrerId);
+  if (!entry.inviteToken && entry.referrerId && !url.pathname.startsWith('/ref/')) url.searchParams.set("ref", entry.referrerId);
   url.searchParams.set("src", "share");
   const bot = config.bot?.replace(/^@/, "");
   const telegram =

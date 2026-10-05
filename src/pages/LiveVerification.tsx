@@ -12,14 +12,16 @@ function checkSocialLink(value:string,profile:boolean):boolean {
  }catch{return false;}
 }
 export function LiveVerification({userId}:{userId:string}){
+ const [hasHandle,setHasHandle]=useState(false);
  const [data,setData]=useState<Application|null>(null);const [busy,setBusy]=useState(false);const [loaded,setLoaded]=useState(false);const [error,setError]=useState('');const [retry,setRetry]=useState(0);
- useEffect(()=>{const controller=new AbortController();setLoaded(false);api.authenticated<Application|null>('/kol/me',undefined,controller.signal).then(v=>{if(!controller.signal.aborted){setData(v);setLoaded(true);setError('');}}).catch(e=>{if(!controller.signal.aborted)setError(e.message);});return ()=>controller.abort();},[userId,retry]);
+ useEffect(()=>{const controller=new AbortController();setLoaded(false);Promise.all([api.authenticated<Application|null>('/kol/me',undefined,controller.signal),api.authenticated<{handle?:string}>('/user/profile',undefined,controller.signal)]).then(([v,profile])=>{if(!controller.signal.aborted){setData(v);setHasHandle(/^[a-z][a-z0-9_]{2,23}$/.test(profile.handle||''));setLoaded(true);setError('');}}).catch(e=>{if(!controller.signal.aborted)setError(e.message);});return ()=>controller.abort();},[userId,retry]);
  async function send(path:string,body:unknown){setBusy(true);setError('');try{await api.authenticated(path,body);setRetry(v=>v+1);}catch(e){setError(e instanceof Error?e.message:'Request failed');}finally{setBusy(false);}}
  const expired=!!data&&Date.parse(data.expires_at)<=Date.now();
  return <div><h2>{data?labels[data.status]:'Become a verified captain'}</h2>{error&&<div role="alert" className="inline-note">{error}{!loaded&&<button className="btn" onClick={()=>setRetry(v=>v+1)}>Retry</button>}</div>}
  {!loaded?<p>Loading verification…</p>:<><p>Platform review verifies your social account ownership. It does not endorse investments or grant campaign publishing access.</p>
- {(!data||['rejected','revoked'].includes(data.status)||(data.status==='draft'&&expired))&&<button className="btn btn-primary" disabled={busy} onClick={()=>send('/kol/challenge',{})}>{data?'Start a new verification':'Get ownership code'}</button>}
- {data?.status==='draft'&&!expired&&<><div className="inline-note"><div><strong>{data.code}</strong><p>Put this exact code in your X / Telegram profile bio or a public post. Keep it visible until review. A Telegram login alone does not verify group/channel ownership.</p><p>Expires: {new Date(data.expires_at).toLocaleString()}</p></div></div>
+ {!hasHandle&&<div className="inline-note"><p>Set your P2L @username before starting or submitting KOL verification. This is your platform username, not your Telegram or X username.</p><Link className="btn btn-primary" to="/profile">Set username in Profile</Link></div>}
+ {hasHandle&&(!data||['rejected','revoked'].includes(data.status)||(data.status==='draft'&&expired))&&<button className="btn btn-primary" disabled={busy} onClick={()=>send('/kol/challenge',{})}>{data?'Start a new verification':'Get ownership code'}</button>}
+ {hasHandle&&data?.status==='draft'&&!expired&&<><div className="inline-note"><div><strong>{data.code}</strong><p>Put this exact code in your X / Telegram profile bio or a public post. Keep it visible until review. A Telegram login alone does not verify group/channel ownership.</p><p>Expires: {new Date(data.expires_at).toLocaleString()}</p></div></div>
  <form className="verification-form" key={`${data.id}:${data.version}`} onSubmit={e=>{e.preventDefault();const values=Object.fromEntries(new FormData(e.currentTarget));
  if(!checkSocialLink(String(values.social_url),true)){setError('Public profile: enter an HTTPS X or Telegram profile URL, such as https://x.com/yourname.');return;}
  if(!checkSocialLink(String(values.proof_url),false)){setError('Proof link: enter an HTTPS X or Telegram profile or public post URL. X share parameters are supported.');return;}

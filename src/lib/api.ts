@@ -27,6 +27,7 @@ const messages: Record<number, string> = {
   11010: "You have used your one username change. Your display name can still be edited.",
   11011: "Your profile changed. Reload before trying again.",
   16003: "Approved KOL verification is required to create a team.",
+  16004: "Set your P2L @username in Profile before starting KOL verification.",
   13003: "Another team or game operation is in progress. Please retry.",
   13004: "Finish your active game or wait for it to expire before creating a team.",
   13005: "This team name is already used in the campaign.",

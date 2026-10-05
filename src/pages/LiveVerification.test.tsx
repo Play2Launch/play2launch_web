@@ -2,10 +2,18 @@
 import {it,expect,vi,afterEach} from 'vitest';
 import {render,screen,fireEvent,cleanup,waitFor} from '@testing-library/react';
 const mock=vi.hoisted(()=>vi.fn());
-vi.mock('../lib/api',()=>({api:{authenticated:mock}}));
+const profile=vi.hoisted(()=>({handle:'player123'}));
+vi.mock('../lib/api',()=>({api:{authenticated:(path:string,...args:unknown[])=>path==='/user/profile'?Promise.resolve(profile):mock(path,...args)}}));
 import {MemoryRouter} from 'react-router-dom';
 import {LiveVerification} from './LiveVerification';
-afterEach(()=>{cleanup();mock.mockReset();});
+afterEach(()=>{cleanup();mock.mockReset();profile.handle='player123';});
+it('requires a P2L username before starting or submitting verification',async()=>{
+ profile.handle='';mock.mockResolvedValue(draft);
+ render(<MemoryRouter><LiveVerification userId="ur1"/></MemoryRouter>);
+ expect((await screen.findByText('Set username in Profile')).getAttribute('href')).toBe('/profile');
+ expect(screen.queryByText('Submit for review')).toBeNull();
+ expect(screen.queryByText('Get ownership code')).toBeNull();
+});
 const draft={id:'kr1',status:'draft',version:1,expires_at:'2099-01-01T00:00:00Z',name:'Brice',avatar:'',social_url:'https://x.com/bricebian',introduction:'Just for fun! Why it needs to be so long?',proof_url:'https://x.com/bricebian/status/123?s=46&t=abc%2Bdef',history:[]};
 it('accepts X share parameters and preserves inputs after a failed submission',async()=>{
  mock.mockImplementation((path:string)=>path==='/kol/me'?Promise.resolve(draft):Promise.reject(new Error('Please check the information you entered.')));
