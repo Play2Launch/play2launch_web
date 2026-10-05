@@ -7,6 +7,13 @@ import {
   type EntryContext,
 } from "./entry";
 import { platformContext } from "./platform";
+it('uses www for production invitations and preserves local origins',()=>{
+ const friend:EntryContext={referrerId:'ur123',source:'share',target:'campaign'};
+ expect(shareLinks('https://play2launch.com',friend,{}).web).toBe('https://www.play2launch.com/ref/ur123?src=share');
+ expect(shareLinks('https://www.play2launch.com',friend,{}).web).toBe('https://www.play2launch.com/ref/ur123?src=share');
+ expect(shareLinks('https://play2launch.com',{...friend,inviteToken:'test-token'},{}).web).toBe('https://www.play2launch.com/invite/test-token?src=share');
+ expect(new URL(shareLinks('http://localhost:5173',friend,{}).web).origin).toBe('http://localhost:5173');
+});
 it('round trips a campaign-independent friend invitation and clears stale team context',()=>{
  const friend:EntryContext={referrerId:'ur123',source:'share',target:'campaign'};
  const links=shareLinks('https://www.play2launch.com',friend,{bot:'p2l_bot'});
