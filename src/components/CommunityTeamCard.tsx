@@ -1,9 +1,13 @@
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import type { ServerTeam } from '../lib/teams';
 import { number } from '../data';
+import { useState } from 'react';
+import { TeamMembers } from './TeamMembers';
 
 export function CommunityTeamCard({slug,team,joined}:{slug:string;team?:ServerTeam;joined:boolean}) {
+  const [params]=useSearchParams();
+  const [showMembers,setShowMembers]=useState(!!team && params.get('selected')===team.id);
   return <section className="membership-card community-team-card" aria-label="P2L Community activity">
     <span className="eyebrow"><Users size={16}/> OPEN COMMUNITY {joined&&'· YOUR COMMUNITY'}</span>
     <h2>P2L Community</h2>
@@ -15,5 +19,7 @@ export function CommunityTeamCard({slug,team,joined}:{slug:string;team?:ServerTe
     </div>
     <p className="small muted">Activity only · Outside team rankings and team ranking rewards. Daily activity uses UTC and accepted rounds with a positive score.</p>
     <Link className="btn btn-primary" to={`/campaign/${slug}/compete`}>Play ranked round</Link>
+    {team&&<button className="btn btn-secondary" aria-expanded={showMembers} onClick={()=>setShowMembers(v=>!v)}>{showMembers?'Hide members':'View members'}</button>}
+    {team&&showMembers&&<TeamMembers key={team.id} slug={slug} team={team.id} community/>}
   </section>;
 }

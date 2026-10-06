@@ -43,11 +43,12 @@ import { launchCopy } from "../lib/launch";
 import { LaunchTimer } from "../LaunchTimer";
 import { CompetitionRules } from "../CompetitionRules";
 import { KolBadge } from "./Verification";
-import { TeamInvite } from "../components/TeamInvite";
 import { FriendInvite } from "../components/FriendInvite";
 import { WalletPanel } from "../components/WalletPanel";
 import { walletAllowed } from "../lib/walletPolicy";
 import { ProfileTools } from "../components/ProfileTools";
+import { TeamMembers } from "../components/TeamMembers";
+import { TeamActions } from "../components/TeamActions";
 import { VerifiedKol } from "../components/VerifiedKol";
 import { TeamBadge } from "../components/TeamBadge";
 import { UserAvatar } from '../components/UserAvatar';
@@ -690,9 +691,9 @@ export function TeamPage({
                 <button
                   key={t.id}
                   className={`team-directory-item ${selected === t.id ? "is-selected" : ""}`}
-                  onClick={() => setSelected(t.id)}
+                  onClick={() => { setSelected(t.id); document.getElementById("selected-team")?.scrollIntoView?.({behavior:"smooth",block:"start"}); }}
                 >
-                  <span className="rank">0{i + 1}</span>
+                  <span className="rank">{live ? "↗" : `0${i + 1}`}</span>
                   <span
                     className="avatar large team-avatar"
                     style={{ background: t.color }}
@@ -713,8 +714,7 @@ export function TeamPage({
                     </strong>
                     <small>{t.handle}</small>
                     <span>
-                      {number(t.players)} players ·{" "}
-                      {live ? "—" : short(t.score)} points
+                      {number(t.players)} players · {live ? "View members →" : `${short(t.score)} points`}
                     </span>
                   </span>
                   <ChevronRight size={20} />
@@ -736,7 +736,7 @@ export function TeamPage({
             </div>
           )}
         </section>
-        <section className="team-detail">
+        <section className="team-detail" id="selected-team">
           <div
             className="team-detail-banner"
             style={{ "--team-color": current.color } as React.CSSProperties}
@@ -760,19 +760,6 @@ export function TeamPage({
           </div>
           <div className="team-detail-body">
             <h2>{current.name}</h2>
-            {live &&
-              member === current.id &&
-              current &&
-              live.teams.find((t) => t.id === current.id)?.status !==
-                "paused" && (
-                <TeamInvite
-                  key={current.id}
-                  slug={c.id}
-                  team={current.id}
-                  name={current.name}
-                  referrer={app.user?.id}
-                />
-              )}
             <p>
               {current.handle} · {c.name} chapter
             </p>
@@ -798,17 +785,7 @@ export function TeamPage({
                   )?.description ||
                   "We’re early. We’re together. Let’s make this launch ours."}
             </blockquote>
-            {live?.teams.find((t) => t.id === current.id)?.status ===
-            "paused" ? (
-              <div className="notice" role="status">
-                Team paused · Joining and new games are unavailable. Past scores
-                are preserved.
-              </div>
-            ) : live && member === current.id ? (
-              <div className="btn btn-primary full">
-                <Check size={18} /> Your team · Joined
-              </div>
-            ) : member === current.id ? (
+            {live ? <TeamActions key={`actions:${current.id}`} slug={c.id} team={current.id} name={current.name} userId={app.user?.id} ownerId={live.teams.find(t=>t.id===current.id)?.owner_id} member={member} communityMember={communityMember} paused={live.teams.find(t=>t.id===current.id)?.status==='paused'} closed={live.closed} busy={live.busy} canJoin={live.canJoin?.(current.id)!==false} join={()=>live.join(current.id)}/> : member === current.id ? (
               <Link
                 to={`/campaign/${c.id}/play`}
                 className="btn btn-primary full"
@@ -818,29 +795,18 @@ export function TeamPage({
             ) : (
               <button
                 className="btn btn-primary full"
-                onClick={() =>
-                  live ? live.join(current.id) : app.join(c.id, current.id)
-                }
+                onClick={() => app.join(c.id, current.id)}
                 disabled={
                   (Boolean(member) && !communityMember) ||
-                  (live
-                    ? live.closed || live.busy || live.canJoin?.(current.id) === false
-                    : Date.now() >= app.local.competition.deadlines[c.id])
+                  Date.now() >= app.local.competition.deadlines[c.id]
                 }
               >
                 <Users size={17} />
-                {live?.busy
-                  ? "Joining"
-                  : member && !communityMember
+                {member && !communityMember
                     ? "Team locked ·"
-                    : (
-                          live
-                            ? live.closed
-                            : Date.now() >=
-                              app.local.competition.deadlines[c.id]
-                        )
+                    : Date.now() >= app.local.competition.deadlines[c.id]
                       ? "Joining closed ·"
-                      : live?.canJoin?.(current.id) === false ? "Invitation required ·" : "Join"}{" "}
+                      : "Join"}{" "}
                 {current.name}
                 <ArrowUpRight size={17} />
               </button>
@@ -856,6 +822,7 @@ export function TeamPage({
                 </>
               )}
             </p>
+            {live && <TeamMembers key={`members:${current.id}`} slug={c.id} team={current.id} />}
           </div>
         </section>
       </div>

@@ -373,14 +373,11 @@ function MembershipList({
             )}
             <Link
               className="btn btn-secondary full"
-              to={
-                m.role === "captain"
-                  ? `/captain?campaign=${encodeURIComponent(m.slug)}`
-                  : `/campaign/${m.slug}/teams?selected=${m.membership.team_id}`
-              }
+              to={`/campaign/${m.slug}/teams?selected=${m.membership.team_id}`}
             >
-              {m.role === "captain" ? "Manage my team" : "View my team"}
+              View my team
             </Link>
+            {m.role === "captain" && <Link className="text-link" to={`/captain?campaign=${encodeURIComponent(m.slug)}`}>Manage my team <span aria-hidden="true">→</span></Link>}
           </article>
         ))}
       </div>

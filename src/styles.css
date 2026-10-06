@@ -2157,10 +2157,34 @@ footer > span:last-child {
   font-weight: 500;
 }
 .team-page-layout {
+  align-items: start;
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   gap: 28px;
   margin: 25px 0 50px;
+}
+.team-detail { scroll-margin-top: 90px; min-width: 0; }
+.team-actions { margin: 20px 0; }
+.team-action-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.team-action-buttons .btn { flex: 1 1 auto; }
+.team-actions > input { width: 100%; }
+.team-members { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); }
+.team-members .section-heading { flex-wrap: wrap; gap: 10px; }
+.team-member-row { display: grid; grid-template-columns: 24px 36px minmax(80px,1fr) auto auto; align-items: center; gap: 10px; padding: 16px 4px; border-top: 1px solid var(--border); }
+.team-member-row:hover, .team-member-row.is-you { background: #d5ff6510; }
+.team-member-name { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.team-member-name strong { overflow-wrap: anywhere; }
+.team-member-badges { display: flex; gap: 6px; color: var(--accent); font-size: 10px; }
+.team-member-score { display: flex; flex-direction: column; gap: 5px; text-align: right; }
+.team-member-score small { color: var(--muted); font-size: 11px; }
+.team-member-row .avatar { width: 36px; height: 36px; background: var(--accent); color: #17200c; }
+@media (max-width: 600px) {
+  .team-member-row { grid-template-columns: 22px 36px 1fr 1fr; gap: 8px; }
+  .team-member-name { grid-column: 3 / -1; }
+  .team-member-score { grid-row: 2; text-align: left; }
+  .team-member-score:nth-last-child(2) { grid-column: 3; }
+  .team-member-score:last-child { grid-column: 4; }
+  .team-detail .team-detail-banner { min-height: 100px; padding: 18px; }
 }
 .team-directory {
   display: flex;
