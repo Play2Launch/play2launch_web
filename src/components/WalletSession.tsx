@@ -24,6 +24,9 @@ const walletKit = createAppKit({
   adapters: [new EthersAdapter()],
   networks: [network],
   defaultNetwork: network,
+  // Single-chain app: use our explicit network status/switch action instead
+  // of AppKit's single-network dropdown, which can render but ignore clicks.
+  enableNetworkSwitch: false,
   projectId: config.projectId,
   metadata: {
     name: "Play To Launch",
@@ -53,12 +56,21 @@ export function openWallet() {
 }
 
 export function WalletButton() {
+  const { chainId, switchNetwork } = useAppKitNetwork();
   const { address, isConnected, status } = useAppKitAccount({
     namespace: "eip155",
   });
   const { open } = useAppKit();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const wrongNetwork = isConnected && Number(chainId) !== network.id;
+  async function changeNetwork() {
+    if (busy) return;
+    setBusy(true); setError("");
+    try { await switchNetwork(network); }
+    catch { setError("Network switch was cancelled or failed. Please retry."); }
+    finally { setBusy(false); }
+  }
   async function show() {
     if (busy) return;
     setBusy(true);
@@ -75,7 +87,7 @@ export function WalletButton() {
     }
   }
   return (
-    <>
+    <div className="header-wallet-controls">
       <button
         className="btn btn-secondary"
         title={isConnected ? address : "Connect Wallet"}
@@ -94,7 +106,8 @@ export function WalletButton() {
           {error}
         </span>
       )}
-    </>
+      {isConnected && (wrongNetwork ? <button className="wallet-network-switch" disabled={busy} onClick={()=>void changeNetwork()} title={`Current chain: ${chainId ?? "unknown"}`}>Switch to {network.name}</button> : <span className="wallet-network-label">{network.name}</span>)}
+    </div>
   );
 }
 

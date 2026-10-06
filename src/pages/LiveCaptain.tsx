@@ -123,7 +123,7 @@ export function LiveCaptain({ userId }: { userId: string }) {
     }
   }
   return (
-    <section className="membership-card verification-content">
+    <section className={approved && !initialSlug && !creating ? "captain-dashboard" : "membership-card verification-content"}>
       {error && (
         <div role="alert" className="inline-note">
           {error}

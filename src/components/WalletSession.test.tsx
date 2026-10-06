@@ -38,7 +38,23 @@ vi.mock("../lib/walletConfig", () => ({
   }),
 }));
 import { WalletSession, WalletButton } from "./WalletSession";
-afterEach(cleanup);
+afterEach(()=>{cleanup();mocks.chainId=4663;mocks.account.isConnected=true;mocks.account.status='connected';mocks.switchNetwork.mockClear();});
+it("shows the configured chain only when connected to it and allows retry after rejection",async()=>{
+ const view=render(<WalletButton/>);
+ expect(screen.getByText('Robinhood Chain')).toBeTruthy();
+ expect(mocks.create.mock.calls[0][0].enableNetworkSwitch).toBe(false);
+ expect(mocks.switchNetwork).not.toHaveBeenCalled();
+ mocks.chainId=1;view.rerender(<WalletButton/>);
+ expect(screen.queryByText('Robinhood Chain')).toBeNull();
+ mocks.switchNetwork.mockRejectedValueOnce(new Error('rejected'));
+ fireEvent.click(screen.getByRole('button',{name:'Switch to Robinhood Chain'}));
+ await screen.findByRole('alert');
+ fireEvent.click(screen.getByRole('button',{name:'Switch to Robinhood Chain'}));
+ await waitFor(()=>expect(mocks.switchNetwork).toHaveBeenCalledTimes(2));
+ expect(mocks.switchNetwork).toHaveBeenLastCalledWith(expect.objectContaining({id:4663}));
+ mocks.chainId=4663;view.rerender(<WalletButton/>);
+ expect(screen.getByText('Robinhood Chain')).toBeTruthy();
+});
 it("keeps header address and disconnected label in sync", async () => {
   const view = render(<WalletButton />);
   fireEvent.click(screen.getByRole("button", { name: "0x1111…1111" }));
