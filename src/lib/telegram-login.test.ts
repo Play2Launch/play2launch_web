@@ -26,3 +26,19 @@ it('rejects a callback opened without its original browser state',async()=>{
  history.replaceState(null,'','/auth/telegram#ticket='+'t'.repeat(43));
  await expect(finishTelegramLogin()).rejects.toThrow('expired');expect(exchange).not.toHaveBeenCalled();
 });
+it('shows a safe callback reason and diagnostic reference without redeeming',async()=>{
+ vi.resetModules();const {finishTelegramLogin}=await import('./telegram-login');
+ history.replaceState(null,'','/auth/telegram#error=telegram_login_failed&reason=TG_COOKIE_MISSING&diagnostic=Abc123_-xyz0');
+ await expect(finishTelegramLogin()).rejects.toThrow('TG_COOKIE_MISSING; ref: Abc123_-xyz0');
+ expect(exchange).not.toHaveBeenCalled();expect(location.hash).toBe('');
+});
+it.each(['unexpected-secret','__proto__','constructor'])('does not reflect unknown callback reason %s',async reason=>{
+ vi.resetModules();const {finishTelegramLogin}=await import('./telegram-login');
+ history.replaceState(null,'',`/auth/telegram#error=secret&reason=${reason}&diagnostic=secret`);
+ await expect(finishTelegramLogin()).rejects.toThrow(/^Telegram sign-in failed\. Please try again\.$/);
+});
+it('does not reflect malformed diagnostic references',async()=>{
+ vi.resetModules();const {finishTelegramLogin}=await import('./telegram-login');
+ history.replaceState(null,'','/auth/telegram#error=1&reason=TG_TOKEN_VERIFY&diagnostic=secret');
+ await expect(finishTelegramLogin()).rejects.toThrow(/\(TG_TOKEN_VERIFY\)$/);
+});
