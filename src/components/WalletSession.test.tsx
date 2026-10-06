@@ -57,7 +57,9 @@ it("shows the configured chain only when connected to it and allows retry after 
 });
 it("keeps header address and disconnected label in sync", async () => {
   const view = render(<WalletButton />);
-  fireEvent.click(screen.getByRole("button", { name: "0x1111…1111" }));
+  const button=screen.getByRole("button", { name: "0x1111…1111 Robinhood Chain" });
+  expect(button.contains(screen.getByText("Robinhood Chain"))).toBe(true);
+  fireEvent.click(button);
   await waitFor(() =>
     expect(mocks.open).toHaveBeenCalledWith({
       view: "Account",

@@ -89,24 +89,29 @@ export function WalletButton() {
   return (
     <div className="header-wallet-controls">
       <button
-        className="btn btn-secondary"
+        className={`btn btn-secondary ${isConnected && address ? "wallet-identity-button" : ""}`}
         title={isConnected ? address : "Connect Wallet"}
         disabled={busy}
         onClick={() => void show()}
       >
-        <Wallet size={16} />
+        <Wallet size={16} aria-hidden="true" />
+        <span className="wallet-identity-text">
+        <span>
         {isConnected && address
           ? `${address.slice(0, 6)}…${address.slice(-4)}`
           : status === "connecting"
             ? "Connecting…"
             : "Connect Wallet"}
+        </span>
+        {isConnected && address && <span className={`wallet-network-label ${wrongNetwork ? "wallet-network-warning" : ""}`}>{wrongNetwork ? `Chain ${chainId ?? "unknown"}` : network.name}</span>}
+        </span>
       </button>
       {error && (
         <span className="header-wallet-error" role="alert">
           {error}
         </span>
       )}
-      {isConnected && (wrongNetwork ? <button className="wallet-network-switch" disabled={busy} onClick={()=>void changeNetwork()} title={`Current chain: ${chainId ?? "unknown"}`}>Switch to {network.name}</button> : <span className="wallet-network-label">{network.name}</span>)}
+      {isConnected && wrongNetwork && <button className="wallet-network-switch" disabled={busy} onClick={()=>void changeNetwork()} title={`Current chain: ${chainId ?? "unknown"}`}>Switch to {network.name}</button>}
     </div>
   );
 }
