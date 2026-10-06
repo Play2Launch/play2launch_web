@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { TeamJoinSettings } from "../components/TeamJoinSettings";
+import { CaptainTeams } from "../components/CaptainTeams";
+import { TeamInvite } from "../components/TeamInvite";
 import { getCampaign } from "../lib/catalog";
 import {
   listTeams,
@@ -20,6 +22,7 @@ export function LiveCaptain({ userId }: { userId: string }) {
   const nav = useNavigate();
   const [params] = useSearchParams();
   const initialSlug = params.get("campaign") || "";
+  const creating = params.get("create") === "1";
   const [campaign, setCampaign] = useState<CaptainCampaign>();
   const [picker, setPicker] = useState(false);
   const dirty = useRef(false);
@@ -32,6 +35,12 @@ export function LiveCaptain({ userId }: { userId: string }) {
   const [membership, setMembership] = useState<Membership | null>(null);
   useEffect(() => {
     const ctrl = new AbortController();
+    setReady(false);
+    setTeams([]);
+    setMembership(null);
+    setCampaign(undefined);
+    setSlug("");
+    setError("");
     Promise.all([
       api.authenticated<{ status: string } | null>(
         "/kol/me",
@@ -135,7 +144,9 @@ export function LiveCaptain({ userId }: { userId: string }) {
         </>
       ) : (
         <>
-          <h2>Create your campaign team</h2>
+          {!initialSlug&&!creating ? <CaptainTeams create={()=>nav('/captain?create=1')}/> : <>
+          <Link className="text-link" to="/captain" onClick={e=>{if(dirty.current&&!window.confirm('Discard the unsaved team details?'))e.preventDefault();else dirty.current=false;}}>← My teams</Link>
+          <h2>{ready&&owned ? `Manage ${owned.name}` : initialSlug&&!ready ? 'Your campaign team' : 'Create your campaign team'}</h2>
           <div className="captain-campaign-summary">
             {campaign ? (
               <CampaignChoice key={campaign.id} campaign={campaign} />
@@ -174,6 +185,10 @@ export function LiveCaptain({ userId }: { userId: string }) {
               >
                 View your team
               </Link>
+              <details className="captain-invitation" open={params.get('panel')==='invite'||undefined}>
+                <summary>Invite players</summary>
+                <TeamInvite key={owned.id} slug={slug} team={owned.id} name={owned.name} referrer={userId}/>
+              </details>
             </>
           ) : campaign?.availability && !campaign.availability.join_open ? (
             <p>Team creation is outside this campaign’s joining window.</p>
@@ -228,6 +243,7 @@ export function LiveCaptain({ userId }: { userId: string }) {
               </fieldset>
             </form>
           )}
+          </>}
         </>
       )}
     </section>

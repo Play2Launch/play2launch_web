@@ -18,8 +18,10 @@ export function CommunityTeamCard({slug,team,joined}:{slug:string;team?:ServerTe
       <div><strong>{number(team?.activity?.rounds_today??0)}</strong><span>Valid rounds today</span></div>
     </div>
     <p className="small muted">Activity only · Outside team rankings and team ranking rewards. Daily activity uses UTC and accepted rounds with a positive score.</p>
+    <div className="community-team-actions">
     <Link className="btn btn-primary" to={`/campaign/${slug}/compete`}>Play ranked round</Link>
     {team&&<button className="btn btn-secondary" aria-expanded={showMembers} onClick={()=>setShowMembers(v=>!v)}>{showMembers?'Hide members':'View members'}</button>}
+    </div>
     {team&&showMembers&&<TeamMembers key={team.id} slug={slug} team={team.id} community/>}
   </section>;
 }

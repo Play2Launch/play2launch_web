@@ -110,11 +110,10 @@ export default function CaptainPage() {
         <div>
           <span className="eyebrow">KOL / CAPTAIN STUDIO</span>
           <h1>
-            Your people. Your team<span>.</span>
+            {liveAuth ? "Captain Studio" : <>Your people. Your team<span>.</span></>}
           </h1>
           <p>
-            Create a team inside a platform-published campaign. Only platform
-            administrators can publish activities.
+            {liveAuth ? "Manage your teams. Grow your community." : "Create a team inside a platform-published campaign. Only platform administrators can publish activities."}
           </p>
         </div>
         <Crown size={36} className="accent" />

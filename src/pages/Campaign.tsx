@@ -47,7 +47,7 @@ import { FriendInvite } from "../components/FriendInvite";
 import { WalletPanel } from "../components/WalletPanel";
 import { walletAllowed } from "../lib/walletPolicy";
 import { ProfileTools } from "../components/ProfileTools";
-import { TeamMembers } from "../components/TeamMembers";
+import { TeamMembers, type TeamScoreSummary } from "../components/TeamMembers";
 import { TeamActions } from "../components/TeamActions";
 import { VerifiedKol } from "../components/VerifiedKol";
 import { TeamBadge } from "../components/TeamBadge";
@@ -605,6 +605,7 @@ export function TeamPage({
   const [selected, setSelected] = useState(
     params.get("selected") || app.entry.teamId || "alice",
   );
+  const [teamSummary,setTeamSummary]=useState<TeamScoreSummary>();
   if (!c) return <NotFound />;
   const member = live ? live.member : app.local.memberships[c.id];
   const community = live?.teams.find(t=>t.team_type==='system_community');
@@ -712,7 +713,6 @@ export function TeamPage({
                         <span className="pill acid">YOUR TEAM</span>
                       )}
                     </strong>
-                    <small>{t.handle}</small>
                     <span>
                       {number(t.players)} players · {live ? "View members →" : `${short(t.score)} points`}
                     </span>
@@ -761,7 +761,7 @@ export function TeamPage({
           <div className="team-detail-body">
             <h2>{current.name}</h2>
             <p>
-              {current.handle} · {c.name} chapter
+              {c.name} chapter
             </p>
             <div className="team-stats">
               <div>
@@ -769,7 +769,7 @@ export function TeamPage({
                 <span>Players</span>
               </div>
               <div>
-                <strong>{live ? "—" : short(current.score)}</strong>
+                <strong>{live ? teamSummary?.slug===c.id && teamSummary.team===current.id && teamSummary.score!==undefined ? number(teamSummary.score) : "—" : short(current.score)}</strong>
                 <span>Campaign team score</span>
               </div>
               <div>
@@ -822,7 +822,7 @@ export function TeamPage({
                 </>
               )}
             </p>
-            {live && <TeamMembers key={`members:${current.id}`} slug={c.id} team={current.id} />}
+            {live && <div id="team-members"><TeamMembers key={`members:${c.id}:${current.id}`} slug={c.id} team={current.id} onSummary={setTeamSummary} /></div>}
           </div>
         </section>
       </div>

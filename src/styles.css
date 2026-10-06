@@ -862,6 +862,14 @@ footer > span:last-child {
 
 .community-team-card { grid-column: 1 / -1; margin: 20px 0; }
 .community-team-card .eyebrow { display: flex; align-items: center; gap: 8px; }
+.community-team-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+.captain-team-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,320px),1fr)); gap: 20px; }
+.captain-team-card h3 { font-size: 24px; margin: 12px 0; }
+.captain-team-card .team-stats { grid-template-columns: 1fr 1fr; }
+.captain-team-links { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 18px; }
+.captain-invitation { margin-top: 20px; }
+.captain-invitation summary { cursor: pointer; padding: 12px 0; }
+#team-members { scroll-margin-top: 90px; }
 .server-result-stats [hidden] { display: none; }
 .community-links { display: flex; flex-wrap: wrap; gap: 8px; }
 .community-links a { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; color: inherit; }
