@@ -18,7 +18,7 @@ export type AccountCredential = {
 export type SignedIn = {
   kind: "authenticated";
   user: User;
-  credential: AccountCredential | { kind: "telegram"; token: string };
+  credential: AccountCredential | { kind: "telegram"; token: string } | {kind:"webtelegram";token:string};
 };
 export type LoginResult = SignedIn | { kind: "verification"; account: Account };
 const messages: Record<number, string> = {
@@ -313,15 +313,27 @@ export class ApiClient {
     };
   }
   // Only the active UI attempt may commit credentials. Never persist raw Telegram data.
+  telegramStartURL(challenge:string,referrer?:string) {
+    if(!this.base) throw new Error('The authentication service has not been configured.');
+    const url=new URL(this.base+'/auth/telegram/start',window.location.origin);
+    url.searchParams.set('challenge',challenge);
+    if(/^ur[0-9a-z]{1,32}$/.test(referrer||''))url.searchParams.set('ref',referrer!);
+    return url.toString();
+  }
+  async telegramExchange(ticket:string,verifier:string,context:AuthContext):Promise<SignedIn> {
+    const data=await this.request<{token:string}>('/auth/telegram/exchange',{ticket,verifier});
+    if(!/^[A-Za-z0-9_-]{43}$/.test(data?.token||''))throw invalid();
+    return {kind:'authenticated',user:await this.user('p2l '+data.token,context),credential:{kind:'webtelegram',token:data.token}};
+  }
   authenticated<T>(path: string, data?: unknown, signal?: AbortSignal): Promise<T> {
     const credential = this.credential;
     if (!credential) return Promise.reject(new ApiError(401, 10002));
-    return this.request<T>(path, data, {signal, authorization: `${credential.kind === "account" ? "bearer" : "tma"} ${credential.token}`});
+    return this.request<T>(path, data, {signal, authorization: `${credential.kind === "account" ? "bearer" : credential.kind === 'webtelegram' ? 'p2l' : "tma"} ${credential.token}`});
   }
   remember(result: SignedIn) {
     this.credential = result.credential;
     try {
-      if (result.credential.kind === "account")
+      if (result.credential.kind !== "telegram")
         this.storage?.setItem(
           this.storageKey,
           JSON.stringify(result.credential),
@@ -331,12 +343,13 @@ export class ApiClient {
       /* Memory-only login when session storage is unavailable. */
     }
   }
-  private saved(): AccountCredential | null {
-    if (this.credential?.kind === "account") return this.credential;
+  private saved(): AccountCredential | {kind:'webtelegram';token:string} | null {
+    if (this.credential && this.credential.kind !== "telegram") return this.credential;
     try {
       const value = JSON.parse(
         this.storage?.getItem(this.storageKey) || "null",
       );
+      if(value?.kind==='webtelegram' && typeof value.token==='string' && /^[A-Za-z0-9_-]{43}$/.test(value.token))return value;
       if (
         value?.kind === "account" &&
         typeof value.accountId === "string" &&
@@ -357,6 +370,7 @@ export class ApiClient {
     const saved = this.saved();
     if (!saved) return null;
     try {
+      if(saved.kind==='webtelegram')return {kind:'authenticated',user:await this.user('p2l '+saved.token,context,signal),credential:saved};
       const checked = await this.request<Account>(
         "/acc/check_token",
         { account_id: saved.accountId, token: saved.token, acc_type: 1 },
@@ -378,6 +392,8 @@ export class ApiClient {
     }
   }
   logout() {
+    const old=this.saved();
+    if(old?.kind==='webtelegram')void this.request('/auth/telegram/logout',{}, {authorization:'p2l '+old.token}).catch(()=>{});
     this.credential = null;
     try {
       this.storage?.removeItem(this.storageKey);

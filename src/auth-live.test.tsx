@@ -135,7 +135,7 @@ beforeEach(() => {
       return reply(account);
     return reply("");
   });
-  vi.stubGlobal("fetch", transport);
+  vi.stubGlobal("fetch", (url:string,options?:RequestInit)=>url.endsWith('/auth/telegram/config')?Promise.resolve(reply({enabled:false})):transport(url,options));
 });
 afterEach(() => {
   cleanup();

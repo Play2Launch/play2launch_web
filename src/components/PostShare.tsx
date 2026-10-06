@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Share2, Copy, ArrowUpRight } from 'lucide-react';
+import {shareOrigin} from '../lib/entry';
 
 export function PostShare({id}:{id:string}) {
  const [open,setOpen]=useState(false),[copied,setCopied]=useState(false),[failed,setFailed]=useState(false);
  const path=`/posts/${encodeURIComponent(id)}`;
- const url=new URL(path,window.location.origin).href;
+ const url=new URL(path,shareOrigin(window.location.origin)).href;
  async function copy(){
   try {await navigator.clipboard.writeText(url);setCopied(true);setFailed(false);}
   catch {setFailed(true);setCopied(false);}

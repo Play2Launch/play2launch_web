@@ -3,7 +3,7 @@ import {StrictMode} from 'react';
 import {afterEach, expect, it, vi} from 'vitest';
 import {act, cleanup, fireEvent, render, screen} from '@testing-library/react';
 const mocks=vi.hoisted(()=>({register:vi.fn(),login:vi.fn(),sendVerification:vi.fn(),setAuthError:vi.fn()}));
-vi.mock('../lib/api',()=>({api:mocks}));
+vi.mock('../lib/api',()=>({api:{...mocks,request:()=>Promise.resolve({enabled:false})}}));
 vi.mock('../state',()=>({useApp:()=>({platform:{runtime:'web'},authBusy:false,setAuthError:mocks.setAuthError,authContext:()=>({}),
  executeAuth:async(work:(signal:AbortSignal)=>Promise<unknown>,done:(value:unknown)=>void)=>{
   try{done(await work(new AbortController().signal));}catch(e){mocks.setAuthError((e as Error).message);}

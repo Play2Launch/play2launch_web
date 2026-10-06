@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowUpRight, Send } from "lucide-react";
 import { api, type Account, type LoginResult } from "../lib/api";
 import { useApp } from "../state";
+import {beginTelegramLogin} from '../lib/telegram-login';
 
 type Step = "login" | "register" | "verify" | "forgot" | "reset";
 const headings: Record<Step, string> = {
@@ -13,6 +14,8 @@ const headings: Record<Step, string> = {
 };
 export function LiveAuthForm() {
   const app = useApp();
+  const [telegramEnabled,setTelegramEnabled]=useState(false);
+  useEffect(()=>{if(app.platform.runtime==='telegram')return;const controller=new AbortController();api.request<{enabled:boolean}>('/auth/telegram/config',undefined,{signal:controller.signal}).then(v=>{if(!controller.signal.aborted)setTelegramEnabled(v.enabled===true)}).catch(()=>{});return ()=>controller.abort();},[app.platform.runtime]);
   const [step, setStep] = useState<Step>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -150,6 +153,7 @@ export function LiveAuthForm() {
   return (
     <>
       <h3>{headings[step]}</h3>
+      {telegramEnabled&&(step==='login'||step==='register')&&<><button type="button" className="btn btn-secondary" disabled={app.authBusy} onClick={()=>void app.executeAuth(()=>beginTelegramLogin(app.authContext()),()=>{})}><Send size={16}/> Continue with Telegram</button><p className="small muted">Or continue with email</p></>}
       <form className="auth-form" onSubmit={submit} aria-busy={app.authBusy}>
         {step !== "verify" ? (
           <label>

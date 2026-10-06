@@ -39,6 +39,19 @@ function memoryStorage() {
   };
 }
 describe("DashFun authentication contract", () => {
+ it('exchanges, persists and restores a Telegram web session without TMA data',async()=>{
+  const token='a'.repeat(43),storage=memoryStorage();
+  const transport=vi.fn().mockResolvedValueOnce(response({token})).mockImplementation(async()=>response({...user,from:1,channel_id:'123',display_name:'Telegram Player'}));
+  const client=new ApiClient('https://api.test',transport,storage);
+  const result=await client.telegramExchange('ticket','verifier',context);
+  expect(result.credential).toEqual({kind:'webtelegram',token});expect(storage.length).toBe(0);
+  client.remember(result);
+  const restored=await new ApiClient('https://api.test',transport,storage).session(context);
+  expect(restored?.user.id).toBe('ur1');
+  expect(transport.mock.calls[2][1].headers.Authorization).toBe('p2l '+token);
+  client.logout();expect(storage.length).toBe(0);
+  expect(transport.mock.calls[3][0]).toBe('https://api.test/auth/telegram/logout');
+ });
   it('retains the public avatar for account and Telegram login',async()=>{
     const transport=vi.fn().mockResolvedValueOnce(response(account)).mockResolvedValueOnce(response({...user,avatar_url:'https://example.com/avatar.png'})).mockResolvedValueOnce(response({...user,avatar_url:'https://example.com/tg.png'}));
     const client=new ApiClient('https://api.test',transport);

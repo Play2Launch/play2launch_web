@@ -167,18 +167,18 @@ export function resolveEntry(
   return { context, destination };
 }
 
+export function shareOrigin(origin:string){
+ const url=new URL(origin);
+ if(url.hostname==='play2launch.com'){url.hostname='www.play2launch.com';url.protocol='https:';url.port='';}
+ return url.origin;
+}
 export function shareLinks(
   origin: string,
   entry: EntryContext,
   config: { bot?: string; app?: string },
 ) {
   const target = entry.target === "teams" ? "teams" : "campaign";
-  const url = new URL(entryPath({ ...entry, target }), origin);
-  if (url.hostname === 'play2launch.com') {
-    url.hostname = 'www.play2launch.com';
-    url.protocol = 'https:';
-    url.port = '';
-  }
+  const url = new URL(entryPath({ ...entry, target }), shareOrigin(origin));
   if (!entry.campaignId && !entry.teamId && !entry.inviteToken && /^ur[0-9a-z]{1,32}$/.test(entry.referrerId || '')) url.pathname = `/ref/${entry.referrerId}`;
   if (entry.inviteToken) url.pathname = `/invite/${encodeURIComponent(entry.inviteToken)}`;
   if (!entry.inviteToken && entry.teamId) url.searchParams.set("team", entry.teamId);

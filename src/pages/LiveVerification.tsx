@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
 import {Link} from "react-router-dom";
 import {api} from '../lib/api';
-type Application={id:string;status:string;version:number;code:string;expires_at:string;name:string;avatar:string;social_url:string;introduction:string;proof_url:string;history:{id:string;status:string;reason:string;at:string}[]};
+type Application={id:string;status:string;version:number;code:string;expires_at:string;name:string;social_url:string;introduction:string;proof_url:string;history:{id:string;status:string;reason:string;at:string}[]};
 const labels:Record<string,string>={draft:'Verify account ownership',pending:'Under review',approved:'Approved captain',rejected:'Changes requested',revoked:'Verification revoked'};
 function checkSocialLink(value:string,profile:boolean):boolean {
  try {
@@ -25,11 +25,9 @@ export function LiveVerification({userId}:{userId:string}){
  <form className="verification-form" key={`${data.id}:${data.version}`} onSubmit={e=>{e.preventDefault();const values=Object.fromEntries(new FormData(e.currentTarget));
  if(!checkSocialLink(String(values.social_url),true)){setError('Public profile: enter an HTTPS X or Telegram profile URL, such as https://x.com/yourname.');return;}
  if(!checkSocialLink(String(values.proof_url),false)){setError('Proof link: enter an HTTPS X or Telegram profile or public post URL. X share parameters are supported.');return;}
- if(String(values.avatar).trim()){try{const avatar=new URL(String(values.avatar));if(avatar.protocol!=='https:'||avatar.username||avatar.password)throw new Error();}catch{setError('Avatar URL: use an HTTPS image URL, or leave it blank.');return;}}
  void send('/kol/apply',{...values,version:data.version});}}>
  <fieldset disabled={busy} style={{border:0,padding:0,display:'grid',gap:16}}>
  <label>Captain name<input name="name" required minLength={2} maxLength={60} defaultValue={data.name}/></label>
- <label>Avatar URL (optional, HTTPS)<input name="avatar" type="url" defaultValue={data.avatar}/></label>
  <label>Public X / Telegram profile<input name="social_url" type="url" required placeholder="https://x.com/yourname" defaultValue={data.social_url}/></label>
  <label>Community introduction<textarea name="introduction" required minLength={20} maxLength={500} rows={4} defaultValue={data.introduction}/></label>
  <label>Proof link (profile or public post containing the code)<input name="proof_url" type="url" required defaultValue={data.proof_url}/></label>

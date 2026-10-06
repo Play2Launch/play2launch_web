@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import InviteLanding from "./pages/InviteLanding";
+import TelegramLogin from './pages/TelegramLogin';
 import { CommunityLinks } from "./components/CommunityLinks";
 import {
   ArrowDownRight,
@@ -243,6 +244,7 @@ function Shell() {
       )}
       <main className="page-container">
         <Routes>
+          {liveAuth&&<Route path="/auth/telegram" element={<TelegramLogin/>}/>}
           <Route path="/" element={liveAuth ? <LiveCatalog /> : <Discover />} />
           <Route path="/invite/:token" element={<InviteLanding />} />
           <Route path="/ref/:userId" element={liveAuth ? <LiveCatalog /> : <Discover />} />

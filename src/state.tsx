@@ -18,6 +18,7 @@ import {
 } from "./lib/entry";
 import { localId, mountPlatform, platformContext, loadTelegramBridge } from "./lib/platform";
 import { api, liveAuth, type SignedIn, type User } from "./lib/api";
+import {finishTelegramLogin} from './lib/telegram-login';
 import {
   createCaptainTeam,
   restoreCaptainTeams,
@@ -335,7 +336,9 @@ function useAppState() {
   useEffect(() => {
     if (!liveAuth) return;
     // Always revalidate the current TMA launch; never restore a web account into it.
-    if (platform.runtime === "telegram") {
+    if (window.location.pathname === '/auth/telegram') {
+      void executeAuth(()=>finishTelegramLogin(),({result,returnPath})=>{completeLiveLogin(result);nav(returnPath,{replace:true});});
+    } else if (platform.runtime === "telegram") {
       api.logout();
       void telegramLogin();
     } else {

@@ -19,10 +19,12 @@ it('accepts X share parameters and preserves inputs after a failed submission',a
  mock.mockImplementation((path:string)=>path==='/kol/me'?Promise.resolve(draft):Promise.reject(new Error('Please check the information you entered.')));
  render(<MemoryRouter><LiveVerification userId="ur1"/></MemoryRouter>);
  const submit=await screen.findByText('Submit for review');
+ expect(screen.queryByLabelText(/Avatar URL/)).toBeNull();
  fireEvent.change(screen.getByLabelText('Captain name'),{target:{value:'Edited name'}});
  fireEvent.click(submit);
  await screen.findByRole('alert');
  expect(mock.mock.calls.find(call=>call[0]==='/kol/apply')?.[1]).toMatchObject({name:'Edited name',proof_url:draft.proof_url});
+ expect(mock.mock.calls.find(call=>call[0]==='/kol/apply')?.[1]).not.toHaveProperty('avatar');
  expect((screen.getByLabelText('Captain name') as HTMLInputElement).value).toBe('Edited name');
  expect(screen.queryByText('Retry')).toBeNull();
  fireEvent.click(screen.getByText('Submit for review'));
