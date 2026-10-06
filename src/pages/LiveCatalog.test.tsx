@@ -74,6 +74,9 @@ it("loads server catalog and arbitrary slug detail without prototype counts", as
   );
   mount();
   await screen.findByRole("heading", { name: campaign.name });
+  expect(document.querySelector(".catalog-status-note")).toBeNull();
+  expect(document.querySelector(".feature-grid")?.nextElementSibling?.className).toBe("discover-captain");
+  expect(document.getElementById("campaigns")?.nextElementSibling?.className).toBe("platform-vision");
   expect(screen.queryByText("PAPERHOOD")).toBeNull();
   expect(screen.getByText("/ 1,234 unlock points")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Trending" })).toBeNull();

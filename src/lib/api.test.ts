@@ -39,18 +39,81 @@ function memoryStorage() {
   };
 }
 describe("DashFun authentication contract", () => {
+ it.each(['login','activation'])('uses a persistent cookie after email %s, without check_token renewal',async flow=>{
+  let signedIn=false;
+  const storage=memoryStorage();
+  const transport=vi.fn().mockImplementation(async(url:string)=>{
+   if(url.endsWith('/auth/session/config'))return response({enabled:true,cookie_session:true});
+   if(url.endsWith('/acc/login')||url.endsWith('/acc/verify_email')){signedIn=true;return response({...account,token:'',session:'cookie'});}
+   if(url.endsWith('/user/tg_login'))return signedIn?response(user):response(null,401,10002);
+   if(url.endsWith('/auth/session/logout')){signedIn=false;return response('signed out');}
+   throw new Error('Unexpected endpoint '+url);
+  });
+  const client=new ApiClient('https://api.test',transport,storage);
+  expect(await client.session(context)).toBeNull();
+  const result=flow==='login'?await client.login(account.username,'password123',context):await client.verifyEmail('AC1','ABC123',context);
+  expect(result.kind).toBe('authenticated');if(result.kind!=='authenticated')throw new Error('not authenticated');
+  client.remember(result);expect(storage.length).toBe(0);expect(result.credential.kind).toBe('web-cookie');
+  const authCall=transport.mock.calls.find(([url])=>url.endsWith(flow==='login'?'/acc/login':'/acc/verify_email'))!;
+  expect(authCall[1].credentials).toBe('include');expect(authCall[1].headers['X-P2L-Session']).toBe('cookie');
+  expect(JSON.parse(authCall[1].body).referrer_id).toBe('urref');
+  expect((await new ApiClient('https://api.test',transport,memoryStorage()).session(context))?.user.id).toBe('ur1');
+  expect(transport.mock.calls.some(([url])=>url.endsWith('/acc/check_token'))).toBe(false);
+  expect(await client.logout()).toBe(true);
+  expect(await new ApiClient('https://api.test',transport,memoryStorage()).session(context)).toBeNull();
+ });
+ it('treats a missing or expired cookie as signed out but surfaces network failures',async()=>{
+  const transport=vi.fn().mockResolvedValueOnce(response({enabled:true,cookie_session:true})).mockResolvedValueOnce(response(null,401,10002)).mockRejectedValueOnce(new TypeError('offline'));
+  const client=new ApiClient('https://api.test',transport,memoryStorage());
+  expect(await client.session(context)).toBeNull();
+  await expect(client.session(context)).rejects.toThrow('Could not reach');
+ });
+ it('blocks automatic cookie restore after failed logout without storing a credential',async()=>{
+  const preferences=memoryStorage();vi.stubGlobal('localStorage',preferences);
+  try {
+   const transport=vi.fn().mockImplementation(async(url:string)=>{if(url.endsWith('/auth/session/config'))return response({enabled:true,cookie_session:true});throw new TypeError('offline');});
+   const client=new ApiClient('https://api.test',transport,memoryStorage());
+   client.remember({kind:'authenticated',user:{id:'ur1',name:'Player',mode:'live'},credential:{kind:'web-cookie',token:''}});
+   expect(await client.logout()).toBe(false);
+   expect(await new ApiClient('https://api.test',transport,memoryStorage()).session(context)).toBeNull();
+   expect(transport).toHaveBeenCalledTimes(2);
+   expect(preferences.getItem(preferences.key(0)!)).toBe('1');
+  } finally {vi.unstubAllGlobals();}
+ });
+ it('uses the configured callback origin for login start without changing the API base',async()=>{
+  vi.stubGlobal('window',{location:{origin:'https://www.play2launch.com'}});
+  try {
+   const transport=vi.fn().mockResolvedValue(response({enabled:true,start_url:'https://www.play2launch.com/api/v1/auth/telegram/start'}));
+   const client=new ApiClient('https://api.play2launch.com/api/v1',transport,memoryStorage());
+   const url=new URL(await client.telegramStartURL('challenge','ur123'));
+   expect(url.origin).toBe('https://www.play2launch.com');
+   expect(url.searchParams.get('challenge')).toBe('challenge');expect(url.searchParams.get('ref')).toBe('ur123');
+   expect(transport.mock.calls[0][0]).toBe('https://api.play2launch.com/api/v1/auth/telegram/config');
+   transport.mockResolvedValue(response({enabled:true}));
+   expect(new URL(await client.telegramStartURL('challenge')).origin).toBe('https://api.play2launch.com');
+   transport.mockResolvedValue(response({enabled:false}));
+   await expect(client.telegramStartURL('challenge')).rejects.toThrow('unavailable');
+   for(const start_url of ['javascript:alert(1)','http://www.play2launch.com/api/v1/auth/telegram/start','https://www.play2launch.com/other','https://user:pass@www.play2launch.com/api/v1/auth/telegram/start','https://www.play2launch.com/api/v1/auth/telegram/start?other=1']) {
+    transport.mockResolvedValue(response({enabled:true,start_url}));
+    await expect(client.telegramStartURL('challenge')).rejects.toThrow();
+   }
+  } finally {vi.unstubAllGlobals();}
+ });
  it('exchanges, persists and restores a Telegram web session without TMA data',async()=>{
-  const token='a'.repeat(43),storage=memoryStorage();
-  const transport=vi.fn().mockResolvedValueOnce(response({token})).mockImplementation(async()=>response({...user,from:1,channel_id:'123',display_name:'Telegram Player'}));
+  const storage=memoryStorage();
+  const transport=vi.fn().mockResolvedValueOnce(response({session:'cookie'})).mockImplementation(async(url:string)=>response(url.endsWith('/auth/session/config')?{enabled:true,cookie_session:true}:{...user,from:1,channel_id:'123',display_name:'Telegram Player'}));
   const client=new ApiClient('https://api.test',transport,storage);
   const result=await client.telegramExchange('ticket','verifier',context);
-  expect(result.credential).toEqual({kind:'webtelegram',token});expect(storage.length).toBe(0);
+  expect(result.credential).toEqual({kind:'web-cookie',token:''});expect(storage.length).toBe(0);
   client.remember(result);
   const restored=await new ApiClient('https://api.test',transport,storage).session(context);
   expect(restored?.user.id).toBe('ur1');
-  expect(transport.mock.calls[2][1].headers.Authorization).toBe('p2l '+token);
+  expect(storage.length).toBe(0);
+  expect(transport.mock.calls[3][1].headers.Authorization).toBeUndefined();
+  expect(transport.mock.calls[3][1].headers['X-P2L-Session']).toBe('cookie');
+  expect(transport.mock.calls[3][1].credentials).toBe('include');
   client.logout();expect(storage.length).toBe(0);
-  expect(transport.mock.calls[3][0]).toBe('https://api.test/auth/telegram/logout');
+  expect(transport.mock.calls[4][0]).toBe('https://api.test/auth/session/logout');
  });
   it('retains the public avatar for account and Telegram login',async()=>{
     const transport=vi.fn().mockResolvedValueOnce(response(account)).mockResolvedValueOnce(response({...user,avatar_url:'https://example.com/avatar.png'})).mockResolvedValueOnce(response({...user,avatar_url:'https://example.com/tg.png'}));
@@ -167,6 +230,7 @@ describe("DashFun authentication contract", () => {
     const storage = memoryStorage();
     const transport = vi
       .fn()
+      .mockResolvedValueOnce(response({enabled:false}))
       .mockResolvedValueOnce(response({ ...account, token: "refreshed" }))
       .mockResolvedValueOnce(response(user));
     new ApiClient("https://api.test", transport, storage).remember({
@@ -176,8 +240,9 @@ describe("DashFun authentication contract", () => {
     });
     const client = new ApiClient("https://api.test", transport, storage);
     const restored = await client.session(context);
-    expect(transport.mock.calls[0][0]).toBe("https://api.test/acc/check_token");
+    expect(transport.mock.calls[1][0]).toBe("https://api.test/acc/check_token");
     expect(restored?.credential.token).toBe("refreshed");
+    transport.mockResolvedValueOnce(response({enabled:false}));
     expect(
       await new ApiClient("https://other.test", transport, storage).session(
         context,
@@ -191,6 +256,7 @@ describe("DashFun authentication contract", () => {
     const transport = vi
       .fn()
       .mockRejectedValueOnce(new TypeError("network"))
+      .mockResolvedValueOnce(response({enabled:false}))
       .mockResolvedValueOnce(response(null, 401, 10002));
     const client = new ApiClient("https://api.test", transport, storage);
     client.remember({

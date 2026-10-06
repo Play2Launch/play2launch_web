@@ -464,14 +464,15 @@ function useAppState() {
   const logout = async () => {
     cancelAuth();
     pending.current = null;
-    if (liveAuth) api.logout();
+    const revocation = liveAuth ? api.logout() : Promise.resolve(true);
     setUser(null);
     setAuthOpen(false);
     setAuthError("");
     if (!liveAuth) setLocal((l) => ({ ...l, demoUser: null }));
-    setToast(
-      "Signed out on this device. Your local practice rounds are still here.",
-    );
+    const revoked = await revocation;
+    setToast(revoked
+      ? "Signed out on this device. Your local practice rounds are still here."
+      : "Signed out locally, but the server session could not be revoked. Automatic sign-in is disabled on this browser.");
   };
   return {
     local,

@@ -10,8 +10,9 @@ export async function beginTelegramLogin(context:AuthContext){
  const verifier=base64url(crypto.getRandomValues(new Uint8Array(32)));
  const challenge=base64url(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))));
  const returnPath=safeReturnPath(location.pathname+location.search+location.hash);
+ const startURL=await api.telegramStartURL(challenge,context.entry.referrerId);
  sessionStorage.setItem(key,JSON.stringify({verifier,returnPath,context,created:Date.now()}));
- location.assign(api.telegramStartURL(challenge,context.entry.referrerId));
+ location.assign(startURL);
 }
 // One redemption across React StrictMode remounts; no long-lived token in the URL.
 let completion:ReturnType<typeof redeem>|undefined;

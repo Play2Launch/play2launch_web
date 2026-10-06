@@ -244,6 +244,37 @@ button {
   .public-player-header .follow-control { margin-left: 0; }
 }
 .discover-heading p { max-width: 680px; }
+.discover-page { display: flex; flex-direction: column; }
+.discover-page > .platform-vision { order: -1; }
+.discover-page > .discover-heading { order: -2; }
+.discover-captain { margin-top: 20px; border: 1px solid #394431; border-radius: 12px; background: #151b10; }
+.discover-captain-link { display: flex; align-items: center; gap: 14px; padding: 18px 20px; }
+.discover-captain-link > span:nth-child(2) { flex: 1; min-width: 0; }
+.discover-captain-link strong { display: block; color: var(--accent); }
+.discover-captain-link small { display: block; margin-top: 5px; color: var(--muted); line-height: 1.5; }
+.discover-captain-link:hover { background: #202819; border-radius: inherit; }
+.discover-captain-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.unlock-rules { margin: 16px 0; }
+.unlock-rules summary { cursor: pointer; padding: 6px 0; }
+@media (max-width: 600px) {
+  .discover-page > .platform-vision { order: 0; margin-top: 28px; }
+  .discover-page .discover-heading { margin-bottom: 18px; }
+  .discover-page .discover-heading .eyebrow,
+  .discover-page .discover-explore { display: none; }
+  .discover-page .discover-heading h1 { font-size: 26px; max-width: none; margin: 0 0 8px; line-height: 1.15; }
+  .discover-page .discover-heading p { max-width: none; margin: 0; font-size: 12px; line-height: 1.5; }
+  .discover-page .genesis-card { min-height: 320px; }
+  .discover-page .genesis-content { padding: 18px 18px 100px; }
+  .discover-page .hero-title { font-size: 54px; margin: 14px 0 12px; }
+  .discover-page .hero-title > span { font-size: 48px; top: 24px; }
+  .discover-page .genesis-content p { display: none; }
+  .discover-page .genesis-content .btn { margin-top: 8px; }
+  .discover-page .genesis-bottom { padding: 14px 18px; }
+  .discover-captain { margin-top: 14px; }
+  .discover-captain-link { padding: 14px; gap: 10px; }
+  .discover-captain-link strong { font-size: 14px; }
+  .discover-captain-link small { font-size: 12px; }
+}
 .discover-explore { margin-top: 20px; }
 .platform-vision {
   margin-bottom: 32px;

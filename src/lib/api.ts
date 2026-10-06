@@ -9,6 +9,7 @@ export type Account = {
   status: number;
   token: string;
   display_name: string;
+  session?: 'cookie';
 };
 export type AccountCredential = {
   kind: "account";
@@ -18,7 +19,7 @@ export type AccountCredential = {
 export type SignedIn = {
   kind: "authenticated";
   user: User;
-  credential: AccountCredential | { kind: "telegram"; token: string } | {kind:"webtelegram";token:string};
+  credential: AccountCredential | { kind: "telegram"; token: string } | {kind:"webtelegram";token:string} | {kind:'web-cookie';token:''};
 };
 export type LoginResult = SignedIn | { kind: "verification"; account: Account };
 const messages: Record<number, string> = {
@@ -86,6 +87,7 @@ const browserStorage = () => {
 };
 export class ApiClient {
   private base: string;
+  private useCookieSession = false;
   private credential: SignedIn["credential"] | null = null;
   constructor(
     base: string,
@@ -96,6 +98,16 @@ export class ApiClient {
   }
   private get storageKey() {
     return "p2l.account-session.v1:" + this.base;
+  }
+  // Non-secret preference prevents a failed logout or an account switch from
+  // silently restoring an older HttpOnly session on the next browser launch.
+  private cookieRestoreBlocked(block?:boolean) {
+    try {
+      const key='p2l.cookie-signout.v1:'+this.base;
+      if(block===true)localStorage.setItem(key,'1');
+      if(block===false)localStorage.removeItem(key);
+      return localStorage.getItem(key)==='1';
+    } catch {return false;}
   }
   async request<T>(
     path: string,
@@ -119,7 +131,7 @@ export class ApiClient {
     try {
       const response = await this.transport(this.base + path, {
         method: data === undefined ? "GET" : "POST",
-        credentials: "omit",
+        credentials: options.authorization==='cookie' ? 'include' : 'omit',
         cache: "no-store",
         headers: {
           ...(data === undefined
@@ -129,7 +141,9 @@ export class ApiClient {
                   ? "application/x-www-form-urlencoded"
                   : "application/json",
               }),
-          ...(options.authorization
+          ...(options.authorization==='cookie'
+            ? {'X-P2L-Session':'cookie'}
+            : options.authorization
             ? { Authorization: options.authorization }
             : {}),
         },
@@ -223,6 +237,7 @@ export class ApiClient {
     const a = this.account(account);
     if (a.status === 0)
       return { kind: "verification", account: { ...a, token: "" } };
+    if(account.session==='cookie')return {kind:'authenticated',user:await this.user('cookie',context,signal),credential:{kind:'web-cookie',token:''}};
     if (!a.token) throw invalid();
     return {
       kind: "authenticated",
@@ -239,8 +254,8 @@ export class ApiClient {
     return this.finish(
       await this.request<Account>(
         "/acc/login",
-        { username: email.trim(), password, acc_type: 1 },
-        { signal },
+        { username: email.trim(), password, acc_type: 1, ...(this.useCookieSession ? {referrer_id:context.entry.referrerId||''} : {}) },
+        { signal, ...(this.useCookieSession ? {authorization:'cookie'} : {}) },
       ),
       context,
       signal,
@@ -271,8 +286,8 @@ export class ApiClient {
     return this.finish(
       await this.request<Account>(
         "/acc/verify_email",
-        { account_id: accountId, code: code.trim().toUpperCase() },
-        { signal },
+        { account_id: accountId, code: code.trim().toUpperCase(), ...(this.useCookieSession ? {referrer_id:context.entry.referrerId||''} : {}) },
+        { signal, ...(this.useCookieSession ? {authorization:'cookie'} : {}) },
       ),
       context,
       signal,
@@ -313,27 +328,31 @@ export class ApiClient {
     };
   }
   // Only the active UI attempt may commit credentials. Never persist raw Telegram data.
-  telegramStartURL(challenge:string,referrer?:string) {
+  async telegramStartURL(challenge:string,referrer?:string) {
     if(!this.base) throw new Error('The authentication service has not been configured.');
-    const url=new URL(this.base+'/auth/telegram/start',window.location.origin);
+    const config=await this.request<{enabled:boolean;start_url?:string}>('/auth/telegram/config');
+    if(!config.enabled)throw new Error('Telegram sign-in is currently unavailable.');
+    const url=new URL(config.start_url || this.base+'/auth/telegram/start',window.location.origin);
+    if(url.protocol!=='https:' || url.username || url.password || url.pathname!=='/api/v1/auth/telegram/start' || url.search || url.hash)throw new Error('The Telegram sign-in address is not configured correctly.');
     url.searchParams.set('challenge',challenge);
     if(/^ur[0-9a-z]{1,32}$/.test(referrer||''))url.searchParams.set('ref',referrer!);
     return url.toString();
   }
   async telegramExchange(ticket:string,verifier:string,context:AuthContext):Promise<SignedIn> {
-    const data=await this.request<{token:string}>('/auth/telegram/exchange',{ticket,verifier});
-    if(!/^[A-Za-z0-9_-]{43}$/.test(data?.token||''))throw invalid();
-    return {kind:'authenticated',user:await this.user('p2l '+data.token,context),credential:{kind:'webtelegram',token:data.token}};
+    const data=await this.request<{session:string}>('/auth/telegram/exchange',{ticket,verifier},{authorization:'cookie'});
+    if(data?.session!=='cookie')throw invalid();
+    return {kind:'authenticated',user:await this.user('cookie',context),credential:{kind:'web-cookie',token:''}};
   }
   authenticated<T>(path: string, data?: unknown, signal?: AbortSignal): Promise<T> {
     const credential = this.credential;
     if (!credential) return Promise.reject(new ApiError(401, 10002));
-    return this.request<T>(path, data, {signal, authorization: `${credential.kind === "account" ? "bearer" : credential.kind === 'webtelegram' ? 'p2l' : "tma"} ${credential.token}`});
+    return this.request<T>(path, data, {signal, authorization: credential.kind==='web-cookie' ? 'cookie' : `${credential.kind === "account" ? "bearer" : credential.kind === 'webtelegram' ? 'p2l' : "tma"} ${credential.token}`});
   }
   remember(result: SignedIn) {
     this.credential = result.credential;
+    this.cookieRestoreBlocked(result.credential.kind!=='web-cookie');
     try {
-      if (result.credential.kind !== "telegram")
+      if (result.credential.kind !== "telegram" && result.credential.kind !== 'web-cookie')
         this.storage?.setItem(
           this.storageKey,
           JSON.stringify(result.credential),
@@ -343,7 +362,7 @@ export class ApiClient {
       /* Memory-only login when session storage is unavailable. */
     }
   }
-  private saved(): AccountCredential | {kind:'webtelegram';token:string} | null {
+  private saved(): AccountCredential | {kind:'webtelegram';token:string} | {kind:'web-cookie';token:''} | null {
     if (this.credential && this.credential.kind !== "telegram") return this.credential;
     try {
       const value = JSON.parse(
@@ -368,7 +387,20 @@ export class ApiClient {
     signal?: AbortSignal,
   ): Promise<SignedIn | null> {
     const saved = this.saved();
-    if (!saved) return null;
+    if(this.base){
+      const config=await this.request<{enabled:boolean;cookie_session?:boolean}>('/auth/session/config',undefined,{signal});
+      this.useCookieSession=config.enabled===true&&config.cookie_session===true;
+    }
+    if (!saved || saved.kind==='web-cookie') {
+      if(!this.base||(!saved&&this.cookieRestoreBlocked()))return null;
+      if(!saved&&!this.useCookieSession)return null;
+      try {
+        return {kind:'authenticated',user:await this.user('cookie',context,signal),credential:{kind:'web-cookie',token:''}};
+      } catch(error) {
+        if(error instanceof ApiError && [401,403].includes(error.status)){this.credential=null;return null;}
+        throw error;
+      }
+    }
     try {
       if(saved.kind==='webtelegram')return {kind:'authenticated',user:await this.user('p2l '+saved.token,context,signal),credential:saved};
       const checked = await this.request<Account>(
@@ -393,13 +425,17 @@ export class ApiClient {
   }
   logout() {
     const old=this.saved();
-    if(old?.kind==='webtelegram')void this.request('/auth/telegram/logout',{}, {authorization:'p2l '+old.token}).catch(()=>{});
+    this.cookieRestoreBlocked(true);
+    const revoked=old?.kind==='web-cookie'||old?.kind==='webtelegram'
+      ? this.request(old.kind==='web-cookie'?'/auth/session/logout':'/auth/telegram/logout',{}, {authorization:old.kind==='web-cookie'?'cookie':'p2l '+old.token}).then(()=>true,()=>false)
+      : Promise.resolve(true);
     this.credential = null;
     try {
       this.storage?.removeItem(this.storageKey);
     } catch {
       /* Legacy protocol has no server logout endpoint. */
     }
+    return revoked;
   }
 }
 export const liveAuth = import.meta.env.VITE_API_MODE === "live";

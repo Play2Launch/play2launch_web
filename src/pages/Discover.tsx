@@ -28,6 +28,7 @@ import { useApp } from "../state";
 import { CampaignArtwork } from "../components/CampaignArtwork";
 import { FeaturedTeams } from "../components/FeaturedTeams";
 import { PlatformVision } from "../components/PlatformVision";
+import { ProfileTools } from "../components/ProfileTools";
 import { walletAllowed } from "../lib/walletPolicy";
 import { launchCopy, launchPlayers, launchPoints } from "../lib/launch";
 
@@ -60,7 +61,7 @@ export default function Discover({
   );
   const items = filter === "New arrivals" ? [...filtered].reverse() : filtered;
   return (
-    <>
+    <div className="discover-page">
       <div className="page-heading discover-heading">
         <div>
           <div className="eyebrow">THE NEXT WAVE STARTS HERE</div>
@@ -75,7 +76,6 @@ export default function Discover({
           </a>
         </div>
       </div>
-      <PlatformVision />
       <section className="feature-grid">
         {featured ? (
           <Link
@@ -230,6 +230,7 @@ export default function Discover({
           )}
         </div>
       </section>
+      <ProfileTools compact />
       <section className="section" id="campaigns" aria-label="Campaigns">
         <div className="section-heading">
           <h2>
@@ -352,6 +353,7 @@ export default function Discover({
           </div>
         )}
       </section>
+      <PlatformVision />
       <section className="section team-preview">
         <div>
           <span className="eyebrow">BETTER TOGETHER</span>
@@ -422,6 +424,6 @@ export default function Discover({
           )}
         </div>
       </section>
-    </>
+    </div>
   );
 }

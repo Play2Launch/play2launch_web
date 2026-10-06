@@ -113,11 +113,6 @@ function CatalogContent({ slug }: { slug?: string }) {
   }, [selected]);
   return (
     <section aria-busy={busy}>
-      <div className="catalog-status-note">
-        Unlock points sum each player’s best score divided by the campaign
-        ratio, rounded down per player. Local practice does not count. Reaching
-        the target does not launch a token.
-      </div>
       {busy && <p role="status">Loading campaigns…</p>}
       {statsError && (
         <div className="notice" role="status">

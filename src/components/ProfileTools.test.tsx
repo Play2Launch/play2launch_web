@@ -20,6 +20,26 @@ vi.mock("../state", () => ({
   useApp: () => ({ user: mocks.user, kolRequest: { status: "approved" } }),
 }));
 import { ProfileTools } from "./ProfileTools";
+it.each([
+  [null, "Become a KOL", "/verification"],
+  [{ status: "pending" }, "View application", "/verification"],
+  [{ status: "draft" }, "Continue application", "/verification"],
+  [{ status: "rejected" }, "Update application", "/verification"],
+  [{ status: "revoked" }, "Update application", "/verification"],
+  [{ status: "approved" }, "Captain Studio", "/captain"],
+] as const)("shows the compact home entry for %j", async (result, label, path) => {
+  mocks.request.mockResolvedValue(result);
+  render(<MemoryRouter><ProfileTools compact /></MemoryRouter>);
+  const link = await screen.findByRole("link", { name: new RegExp(label) });
+  expect(link.getAttribute("href")).toBe(path);
+  expect(screen.getAllByRole("link")).toHaveLength(1);
+});
+it("offers guests a compact application entry without requesting private status", () => {
+  mocks.user = undefined;
+  render(<MemoryRouter><ProfileTools compact /></MemoryRouter>);
+  expect(screen.getByRole("link", { name: /Become a KOL/ }).getAttribute("href")).toBe("/verification");
+  expect(mocks.request).not.toHaveBeenCalled();
+});
 afterEach(() => {
   cleanup();
   mocks.request.mockReset();

@@ -300,11 +300,15 @@ export function CampaignPage({
               </b>
             </div>
             {
-              <p className="small muted">
+              <details className="unlock-rules small muted">
+                <summary>Unlock points rules</summary>
+                <p>
                 {(c.score_per_unlock_point ?? 0) > 0
                   ? `Every ${number(c.score_per_unlock_point!)} game points in your best accepted score adds 1 unlock point, rounded down. Only improvements add more.`
                   : "Unlock conversion is not configured yet."}
-              </p>
+                </p>
+                <p>Campaign progress sums every player’s unlock points. Local practice does not count. Reaching the target does not launch a token.</p>
+              </details>
             }
             {!live &&
               walletAllowed(app.platform?.runtime) &&

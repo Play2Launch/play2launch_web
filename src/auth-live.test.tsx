@@ -135,7 +135,7 @@ beforeEach(() => {
       return reply(account);
     return reply("");
   });
-  vi.stubGlobal("fetch", (url:string,options?:RequestInit)=>url.endsWith('/auth/telegram/config')?Promise.resolve(reply({enabled:false})):transport(url,options));
+  vi.stubGlobal("fetch", (url:string,options?:RequestInit)=>(url.endsWith('/auth/telegram/config')||url.endsWith('/auth/session/config'))?Promise.resolve(reply({enabled:false})):(options?.headers as Record<string,string>)?.['X-P2L-Session']==='cookie'?Promise.resolve(reply(null,401,10002)):transport(url,options));
 });
 afterEach(() => {
   cleanup();

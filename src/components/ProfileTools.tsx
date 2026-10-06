@@ -12,7 +12,7 @@ const labels: Record<string, string> = {
   revoked: "Verification revoked",
   none: "Verify your community profile",
 };
-export function ProfileTools({onVerified}: {onVerified?: (v:{id?:string; approved:boolean})=>void} = {}) {
+export function ProfileTools({onVerified, compact = false}: {compact?: boolean; onVerified?: (v:{id?:string; approved:boolean})=>void} = {}) {
   const app = useApp();
   return (
     <Tools
@@ -20,6 +20,7 @@ export function ProfileTools({onVerified}: {onVerified?: (v:{id?:string; approve
       userId={app.user?.id}
       demoStatus={app.kolRequest?.status}
       onVerified={onVerified}
+      compact={compact}
     />
   );
 }
@@ -27,9 +28,11 @@ function Tools({
   userId,
   demoStatus,
   onVerified,
+  compact,
 }: {
   userId?: string;
   demoStatus?: string;
+  compact?: boolean;
   onVerified?: (v:{id?:string; approved:boolean})=>void;
 }) {
   const [status, setStatus] = useState(
@@ -78,6 +81,18 @@ function Tools({
   const current = liveAuth ? status : demoStatus || "none";
   const approved = !!userId && current === "approved" && !error;
   useEffect(()=>{onVerified?.({id:userId,approved:liveAuth && approved});},[userId,approved,onVerified]);
+  if (compact) return (
+    <section className="discover-captain" aria-label="Captain opportunities">
+      <Link to={approved ? "/captain" : "/verification"} className="discover-captain-link">
+        <span className="profile-tool-icon">{approved ? <Crown size={20} /> : <BadgeCheck size={20} />}</span>
+        <span>
+          <strong>{approved ? "Captain Studio" : error || current === "loading" ? "KOL verification" : current === "pending" ? "View application" : ["rejected", "revoked"].includes(current) ? "Update application" : current === "draft" ? "Continue application" : "Become a KOL"}</strong>
+          <small>{approved ? "Manage your teams and grow your community" : error ? "Check your verification status" : current === "loading" ? "Checking verification…" : current === "pending" ? "Your application is under review" : "Lead your community into the next launch"}</small>
+        </span>
+        <ChevronRight size={18} aria-hidden="true" />
+      </Link>
+    </section>
+  );
   return (
     <section className="profile-tools" aria-label="Creator tools">
       <span className="eyebrow">COMMUNITY TOOLS</span>
