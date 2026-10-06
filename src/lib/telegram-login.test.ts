@@ -32,6 +32,12 @@ it('shows a safe callback reason and diagnostic reference without redeeming',asy
  await expect(finishTelegramLogin()).rejects.toThrow('TG_COOKIE_MISSING; ref: Abc123_-xyz0');
  expect(exchange).not.toHaveBeenCalled();expect(location.hash).toBe('');
 });
+it.each(['TG_JWKS_FETCH','TG_TOKEN_SIGNATURE','TG_TOKEN_AUDIENCE','TG_TOKEN_ISSUER','TG_TOKEN_EXPIRED','TG_TOKEN_NOT_YET_VALID','TG_TOKEN_FORMAT'])('shows verification failure %s',async reason=>{
+ vi.resetModules();const {finishTelegramLogin}=await import('./telegram-login');
+ history.replaceState(null,'',`/auth/telegram#error=1&reason=${reason}`);
+ await expect(finishTelegramLogin()).rejects.toThrow(`(${reason})`);
+ expect(exchange).not.toHaveBeenCalled();
+});
 it.each(['unexpected-secret','__proto__','constructor'])('does not reflect unknown callback reason %s',async reason=>{
  vi.resetModules();const {finishTelegramLogin}=await import('./telegram-login');
  history.replaceState(null,'',`/auth/telegram#error=secret&reason=${reason}&diagnostic=secret`);

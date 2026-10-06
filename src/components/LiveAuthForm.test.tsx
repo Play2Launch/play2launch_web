@@ -2,14 +2,26 @@
 import {StrictMode} from 'react';
 import {afterEach, expect, it, vi} from 'vitest';
 import {act, cleanup, fireEvent, render, screen} from '@testing-library/react';
-const mocks=vi.hoisted(()=>({register:vi.fn(),login:vi.fn(),sendVerification:vi.fn(),setAuthError:vi.fn()}));
-vi.mock('../lib/api',()=>({api:{...mocks,request:()=>Promise.resolve({enabled:false})}}));
+const mocks=vi.hoisted(()=>({register:vi.fn(),login:vi.fn(),sendVerification:vi.fn(),setAuthError:vi.fn(),request:vi.fn()}));
+vi.mock('../lib/api',()=>({api:{...mocks,request:()=>mocks.request()||Promise.resolve({enabled:false})}}));
 vi.mock('../state',()=>({useApp:()=>({platform:{runtime:'web'},authBusy:false,setAuthError:mocks.setAuthError,authContext:()=>({}),
  executeAuth:async(work:(signal:AbortSignal)=>Promise<unknown>,done:(value:unknown)=>void)=>{
   try{done(await work(new AbortController().signal));}catch(e){mocks.setAuthError((e as Error).message);}
  },completeLiveLogin:vi.fn()})}));
 import {LiveAuthForm} from './LiveAuthForm';
 const account={account_id:'ac1',username:'test@example.com',status:0};
+it('places the full-width Telegram alternative after email submission on login and registration',async()=>{
+ mocks.request.mockResolvedValue({enabled:true});
+ render(<LiveAuthForm/>);
+ const telegram=await screen.findByRole('button',{name:'Continue with Telegram'});
+ const submit=screen.getByRole('button',{name:'Sign in'});
+ expect(submit.compareDocumentPosition(telegram)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+ expect(telegram.classList.contains('full')).toBe(true);
+ expect(telegram.closest('form')).toBeNull();
+ expect(screen.queryByText('Or continue with email')).toBeNull();
+ fireEvent.click(screen.getByText('Create an account'));
+ expect(screen.getByRole('button',{name:'Create account'}).compareDocumentPosition(telegram)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
 afterEach(()=>{cleanup();vi.useRealTimers();vi.resetAllMocks();});
 async function enterVerification(register:boolean){
  mocks.register.mockResolvedValue(account);mocks.login.mockResolvedValue({kind:'verification',account});

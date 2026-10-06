@@ -153,7 +153,6 @@ export function LiveAuthForm() {
   return (
     <>
       <h3>{headings[step]}</h3>
-      {telegramEnabled&&(step==='login'||step==='register')&&<><button type="button" className="btn btn-secondary" disabled={app.authBusy} onClick={()=>void app.executeAuth(()=>beginTelegramLogin(app.authContext()),()=>{})}><Send size={16}/> Continue with Telegram</button><p className="small muted">Or continue with email</p></>}
       <form className="auth-form" onSubmit={submit} aria-busy={app.authBusy}>
         {step !== "verify" ? (
           <label>
@@ -237,6 +236,19 @@ export function LiveAuthForm() {
           <ArrowUpRight size={16} />
         </button>
       </form>
+      {telegramEnabled && (step === 'login' || step === 'register') && (
+        <div className="auth-alternative">
+          <div className="auth-divider"><span>or</span></div>
+          <button
+            type="button"
+            className="btn btn-secondary full"
+            disabled={app.authBusy}
+            onClick={() => void app.executeAuth(() => beginTelegramLogin(app.authContext()), () => {})}
+          >
+            <Send size={16} /> Continue with Telegram
+          </button>
+        </div>
+      )}
       {step === "verify" && account && (
         <button
           type="button"
