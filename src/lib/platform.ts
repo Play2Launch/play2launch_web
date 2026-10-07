@@ -4,6 +4,7 @@ export type TelegramApp = {
   platform?: string;
   ready?: () => void;
   expand?: () => void;
+  disableVerticalSwipes?: () => void;
   isFullscreen?: boolean;
   isVersionAtLeast?: (version: string) => boolean;
   requestFullscreen?: () => void;
@@ -95,6 +96,13 @@ export function mountPlatform(app: TelegramApp | undefined, runtime: Runtime) {
     app.setBackgroundColor?.("#0b0d0b");
   } catch {
     /* Optional client capabilities must not block play. */
+  }
+  // Scrolling long pages must not drag the Mini App back into its chat.
+  // Telegram's header remains available for minimizing or closing it.
+  try {
+    if (app.isVersionAtLeast?.("7.7")) app.disableVerticalSwipes?.();
+  } catch {
+    /* Older or incompatible clients keep their default swipe behavior. */
   }
   const resize = () => {
     document.documentElement.style.setProperty(

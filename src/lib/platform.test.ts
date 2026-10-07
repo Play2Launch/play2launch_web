@@ -19,6 +19,7 @@ afterEach(() => {
 it("requests native fullscreen on supported Telegram entry and tracks safe areas", () => {
   const app = {
     initData: "signed", ready: vi.fn(), expand: vi.fn(),
+    disableVerticalSwipes: vi.fn(),
     isVersionAtLeast: vi.fn(() => true), requestFullscreen: vi.fn(),
     safeAreaInset: { top: 24, bottom: 12 },
     contentSafeAreaInset: { top: 40, bottom: 0 },
@@ -27,6 +28,8 @@ it("requests native fullscreen on supported Telegram entry and tracks safe areas
   const cleanup = mountPlatform(app, "telegram");
   expect(app.ready).toHaveBeenCalledOnce();
   expect(app.expand).toHaveBeenCalledOnce();
+  expect(app.isVersionAtLeast).toHaveBeenCalledWith("7.7");
+  expect(app.disableVerticalSwipes).toHaveBeenCalledOnce();
   expect(app.isVersionAtLeast).toHaveBeenCalledWith("8.0");
   expect(app.requestFullscreen).toHaveBeenCalledOnce();
   expect(document.documentElement.style.getPropertyValue("--tg-top")).toBe("64px");
@@ -42,12 +45,37 @@ it("requests native fullscreen on supported Telegram entry and tracks safe areas
 });
 
 it("keeps older clients expanded and does not request fullscreen on ordinary Web", () => {
-  const app = { initData: "", expand: vi.fn(), requestFullscreen: vi.fn(), isVersionAtLeast: () => false };
+  const app = { initData: "", expand: vi.fn(), disableVerticalSwipes: vi.fn(), requestFullscreen: vi.fn(), isVersionAtLeast: () => false };
   mountPlatform(app, "web")();
   expect(app.expand).not.toHaveBeenCalled();
+  expect(app.disableVerticalSwipes).not.toHaveBeenCalled();
   mountPlatform(app, "telegram")();
   expect(app.expand).toHaveBeenCalledOnce();
+  expect(app.disableVerticalSwipes).not.toHaveBeenCalled();
   expect(app.requestFullscreen).not.toHaveBeenCalled();
+});
+
+it("disables sheet swipes on Telegram 7.7 without requiring fullscreen support", () => {
+  const app = {
+    initData: "signed",
+    isVersionAtLeast: (version: string) => version === "7.7",
+    disableVerticalSwipes: vi.fn(),
+    requestFullscreen: vi.fn(),
+  };
+  mountPlatform(app, "telegram")();
+  expect(app.disableVerticalSwipes).toHaveBeenCalledOnce();
+  expect(app.requestFullscreen).not.toHaveBeenCalled();
+});
+
+it("keeps fullscreen setup working if disabling swipes fails", () => {
+  const app = {
+    initData: "signed",
+    isVersionAtLeast: () => true,
+    disableVerticalSwipes: vi.fn(() => { throw new Error("unsupported"); }),
+    requestFullscreen: vi.fn(),
+  };
+  expect(() => mountPlatform(app, "telegram")()).not.toThrow();
+  expect(app.requestFullscreen).toHaveBeenCalledOnce();
 });
 
 it("does not request fullscreen again when already fullscreen, and tolerates client errors", () => {
