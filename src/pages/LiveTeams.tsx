@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { ArrowRight, UsersRound } from "lucide-react";
 import { useApp } from "../state";
 import { getCampaign } from "../lib/catalog";
 import { api } from "../lib/api";
@@ -147,6 +148,9 @@ function Directory({ slug }: { slug: string }) {
       if (!ctrl.signal.aborted) setBusy(false);
     }
   }
+  const invitedTeam = teams.find((t) => t.id === incoming?.teamId);
+  const invitationPending = !invitationError && !validInvitation;
+  const invitationActive = !invitationPending && !invitationError && !!invitedTeam;
   return (
     <>
       {error && (
@@ -159,15 +163,36 @@ function Directory({ slug }: { slug: string }) {
       {ready && campaign && (
         <>
           {app.entry.campaignId === slug && app.entry.teamId && (
-            <div className="notice" role="status">
-              {invitationError ||
-                (!validInvitation
-                  ? "Checking invitation…"
-                  : teams.some((t) => t.id === app.entry.teamId)
-                    ? `You were invited to ${teams.find((t) => t.id === app.entry.teamId)!.name}. Confirm joining to move from P2L Community; previous scores stay with their original team.`
-                    : "This invitation points to an unavailable team. Choose another team to continue.")}
-              <Link to={`/campaign/${slug}/teams?src=direct`}>
-                Browse without invitation
+            <div
+              className={`team-entry-invite${invitationActive ? "" : " is-muted"}`}
+              role="status"
+            >
+              <span className="team-entry-invite-icon" aria-hidden="true">
+                <UsersRound size={20} />
+              </span>
+              <div className="team-entry-invite-copy">
+                <span className="team-entry-invite-label">Team invitation</span>
+                <strong>
+                  {invitationPending
+                    ? "Checking your invitation"
+                    : invitationActive
+                      ? `Join ${invitedTeam.name}`
+                      : "Invitation unavailable"}
+                </strong>
+                <p>
+                  {invitationError ||
+                    (invitationPending
+                      ? "One moment while we verify your link."
+                      : invitationActive
+                        ? "Confirm on the team card below. Past scores stay with the team where you earned them."
+                        : "This team is no longer available through this invitation.")}
+                </p>
+              </div>
+              <Link
+                className="team-entry-invite-link"
+                to={`/campaign/${slug}/teams?src=direct`}
+              >
+                Browse teams <ArrowRight size={15} aria-hidden="true" />
               </Link>
             </div>
           )}
