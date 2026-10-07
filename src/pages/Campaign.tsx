@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   BadgeCheck,
@@ -24,9 +23,8 @@ import {
   UnlockKeyhole,
   Users,
   Wallet,
-  Zap,
 } from "lucide-react";
-import { Link, NavLink, useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   campaigns,
   number,
@@ -36,9 +34,9 @@ import {
   type Campaign,
 } from "../data";
 import { useApp } from "../state";
-import { liveAuth } from "../lib/api";
+import { api, liveAuth } from "../lib/api";
 import { LiveMemberships } from "./LiveTeams";
-import { CampaignArtwork } from "../components/CampaignArtwork";
+import { CampaignIdentityCard, CampaignNav } from "../components/CampaignHeader";
 import { launchCopy } from "../lib/launch";
 import { LaunchTimer } from "../LaunchTimer";
 import { CompetitionRules } from "../CompetitionRules";
@@ -57,66 +55,12 @@ import { PlatformPoints } from "../components/PlatformPoints";
 import { CampaignTeamsPreview } from "../components/CampaignTeamsPreview";
 import { FollowButton } from "../components/FollowButton";
 import { CommunityTeamCard } from "../components/CommunityTeamCard";
+import { ExploreTeams } from "../components/ExploreTeams";
 
 export function useCampaign() {
   const { id } = useParams();
   const app = useApp();
   return app.campaign(id || app.entry.campaignId || "phood");
-}
-export function CampaignNav({
-  campaign,
-  live = false,
-}: {
-  campaign: Campaign;
-  live?: boolean;
-}) {
-  const app = useApp();
-  return (
-    <>
-      <div className="breadcrumbs">
-        <Link to="/">
-          <ArrowLeft size={14} /> Discover
-        </Link>
-        <ChevronRight size={13} />
-        <span>{campaign.name}</span>
-        {!live && (
-          <button
-            className="text-link"
-            onClick={() => app.setShareCampaign(campaign.id)}
-          >
-            <Send size={14} /> Share campaign
-          </button>
-        )}
-      </div>
-      <nav className="campaign-nav" aria-label="Campaign navigation">
-        <NavLink end to={`/campaign/${campaign.id}`}>
-          Overview
-        </NavLink>
-        {live ? (
-          <>
-            <NavLink to={`/campaign/${campaign.id}/teams`}>Teams</NavLink>
-            <NavLink to={`/campaign/${campaign.id}/leaderboard`}>
-              Leaderboard
-            </NavLink>
-          </>
-        ) : (
-          <>
-            <NavLink to={`/campaign/${campaign.id}/teams`}>
-              Teams <span>{campaign.teams}</span>
-            </NavLink>
-            <NavLink to={`/campaign/${campaign.id}/leaderboard`}>
-              Leaderboard
-            </NavLink>
-            {walletAllowed(app.platform?.runtime) && (
-              <NavLink to={`/campaign/${campaign.id}/launch`}>
-                Launch <ArrowUpRight size={13} />
-              </NavLink>
-            )}
-          </>
-        )}
-      </nav>
-    </>
-  );
 }
 export function CampaignPage({
   liveCampaign,
@@ -141,33 +85,9 @@ export function CampaignPage({
   return (
     <>
       <CampaignNav campaign={c} live={live} />
+      <CampaignIdentityCard campaign={c} stage={stage} />
       <div className="campaign-layout">
         <div>
-          <section className={`campaign-hero art-${c.id}`}>
-            <CampaignArtwork campaign={c} variant="hero" />
-            <div className="campaign-hero-shade" />
-            <div className="campaign-hero-content">
-              <span className="pill acid">
-                <Zap size={12} />{" "}
-                {live ? (
-                  "PLAY TO LAUNCH"
-                ) : (
-                  <>
-                    P2L ORIGINAL #
-                    {String(
-                      campaigns.findIndex((item) => item.id === c.id) + 1,
-                    ).padStart(3, "0")}
-                  </>
-                )}
-              </span>
-              <h1>{c.name}</h1>
-              <p>{c.description}</p>
-              <span className="pill neutral">
-                <Gamepad2 size={13} />
-                {c.category}
-              </span>
-            </div>
-          </section>
           {live && liveCampaignId && <div className="campaign-follow-row"><span className="muted">Keep this campaign on your radar.</span><FollowButton kind="campaign" targetId={liveCampaignId} /></div>}
           <div className="campaign-description">
             {!live && <CompetitionRules campaignId={c.id} />}
@@ -554,25 +474,34 @@ export function MyTeams({ compact = false }: { compact?: boolean }) {
 }
 
 export function MyTeamsPage() {
+  const app = useApp();
+  const [view, setView] = useState<"mine" | "explore">(app.user ? "mine" : "explore");
+  useEffect(() => { if (app.user) setView("mine"); }, [app.user?.id]);
   return (
     <>
       <div className={`page-heading ${liveAuth ? "my-teams-heading" : ""}`}>
         <div>
           <span className="eyebrow">YOUR COMMUNITIES</span>
           <h1>
-            {liveAuth ? "My teams" : <>Different campaigns.<br />Your people<span>.</span></>}
+            {liveAuth ? "Teams" : <>Different campaigns.<br />Your people<span>.</span></>}
           </h1>
-          <p>One account. An independent team choice in every campaign.</p>
+          <p>Your teams across campaigns, and more communities to join.</p>
         </div>
       </div>
-      <MyTeams />
+      <div className="teams-hub-tabs" role="group" aria-label="Teams view">
+        <button className={view === "mine" ? "selected" : ""} aria-pressed={view === "mine"} onClick={() => setView("mine")}>My teams</button>
+        <button className={view === "explore" ? "selected" : ""} aria-pressed={view === "explore"} onClick={() => setView("explore")}>Explore teams</button>
+      </div>
+      {view === "mine" ? <MyTeams /> : liveAuth ? <ExploreTeams /> : <div className="empty-panel"><p>Explore teams inside each campaign.</p><Link to="/">Discover campaigns</Link></div>}
     </>
   );
 }
 
 export function TeamPage({
   live,
+  invitationNotice,
 }: {
+  invitationNotice?: React.ReactNode;
   live?: {
     campaign: Campaign;
     teams: Array<{
@@ -601,22 +530,55 @@ export function TeamPage({
   const c = live?.campaign ?? demoCampaign;
   const app = useApp();
   const [search, setSearch] = useState("");
-  const [params] = useSearchParams();
-  const [selected, setSelected] = useState(
-    params.get("selected") || app.entry.teamId || "alice",
-  );
+  const [params, setParams] = useSearchParams();
+  const [page, setPage] = useState(1);
+  const listScroll = useRef(0);
+  const directoryPanel = useRef<HTMLElement>(null);
   const [teamSummary,setTeamSummary]=useState<TeamScoreSummary>();
   if (!c) return <NotFound />;
   const member = live ? live.member : app.local.memberships[c.id];
   const community = live?.teams.find(t=>t.team_type==='system_community');
   const communityMember = !!community && member===community.id;
   const teams = live ? live.teams.filter(t=>t.team_type!=='system_community') : app.standings(c.id).teams;
+  const sortedTeams = [...teams].sort((a, b) =>
+    Number(b.id === member) - Number(a.id === member) ||
+    b.players - a.players ||
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" }) ||
+    a.id.localeCompare(b.id),
+  );
+  const filteredTeams = sortedTeams.filter((t) =>
+    `${t.name} ${t.handle}`.toLowerCase().includes(search.toLowerCase()),
+  );
+  const pageCount = Math.max(1, Math.ceil(filteredTeams.length / 8));
+  const activePage = Math.min(page, pageCount);
+  const requested = params.get("selected") || (params.get("src") === "direct" ? "" : app.entry.teamId);
+  const current = teams.find((t) => t.id === requested) || sortedTeams[0];
+  const captainId = live?.teams.find((t) => t.id === current?.id)?.owner_id;
+  const detailOpen = !!teams.find((t) => t.id === requested);
+  const selectTeam = (id: string) => {
+    if (window.matchMedia?.("(max-width: 700px)").matches) listScroll.current = window.scrollY;
+    const next = new URLSearchParams(params);
+    next.set("selected", id);
+    next.delete("src");
+    setParams(next);
+    requestAnimationFrame(() => document.getElementById("selected-team")?.scrollIntoView?.({ behavior: "smooth", block: "start" }));
+  };
+  const backToList = () => {
+    const next = new URLSearchParams(params);
+    next.delete("selected");
+    if (app.entry.teamId) next.set("src", "direct");
+    setParams(next, { replace: true });
+    requestAnimationFrame(() => window.scrollTo({ top: listScroll.current, behavior: "auto" }));
+  };
+  const changePage = (next: number) => {
+    setPage(next);
+    requestAnimationFrame(() => directoryPanel.current?.scrollIntoView?.({ behavior: "smooth", block: "start" }));
+  };
   const communityCard = live && <CommunityTeamCard slug={c.id} team={community} joined={communityMember}/>;
-  const current = teams.find((t) => t.id === selected) || teams[0];
   const ownsTeam = !!app.user?.id && live?.teams.some(t => t.owner_id === app.user!.id);
   const captainAction = live && (
     <Link
-      className="btn btn-secondary"
+      className="btn btn-secondary team-captain-action"
       style={{ gridColumn: "1 / -1" }}
       to={`/captain?campaign=${encodeURIComponent(c.id)}`}
     >
@@ -627,6 +589,8 @@ export function TeamPage({
     return (
       <>
         <CampaignNav campaign={c} live={!!live} />
+        <CampaignIdentityCard campaign={c} stage={live ? c.stage : app.getStage(c.id)} />
+        {invitationNotice}
         {communityCard}
         <div className="empty-panel">
           <h2>No teams available yet</h2>
@@ -638,63 +602,37 @@ export function TeamPage({
   return (
     <>
       <CampaignNav campaign={c} live={!!live} />
-      <section
-        className="team-campaign-strip"
-        aria-label={`${c.name} campaign`}
-        style={{ "--campaign-color": c.color } as React.CSSProperties}
-      >
-        <div className="team-campaign-strip-art">
-          <CampaignArtwork campaign={c} variant="hero" />
-        </div>
-        <div className="team-campaign-strip-content">
-          <div className="team-campaign-strip-meta">
-            <span className={`pill ${c.stage}`}>
-              {stageLabel(live ? c.stage : app.getStage(c.id))}
-            </span>
-            <span>${c.ticker} / COMMUNITY BATTLE</span>
-          </div>
-          <h1>{c.name}</h1>
-          <p>
-            Pick your people.{" "}
-            <span>Your team choice stays in this campaign.</span>
-          </p>
-          <span className="team-campaign-strip-count">
-            <Users size={16} /> {teams.length} teams
-          </span>
-        </div>
-      </section>
-      <div className="team-page-layout">
+      <CampaignIdentityCard campaign={c} stage={live ? c.stage : app.getStage(c.id)} />
+      {invitationNotice}
+      <div className={`team-page-layout${detailOpen ? " is-detail-open" : ""}`}>
         {communityCard}
         {captainAction}
-        <section>
+        <section className="team-directory-panel" ref={directoryPanel}>
           <div className="filter-row">
             <div className="tabs">
-              <button className="selected">All teams</button>
+              <button className="selected">All teams <span>{teams.length}</span></button>
             </div>
             <label className="search-field">
               <Search size={16} />
               <input
+                type="search"
                 aria-label="Search teams"
                 placeholder="Find a team"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               />
             </label>
           </div>
           <div className="team-directory">
-            {teams
-              .filter((t) =>
-                `${t.name} ${t.handle}`
-                  .toLowerCase()
-                  .includes(search.toLowerCase()),
-              )
+            {filteredTeams
+              .slice((activePage - 1) * 8, activePage * 8)
               .map((t, i) => (
                 <button
                   key={t.id}
-                  className={`team-directory-item ${selected === t.id ? "is-selected" : ""}`}
-                  onClick={() => { setSelected(t.id); document.getElementById("selected-team")?.scrollIntoView?.({behavior:"smooth",block:"start"}); }}
+                  className={`team-directory-item ${current.id === t.id ? "is-selected" : ""}`}
+                  onClick={() => selectTeam(t.id)}
                 >
-                  <span className="rank">{live ? "↗" : `0${i + 1}`}</span>
+                  <span className="rank">{live ? "↗" : `0${(activePage - 1) * 8 + i + 1}`}</span>
                   <span
                     className="avatar large team-avatar"
                     style={{ background: t.color }}
@@ -714,19 +652,14 @@ export function TeamPage({
                       )}
                     </strong>
                     <span>
-                      {number(t.players)} players · {live ? "View members →" : `${short(t.score)} points`}
+                      {number(t.players)} players{!live && ` · ${short(t.score)} points`}
                     </span>
                   </span>
                   <ChevronRight size={20} />
                 </button>
               ))}
           </div>
-          {teams.every(
-            (t) =>
-              !`${t.name} ${t.handle}`
-                .toLowerCase()
-                .includes(search.toLowerCase()),
-          ) && (
+          {!filteredTeams.length && (
             <div className="empty-panel">
               <Search />
               <h3>No teams found</h3>
@@ -735,8 +668,16 @@ export function TeamPage({
               </button>
             </div>
           )}
+          {pageCount > 1 && (
+            <nav className="team-directory-pagination" aria-label="Team pages">
+              <button className="btn btn-secondary" disabled={activePage === 1} onClick={() => changePage(activePage - 1)}>Previous</button>
+              <span>Page {activePage} of {pageCount}</span>
+              <button className="btn btn-secondary" disabled={activePage === pageCount} onClick={() => changePage(activePage + 1)}>Next</button>
+            </nav>
+          )}
         </section>
         <section className="team-detail" id="selected-team">
+          <button className="team-detail-back" onClick={backToList}>← All teams</button>
           <div
             className="team-detail-banner"
             style={{ "--team-color": current.color } as React.CSSProperties}
@@ -763,6 +704,7 @@ export function TeamPage({
             <p>
               {c.name} chapter
             </p>
+            {live && (captainId ? <CaptainIdentity key={captainId} ownerId={captainId} /> : <div className="team-captain"><span><small>Team captain</small><strong>Not listed</strong></span></div>)}
             <div className="team-stats">
               <div>
                 <strong>{short(current.players)}</strong>
@@ -785,7 +727,7 @@ export function TeamPage({
                   )?.description ||
                   "We’re early. We’re together. Let’s make this launch ours."}
             </blockquote>
-            {live ? <TeamActions key={`actions:${current.id}`} slug={c.id} team={current.id} name={current.name} userId={app.user?.id} ownerId={live.teams.find(t=>t.id===current.id)?.owner_id} member={member} communityMember={communityMember} paused={live.teams.find(t=>t.id===current.id)?.status==='paused'} closed={live.closed} busy={live.busy} canJoin={live.canJoin?.(current.id)!==false} join={()=>live.join(current.id)}/> : member === current.id ? (
+            {live ? <TeamActions key={`actions:${current.id}`} slug={c.id} team={current.id} name={current.name} teamType={live.teams.find(t=>t.id===current.id)?.team_type} userId={app.user?.id} ownerId={live.teams.find(t=>t.id===current.id)?.owner_id} member={member} communityMember={communityMember} paused={live.teams.find(t=>t.id===current.id)?.status==='paused'} closed={live.closed} busy={live.busy} canJoin={live.canJoin?.(current.id)!==false} join={()=>live.join(current.id)}/> : member === current.id ? (
               <Link
                 to={`/campaign/${c.id}/play`}
                 className="btn btn-primary full"
@@ -827,6 +769,38 @@ export function TeamPage({
         </section>
       </div>
     </>
+  );
+}
+
+type CaptainProfile = { id: string; display_name: string; handle: string; avatar_url: string };
+function CaptainIdentity({ ownerId }: { ownerId: string }) {
+  const app = useApp();
+  const own = app.user?.id === ownerId;
+  const [profile, setProfile] = useState<CaptainProfile>();
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (own) return;
+    const ctrl = new AbortController();
+    api.request<CaptainProfile>(`/players/${encodeURIComponent(ownerId)}`, undefined, { signal: ctrl.signal })
+      .then((value) => {
+        if (!ctrl.signal.aborted) {
+          if (value?.id === ownerId) setProfile(value);
+          else setFailed(true);
+        }
+      })
+      .catch(() => { if (!ctrl.signal.aborted) setFailed(true); });
+    return () => ctrl.abort();
+  }, [ownerId, own]);
+  const name = own ? app.user?.name || "You" : profile?.display_name || profile?.handle || "Captain";
+  const body = <>
+    <span className="avatar player-avatar"><UserAvatar name={name} src={own ? app.user?.avatarUrl : profile?.avatar_url} /></span>
+    <span><small>Team captain</small><strong>{failed ? "Captain profile unavailable" : name}</strong>{profile?.handle && <small>@{profile.handle}</small>}</span>
+    <ChevronRight size={16} aria-hidden="true" />
+  </>;
+  return own || profile ? (
+    <Link className="team-captain" to={`/players/${encodeURIComponent(ownerId)}`}>{body}</Link>
+  ) : (
+    <div className="team-captain">{body}</div>
   );
 }
 

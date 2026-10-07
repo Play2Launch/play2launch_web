@@ -11,9 +11,9 @@ const person = { user_id: 'ur1', target_type: 'user', target_id: 'ur2', name: 'P
 const campaign = { user_id: 'ur1', target_type: 'campaign', target_id: 'cp1', name: 'Moon Run', slug: 'moon-run' };
 function mount() { const view=render(<MemoryRouter><Following /></MemoryRouter>); if(mock.user)fireEvent.click(screen.getByRole('button',{name:'Manage following'})); return view; }
 afterEach(() => { cleanup(); mock.user = { id: 'ur1', mode: 'live' }; vi.mocked(api.authenticated).mockReset(); mock.signIn.mockReset(); });
-it('keeps guest state private and My teams reachable', () => {
+it('keeps guest state private and leaves team navigation out of Feed', () => {
   mock.user = null; mount(); expect(api.authenticated).not.toHaveBeenCalled();
-  expect(screen.getByRole('link', { name: /My teams/ }).getAttribute('href')).toBe('/teams');
+  expect(screen.queryByRole('link', { name: /My teams/ })).toBeNull();
   expect(api.request).toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: 'Following' }));
   fireEvent.click(screen.getByRole('button', { name: 'Sign in to follow' })); expect(mock.signIn).toHaveBeenCalledWith(true);

@@ -12,7 +12,6 @@ import {
   FlaskConical,
   Globe2,
   LayoutGrid,
-  ListChecks,
   LogIn,
   Send,
   ShieldCheck,
@@ -103,7 +102,7 @@ function Shell() {
     const globalTitle = (
       {
         "/": "Discover",
-        "/teams": "My teams",
+        "/teams": "Teams",
         "/following": "Feed",
         "/tasks": "Tasks",
         "/profile": "Profile",
@@ -133,8 +132,8 @@ function Shell() {
           <NavLink to="/" end>
             Discover
           </NavLink>
+          <NavLink to="/teams" className={({isActive}) => isActive || /^\/campaign\/[^/]+\/teams$/.test(loc.pathname) ? "active" : ""}>Teams</NavLink>
           <NavLink to="/following">Feed</NavLink>
-          <NavLink to="/tasks">Tasks</NavLink>
           <NavLink to="/leaderboard">Leaderboard</NavLink>
         </nav>
         <div className="header-right">
@@ -296,13 +295,13 @@ function Shell() {
           <LayoutGrid size={19} />
           Discover
         </NavLink>
+        <NavLink to="/teams" className={({isActive}) => isActive || /^\/campaign\/[^/]+\/teams$/.test(loc.pathname) ? "active" : ""}>
+          <Users size={19} />
+          Teams
+        </NavLink>
         <NavLink to="/following">
           <Radio size={19} />
           Feed
-        </NavLink>
-        <NavLink to="/tasks">
-          <ListChecks size={19}/>
-          Tasks
         </NavLink>
         <NavLink to="/leaderboard">
           <Trophy size={19} />

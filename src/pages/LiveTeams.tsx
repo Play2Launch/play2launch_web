@@ -151,6 +151,40 @@ function Directory({ slug }: { slug: string }) {
   const invitedTeam = teams.find((t) => t.id === incoming?.teamId);
   const invitationPending = !invitationError && !validInvitation;
   const invitationActive = !invitationPending && !invitationError && !!invitedTeam;
+  const invitationNotice = app.entry.campaignId === slug && app.entry.teamId ? (
+    <div
+      className={`team-entry-invite${invitationActive ? "" : " is-muted"}`}
+      role="status"
+    >
+      <span className="team-entry-invite-icon" aria-hidden="true">
+        <UsersRound size={20} />
+      </span>
+      <div className="team-entry-invite-copy">
+        <span className="team-entry-invite-label">Team invitation</span>
+        <strong>
+          {invitationPending
+            ? "Checking your invitation"
+            : invitationActive
+              ? `Join ${invitedTeam.name}`
+              : "Invitation unavailable"}
+        </strong>
+        <p>
+          {invitationError ||
+            (invitationPending
+              ? "One moment while we verify your link."
+              : invitationActive
+                ? "Confirm on the team card below. Past scores stay with the team where you earned them."
+                : "This team is no longer available through this invitation.")}
+        </p>
+      </div>
+      <Link
+        className="team-entry-invite-link"
+        to={`/campaign/${slug}/teams?src=direct`}
+      >
+        Browse teams <ArrowRight size={15} aria-hidden="true" />
+      </Link>
+    </div>
+  ) : undefined;
   return (
     <>
       {error && (
@@ -161,57 +195,22 @@ function Directory({ slug }: { slug: string }) {
       )}
       {!ready && !error && <p role="status">Loading teams…</p>}
       {ready && campaign && (
-        <>
-          {app.entry.campaignId === slug && app.entry.teamId && (
-            <div
-              className={`team-entry-invite${invitationActive ? "" : " is-muted"}`}
-              role="status"
-            >
-              <span className="team-entry-invite-icon" aria-hidden="true">
-                <UsersRound size={20} />
-              </span>
-              <div className="team-entry-invite-copy">
-                <span className="team-entry-invite-label">Team invitation</span>
-                <strong>
-                  {invitationPending
-                    ? "Checking your invitation"
-                    : invitationActive
-                      ? `Join ${invitedTeam.name}`
-                      : "Invitation unavailable"}
-                </strong>
-                <p>
-                  {invitationError ||
-                    (invitationPending
-                      ? "One moment while we verify your link."
-                      : invitationActive
-                        ? "Confirm on the team card below. Past scores stay with the team where you earned them."
-                        : "This team is no longer available through this invitation.")}
-                </p>
-              </div>
-              <Link
-                className="team-entry-invite-link"
-                to={`/campaign/${slug}/teams?src=direct`}
-              >
-                Browse teams <ArrowRight size={15} aria-hidden="true" />
-              </Link>
-            </div>
-          )}
-          <TeamPage
-            live={{
-              campaign,
-              teams: teams.map((t) => ({
-                ...t,
-                score: 0,
-                referrals: t.referrals ?? 0,
-              })),
-              member: member?.team_id,
-              closed,
-              busy,
-              canJoin,
-              join,
-            }}
-          />
-        </>
+        <TeamPage
+          invitationNotice={invitationNotice}
+          live={{
+            campaign,
+            teams: teams.map((t) => ({
+              ...t,
+              score: 0,
+              referrals: t.referrals ?? 0,
+            })),
+            member: member?.team_id,
+            closed,
+            busy,
+            canJoin,
+            join,
+          }}
+        />
       )}
     </>
   );

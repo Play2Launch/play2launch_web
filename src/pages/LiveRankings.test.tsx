@@ -64,6 +64,19 @@ it("renders real scores, own standing and team tab while retaining data on refre
   await screen.findByRole("alert");
   expect(screen.getByText("#1 · 20,000 pts")).toBeTruthy();
 });
+it("keeps team context inside each compact mobile ranking row", async () => {
+  mock.request.mockResolvedValue(data);
+  const { container } = render(
+    <MemoryRouter>
+      <LiveRankings />
+    </MemoryRouter>,
+  );
+  await screen.findByText("#1 · 15,000 pts");
+  expect(container.querySelector(".rankings-table tbody .rankings-mobile-detail")?.textContent).toBe("A Team");
+  fireEvent.click(screen.getByRole("button", { name: "Teams" }));
+  await screen.findByText("#1 · 20,000 pts");
+  expect(container.querySelector(".rankings-table tbody .rankings-mobile-detail")?.textContent).toBe("2 members");
+});
 it("pauses polling requests while hidden and refreshes on becoming visible", async () => {
   let state = "visible";
   vi.spyOn(document, "visibilityState", "get").mockImplementation(

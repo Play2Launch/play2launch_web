@@ -11,7 +11,7 @@ import {
 import { listTeams, myMembership, type ServerTeam } from "../lib/teams";
 import { useApp } from "../state";
 import { safeImageSource } from "../components/CampaignArtwork";
-import { stageLabel } from "../data";
+import { CampaignIdentityCard, CampaignNav } from "../components/CampaignHeader";
 import { VerifiedKol } from "../components/VerifiedKol";
 import { TeamBadge } from "../components/TeamBadge";
 type Rank = {
@@ -167,7 +167,6 @@ function Board({
   const [membership, setMembership] = useState<string>(),
     [memberError, setMemberError] = useState(false),
     [memberReady, setMemberReady] = useState(false);
-  const [artFailed, setArtFailed] = useState(false);
   const reload = useRef<() => void>(() => {});
   const onUnavailable = useRef(unavailable);
   onUnavailable.current = unavailable;
@@ -279,7 +278,7 @@ function Board({
       : r.id === app.user?.id
         ? app.user.name
         : r.display_name || `Player #${r.id}`;
-  const art = safeImageSource(campaign?.hero_image || campaign?.cover_image);
+  const headerCampaign = { ...campaign, id: campaign.slug };
   const username = (r: Rank) => {
     const h = r.id === app.user?.id ? (app.user.handle ?? r.handle) : r.handle;
     return kind === "players" && h && /^[a-z][a-z0-9_]{2,23}$/.test(h)
@@ -302,47 +301,8 @@ function Board({
           }}
         />
       )}
-      <nav className="rankings-breadcrumb">
-        <Link to="/">Discover</Link>
-        <span>/</span>
-        <Link to={`/campaign/${slug}`}>{campaign?.name || slug}</Link>
-        <span>/ Leaderboard</span>
-        <button className="btn btn-secondary" onClick={() => setPicker(true)}>
-          Switch campaign
-        </button>
-      </nav>
-      <header className="rankings-hero">
-        <div className="rankings-art">
-          {art && !artFailed ? (
-            <img
-              src={art}
-              alt={campaign?.image_alt || ""}
-              onError={() => setArtFailed(true)}
-            />
-          ) : (
-            <Trophy size={48} />
-          )}
-        </div>
-        <div>
-          <span className="eyebrow">
-            {campaign ? stageLabel(campaign.stage) : "CAMPAIGN"} / COMMUNITY
-            STANDINGS
-          </span>
-          <h1>
-            {campaign?.name || slug}
-            <span>.</span>
-          </h1>
-          <p>Every best score counts. Every team moves together.</p>
-        </div>
-        <Link className="btn btn-secondary" to={`/campaign/${slug}/teams`}>
-          Find your team <ArrowUpRight size={16} />
-        </Link>
-      </header>
-      <nav className="campaign-tabs">
-        <Link to={`/campaign/${slug}`}>Overview</Link>
-        <Link to={`/campaign/${slug}/teams`}>Teams</Link>
-        <span aria-current="page">Leaderboard</span>
-      </nav>
+      <CampaignNav campaign={headerCampaign} live activeTab="leaderboard" />
+      <CampaignIdentityCard campaign={headerCampaign} />
       {(error || metaError) && (
         <div className="notice" role="alert">
           <span>
@@ -362,6 +322,9 @@ function Board({
           </h2>
         </div>
         <div className="rankings-update">
+          <button className="btn btn-secondary" onClick={() => setPicker(true)}>
+            Switch campaign
+          </button>
           <button
             className="btn btn-secondary"
             disabled={busy}
@@ -539,7 +502,10 @@ function Board({
                       {kind === "teams" ? (
                         <Link className="rankings-player-name" to={`/campaign/${slug}/teams?selected=${r.id}`}>
                           <span className="rankings-avatar rankings-avatar-small team-avatar" style={{background:teams.find(t=>t.id===r.id)?.color}}>{teams.find(t=>t.id===r.id)?.initial||'T'}<TeamBadge /></span>{' '}
-                          {label(r)}
+                          <span className="rankings-player-label">
+                            <span>{label(r)}</span>
+                            <span className="rankings-mobile-detail">{teams.find((t) => t.id === r.id)?.players ?? "—"} members</span>
+                          </span>
                         </Link>
                       ) : (
                         <Link to={`/players/${encodeURIComponent(r.id)}`} className="rankings-player-name">
@@ -560,6 +526,7 @@ function Board({
                                 @{username(r)}
                               </span>
                             )}
+                            <span className="rankings-mobile-detail">{teamName(r.team_id)}</span>
                           </span>
                         </Link>
                       )}

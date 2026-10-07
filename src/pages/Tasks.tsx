@@ -67,7 +67,7 @@ export default function Tasks() {
           <div className="tasks-toolbar">
             <p>Rewards are credited automatically. No claim needed.</p>
             <button
-              className="btn btn-outline"
+              className="btn btn-secondary"
               disabled={busy}
               onClick={refresh}
             >

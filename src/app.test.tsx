@@ -305,7 +305,11 @@ describe("complete prototype flows", () => {
   });
   it("labels global routes independently of the last campaign", () => {
     mount("/teams");
-    expect(document.title).toBe("My teams · PLAY TO LAUNCH");
+    expect(document.title).toBe("Teams · PLAY TO LAUNCH");
+    const mobile = within(screen.getByRole("navigation", { name: "Mobile navigation" }));
+    expect(mobile.getByRole("link", { name: "Teams" }).getAttribute("href")).toBe("/teams");
+    expect(mobile.queryByRole("link", { name: "Tasks" })).toBeNull();
+    expect(within(screen.getByRole("navigation", { name: "Main navigation" })).getByRole("link", { name: "Teams" })).toBeTruthy();
     cleanup();
     mount("/profile");
     expect(document.title).toBe("Profile · PLAY TO LAUNCH");

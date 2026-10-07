@@ -1,6 +1,11 @@
 import { useState } from "react";
 import type { Campaign } from "../data";
 
+type ArtworkCampaign = Pick<
+  Campaign,
+  "name" | "color" | "symbol" | "hero_image" | "cover_image" | "image_alt"
+>;
+
 export function safeImageSource(value?: string): string | undefined {
   if (!value || value.length > 2048 || /[\\\u0000-\u0020\u007f]/.test(value))
     return undefined;
@@ -18,7 +23,7 @@ export function CampaignArtwork({
   campaign,
   variant,
 }: {
-  campaign: Campaign;
+  campaign: ArtworkCampaign;
   variant: "hero" | "cover";
 }) {
   const source = safeImageSource(
@@ -41,7 +46,7 @@ function Artwork({
   variant,
 }: {
   source?: string;
-  campaign: Campaign;
+  campaign: ArtworkCampaign;
   variant: "hero" | "cover";
 }) {
   const [failed, setFailed] = useState(false);
