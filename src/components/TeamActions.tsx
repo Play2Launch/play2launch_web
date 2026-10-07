@@ -19,7 +19,7 @@ export function TeamActions({slug,team,name,teamType,userId,ownerId,member,commu
     catch {setShareURL(url.href);setNotice("Copy the team page link below. This is not a joining invitation.");}
   }
   return <section className="team-actions" aria-label="Team actions">
-    {mine&&<span className="pill acid">{captain?"YOUR TEAM · CAPTAIN":"Your team · Joined"}</span>}
+    {mine&&<span className="team-membership-label">{captain?"YOUR TEAM · CAPTAIN":"Your team · Joined"}</span>}
     <div className="team-action-buttons">
       {captain&&<Link className="btn btn-primary" to={`/captain?campaign=${encodeURIComponent(slug)}`}>Manage team</Link>}
       {mine&&!paused&&<Link className={`btn ${captain?'btn-secondary':'btn-primary'}`} to={`/campaign/${encodeURIComponent(slug)}/compete`}>Play for your team</Link>}

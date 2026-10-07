@@ -23,7 +23,7 @@ import {
   teams,
   type Campaign,
 } from "../data";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "../state";
 import { CampaignArtwork } from "../components/CampaignArtwork";
 import { FeaturedTeams } from "../components/FeaturedTeams";
@@ -31,6 +31,7 @@ import { PlatformVision } from "../components/PlatformVision";
 import { ProfileTools } from "../components/ProfileTools";
 import { walletAllowed } from "../lib/walletPolicy";
 import { launchCopy, launchPlayers, launchPoints } from "../lib/launch";
+import { api } from "../lib/api";
 
 export default function Discover({
   liveCatalog,
@@ -49,6 +50,30 @@ export default function Discover({
       ? catalog.find((c) => c.id === id)?.stage || "prelaunch"
       : app.getStage(id);
   const featured = catalog.find((c) => c.featured) || catalog[0];
+  const [participation, setParticipation] = useState<{ players: number; teams: number }>();
+  useEffect(() => {
+    if (!live || !featured) return;
+    const controller = new AbortController();
+    const refresh = async () => {
+      try {
+        const data = await api.request<{ players: number; teams: number; campaign: string }>(
+          `/campaigns/${encodeURIComponent(featured.id)}/participation`,
+          undefined,
+          { signal: controller.signal },
+        );
+        if (!Number.isSafeInteger(data.players) || data.players < 0 ||
+            !Number.isSafeInteger(data.teams) || data.teams < 0 ||
+            data.campaign !== featured.id) throw new Error("Invalid participation stats");
+        if (!controller.signal.aborted) setParticipation({ players: data.players, teams: data.teams });
+      } catch {
+        if (!controller.signal.aborted) setParticipation(undefined);
+      }
+    };
+    setParticipation(undefined);
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 3 * 60 * 1000);
+    return () => { controller.abort(); window.clearInterval(timer); };
+  }, [live, featured?.id]);
   const featuredStage = featured ? getStage(featured.id) : "prelaunch";
   const filtered = catalog.filter(
     (c) =>
@@ -211,11 +236,11 @@ export default function Discover({
           </div>
           <div className="side-stats">
             <div>
-              <strong>{live ? "—" : "48.5K"}</strong>
+              <strong>{live ? participation ? number(participation.players) : "—" : "48.5K"}</strong>
               <span>Early players</span>
             </div>
             <div>
-              <strong>{live ? "—" : "115"}</strong>
+              <strong>{live ? participation ? number(participation.teams) : "—" : "115"}</strong>
               <span>Teams in motion</span>
             </div>
           </div>

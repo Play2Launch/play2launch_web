@@ -9,6 +9,9 @@ const base={slug:'phood',team:'tm1',name:'Wizards',teamType:undefined as string|
 function mount(props:Partial<typeof base>&{member?:string}={}){render(<MemoryRouter><TeamActions {...base} {...props}/></MemoryRouter>);}
 it('gives captains management and lazy invitation controls',()=>{
  mount({ownerId:'ur1',member:'tm1'});
+ const identity=screen.getByText('YOUR TEAM · CAPTAIN');
+ expect(identity.classList.contains('team-membership-label')).toBe(true);
+ expect(identity.closest('button,a')).toBeNull();
  expect(screen.getByRole('link',{name:'Manage team'}).getAttribute('href')).toBe('/captain?campaign=phood');
  expect(screen.queryByText('Invitation panel')).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Invite players'}));expect(screen.getByText('Invitation panel')).toBeTruthy();
 });

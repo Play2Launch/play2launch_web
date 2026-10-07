@@ -93,6 +93,24 @@ it("loads server catalog and arbitrary slug detail without prototype counts", as
   ).toBe(true);
   expect(fetcher.mock.calls[0][1].headers.Authorization).toBeUndefined();
 });
+
+it("shows server participation and featured-campaign team counts on Discover", async () => {
+  fetcher.mockImplementation(async (url: string) => {
+    if (url.endsWith("/campaigns/new-event/participation"))
+      return reply({ players: 1234, teams: 7, campaign: "new-event" });
+    if (url.includes("?limit="))
+      return reply({ items: [{ ...campaign, featured: true }], next_cursor: "" });
+    if (url.endsWith("/campaigns/new-event/rankings"))
+      return reply({ unlock_points: 0 });
+    return reply(campaign);
+  });
+  mount();
+  await screen.findByText("1,234");
+  expect(screen.getByText("7")).toBeTruthy();
+  expect(fetcher.mock.calls.some((call) =>
+    call[0] === "https://p2l.test/api/v1/campaigns/new-event/participation"
+  )).toBe(true);
+});
 it("restores the original hero and cards while showing no demo statistics", async () => {
   fetcher.mockResolvedValue(
     reply({

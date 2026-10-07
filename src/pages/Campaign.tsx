@@ -648,7 +648,7 @@ export function TeamPage({
                         <span className="pill neutral">PAUSED</span>
                       )}
                       {member === t.id && (
-                        <span className="pill acid">YOUR TEAM</span>
+                        <span className="team-membership-label">YOUR TEAM</span>
                       )}
                     </strong>
                     <span>

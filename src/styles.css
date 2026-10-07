@@ -2251,6 +2251,9 @@ footer > span:last-child {
 .team-captain strong { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px; }
 .team-captain > svg { margin-left:auto;color:var(--muted); }
 .team-actions { margin: 20px 0; }
+.team-membership-label { display:inline-flex;align-items:center;gap:7px;color:#b6d979;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;cursor:default; }
+.team-membership-label::before { content:"";width:6px;height:6px;flex:none;border-radius:50%;background:var(--accent); }
+.team-directory-item .team-membership-label { font-size:10px; }
 .team-action-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .team-action-buttons .btn { flex: 1 1 auto; }
 .team-actions > input { width: 100%; }
