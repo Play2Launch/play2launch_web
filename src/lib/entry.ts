@@ -71,6 +71,8 @@ export function decodeStart(token: string): EntryContext {
 
 export function entryPath(entry: EntryContext): string {
   if (entry.inviteToken && !entry.campaignId) return `/invite/${encodeURIComponent(entry.inviteToken)}`;
+  if (!entry.campaignId && /^ur[0-9a-z]{1,32}$/.test(entry.referrerId || ""))
+    return `/ref/${entry.referrerId}`;
   if (!entry.campaignId) return "/";
   const base = `/campaign/${encodeURIComponent(entry.campaignId)}`;
   return entry.target === "campaign" ? base : `${base}/${entry.target}`;

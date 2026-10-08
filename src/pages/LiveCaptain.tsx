@@ -26,6 +26,7 @@ export function LiveCaptain({ userId }: { userId: string }) {
   const [campaign, setCampaign] = useState<CaptainCampaign>();
   const [picker, setPicker] = useState(false);
   const dirty = useRef(false);
+  const invitePanel = useRef<HTMLDetailsElement>(null);
   const [slug, setSlug] = useState("");
   const [approved, setApproved] = useState<boolean | null>(null);
   const [error, setError] = useState("");
@@ -83,6 +84,11 @@ export function LiveCaptain({ userId }: { userId: string }) {
   }, [slug, userId]);
   const owned = teams.find((t) => t.owner_id === userId);
   const current = teams.find((t) => t.id === membership?.team_id);
+  useEffect(() => {
+    if (!ready || !owned || params.get('panel') !== 'invite') return;
+    const frame = requestAnimationFrame(() => invitePanel.current?.scrollIntoView?.({ block: 'start' }));
+    return () => cancelAnimationFrame(frame);
+  }, [ready, owned?.id, params]);
   function selectCampaign(c: CaptainCampaign) {
     if (
       dirty.current &&
@@ -185,8 +191,8 @@ export function LiveCaptain({ userId }: { userId: string }) {
               >
                 View your team
               </Link>
-              <details className="captain-invitation" open={params.get('panel')==='invite'||undefined}>
-                <summary>Invite players</summary>
+              <details ref={invitePanel} className="captain-invitation" open={params.get('panel')==='invite'||undefined}>
+                <summary>Invite to team</summary>
                 <TeamInvite key={owned.id} slug={slug} team={owned.id} name={owned.name} referrer={userId}/>
               </details>
             </>

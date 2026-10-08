@@ -1,6 +1,6 @@
 import type { EntryContext } from "./entry";
 import { publicAvatarURL } from './avatar';
-export type User = { id: string; name: string; handle?: string; avatarUrl?: string; mode: "demo" | "live" };
+export type User = { id: string; name: string; handle?: string; avatarUrl?: string; signupInviteToken?: string; mode: "demo" | "live" };
 export type AuthContext = { guestId: string; entry: EntryContext };
 export type Account = {
   account_id: string;
@@ -211,15 +211,21 @@ export class ApiClient {
     const referrer = /^ur[a-z0-9]+$/.test(context.entry.referrerId || "")
       ? context.entry.referrerId!
       : "";
+    // A TMA starts authentication before the invitation page can fetch its
+    // preview. The server derives first-login attribution from this token.
+    const inviteToken = /^tma /i.test(authorization) && /^[A-Za-z0-9_-]{32}$/.test(context.entry.inviteToken || "")
+      ? context.entry.inviteToken!
+      : "";
     const data = await this.request<{
       id: string;
+      new_account?: boolean;
       display_name?: string;
       user_name?: string;
       nickname?: string;
       avatar_url?: string;
       handle?: string;
       from?: number;
-    }>("/user/tg_login", new URLSearchParams({ referrer_id: referrer }), {
+    }>("/user/tg_login", new URLSearchParams({ referrer_id: referrer, ...(inviteToken ? { invite_token: inviteToken } : {}) }), {
       authorization,
       signal,
     });
@@ -227,7 +233,7 @@ export class ApiClient {
     const name = [data.nickname, data.from === 1 ? data.display_name : undefined].find(
       (value) => typeof value === "string" && value.trim() && !value.includes("@") && !/[\u0000-\u001f\u007f]/.test(value),
     );
-    return { id: data.id, name: name?.trim() || `Player #${data.id}`, ...(publicAvatarURL(data.avatar_url) ? {avatarUrl:publicAvatarURL(data.avatar_url)} : {}), ...(typeof data.handle === "string" && /^[a-z][a-z0-9_]{2,23}$/.test(data.handle) ? {handle:data.handle} : {}), mode: "live" };
+    return { id: data.id, name: name?.trim() || `Player #${data.id}`, ...(publicAvatarURL(data.avatar_url) ? {avatarUrl:publicAvatarURL(data.avatar_url)} : {}), ...(typeof data.handle === "string" && /^[a-z][a-z0-9_]{2,23}$/.test(data.handle) ? {handle:data.handle} : {}), ...(data.new_account === true && inviteToken ? {signupInviteToken:inviteToken} : {}), mode: "live" };
   }
   private async finish(
     account: Account,

@@ -2,11 +2,12 @@
 import {it,expect,vi,afterEach} from 'vitest';
 import {render,screen,act,cleanup,waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
-const mocks=vi.hoisted(()=>({authenticated:vi.fn(),request:vi.fn()}));
+const mocks=vi.hoisted(()=>({authenticated:vi.fn(),request:vi.fn(),gameEvent:vi.fn()}));
 vi.mock('../lib/api',()=>({api:mocks,ApiError:class extends Error{code=0;}}));
+vi.mock('../lib/firebaseAnalytics',()=>({trackGameEvent:mocks.gameEvent}));
 import {RunnerFrame} from './RunnerFrame';
 import {RUNNER_RULES} from '../lib/runner';
-afterEach(()=>{cleanup();vi.unstubAllEnvs();vi.restoreAllMocks();mocks.authenticated.mockReset();});
+afterEach(()=>{cleanup();vi.unstubAllEnvs();vi.restoreAllMocks();mocks.authenticated.mockReset();mocks.gameEvent.mockReset();});
 it('creates a real session and sends only the SDK payload; forwards accepted score',async()=>{
  vi.stubEnv('VITE_PAPERHOOD_GAME_URL','https://game.test/');
  const session={id:'gs1',slug:'run',game_key:'gx1',rules:RUNNER_RULES,protocol_version:'p2l-game-v1',seed:42,expires_at:new Date(Date.now()+300000).toISOString(),status:'playing',score:0};
@@ -22,9 +23,17 @@ it('creates a real session and sends only the SDK payload; forwards accepted sco
  expect(send.mock.calls[0][0]).toMatchObject({type:'p2l:init',session:{id:'gs1',seed:42,duration_ms:90000,allow_pause:false}});
  expect(JSON.stringify(send.mock.calls)).not.toMatch(/token|authorization|account_id/i);
  await message({type:'p2l:start',session_id:'gs1'});
+ await message({type:'p2l:start',session_id:'gs1'});
+ expect(mocks.gameEvent).toHaveBeenCalledTimes(1);
+ expect(mocks.gameEvent).toHaveBeenCalledWith('game_start','run','ranked','gs1');
+ await message({type:'p2l:progress',session_id:'gs1',report:{elapsed_ms:15000}});
+ await message({type:'p2l:progress',session_id:'gs1',report:{elapsed_ms:16000}});
+ expect(mocks.gameEvent).toHaveBeenCalledTimes(2);
+ expect(mocks.gameEvent).toHaveBeenCalledWith('game_effective','run','ranked','gs1');
  const report={elapsed_ms:10000,score:712,metrics:{distance:71.25},inputs:[]};
  await message({type:'p2l:finish',session_id:'gs1',submission_id:'b'.repeat(32),report});
  await waitFor(()=>expect(screen.getByText('Score accepted')).toBeTruthy());
+ expect(mocks.gameEvent).toHaveBeenCalledWith('game_score_accepted','run','ranked','gs1');
  expect(mocks.authenticated.mock.calls[1][0]).toBe('/game/sessions/gs1/runner-submit');
  expect(mocks.authenticated.mock.calls[1][1]).toEqual({submission_id:'b'.repeat(32),report});
  expect(send.mock.calls.at(-1)?.[0]).toMatchObject({type:'p2l:result',status:'accepted',score:712});

@@ -12,11 +12,11 @@ const headings: Record<Step, string> = {
   forgot: "Reset your password",
   reset: "Choose a new password",
 };
-export function LiveAuthForm() {
+export function LiveAuthForm({ initialStep = "login" }: { initialStep?: "login" | "register" } = {}) {
   const app = useApp();
   const [telegramEnabled,setTelegramEnabled]=useState(false);
   useEffect(()=>{if(app.platform.runtime==='telegram')return;const controller=new AbortController();api.request<{enabled:boolean}>('/auth/telegram/config',undefined,{signal:controller.signal}).then(v=>{if(!controller.signal.aborted)setTelegramEnabled(v.enabled===true)}).catch(()=>{});return ()=>controller.abort();},[app.platform.runtime]);
-  const [step, setStep] = useState<Step>("login");
+  const [step, setStep] = useState<Step>(initialStep);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");

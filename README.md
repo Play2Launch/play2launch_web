@@ -44,6 +44,14 @@ npm run build:live
 
 所有 VITE_* 值都会进入浏览器，不得填写后端签名密钥、邮件凭证或私钥。WalletConnect Project ID 是公开标识，仍应在 Reown 配置域名限制。
 
+### Firebase Analytics
+
+网页端已接入 `metamyth-web3` 的 Firebase Analytics。仅在 `build:live` 构建并由 `www.play2launch.com`、`app.play2launch.com`（或裸域名）访问时发送统计；本地开发、预览和 demo 构建不发送。单页应用切换路由时会手动记录 `page_view`，路径中的邀请令牌、用户 ID 和游戏会话 ID 会替换为路由模板，查询参数不会发送。暂未接入 Firebase 登录或其他产品。
+
+为避免 Firebase/GA4 的增强型衡量另行记录浏览器历史变化，造成重复浏览记录或采集原始邀请 URL，请在对应 Web 数据流的增强型衡量设置中关闭“根据浏览器历史记录事件的网页更改”选项。部署后可在 Firebase Analytics 的 DebugView 或 GA4 实时报告核对页面浏览。
+
+游戏统计使用 `game_start`（真正开始一局）、`game_effective`（累计玩到 15 秒）和 `game_score_accepted`（正式局成绩被服务端接受）三个事件。事件参数只有活动标识 `campaign` 与 `game_mode`（`trial` / `ranked`）；试玩与正式局可分开筛选，事件不包含用户 ID、邀请令牌或成绩。刷新页面、重新加载配置和重复消息不应额外算作同一局开始。
+
 ## 当前功能
 
 - 活动发现、主视觉与封面配置、活动详情、阶段与时间窗口展示。

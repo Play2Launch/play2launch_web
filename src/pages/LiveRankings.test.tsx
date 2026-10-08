@@ -7,7 +7,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 const mock = vi.hoisted(() => ({ request: vi.fn() }));
 vi.mock("../lib/api", () => ({ api: { request: mock.request } }));
 vi.mock("../state", () => ({
@@ -37,6 +37,9 @@ vi.mock("../lib/teams", () => ({
   myMembership: async () => ({ team_id: "tm1" }),
 }));
 import LiveRankings, { validRankings } from "./LiveRankings";
+function renderCampaignRankings() {
+  return render(<MemoryRouter initialEntries={["/campaign/phood/leaderboard"]}><Routes><Route path="/campaign/:id/leaderboard" element={<LiveRankings />} /></Routes></MemoryRouter>);
+}
 const data = {
   players: [{ id: "ur1", score: 15000, team_id: "tm1" }],
   teams: [{ id: "tm1", score: 20000 }],
@@ -51,11 +54,7 @@ afterEach(() => {
 });
 it("renders real scores, own standing and team tab while retaining data on refresh failure", async () => {
   mock.request.mockResolvedValue(data);
-  render(
-    <MemoryRouter>
-      <LiveRankings />
-    </MemoryRouter>,
-  );
+  renderCampaignRankings();
   await screen.findByText("#1 · 15,000 pts");
   fireEvent.click(screen.getByRole("button", { name: "Teams" }));
   await screen.findByText("#1 · 20,000 pts");
@@ -66,11 +65,7 @@ it("renders real scores, own standing and team tab while retaining data on refre
 });
 it("keeps team context inside each compact mobile ranking row", async () => {
   mock.request.mockResolvedValue(data);
-  const { container } = render(
-    <MemoryRouter>
-      <LiveRankings />
-    </MemoryRouter>,
-  );
+  const { container } = renderCampaignRankings();
   await screen.findByText("#1 · 15,000 pts");
   expect(container.querySelector(".rankings-table tbody .rankings-mobile-detail")?.textContent).toBe("A Team");
   fireEvent.click(screen.getByRole("button", { name: "Teams" }));
@@ -83,11 +78,7 @@ it("pauses polling requests while hidden and refreshes on becoming visible", asy
     () => state as DocumentVisibilityState,
   );
   mock.request.mockResolvedValue(data);
-  render(
-    <MemoryRouter>
-      <LiveRankings />
-    </MemoryRouter>,
-  );
+  renderCampaignRankings();
   await screen.findByText("#1 · 15,000 pts");
   const count = mock.request.mock.calls.length;
   state = "hidden";
@@ -119,11 +110,7 @@ it("shows public player names and falls back when avatars fail", async () => {
       },
     ],
   });
-  const { container } = render(
-    <MemoryRouter>
-      <LiveRankings />
-    </MemoryRouter>,
-  );
+  const { container } = renderCampaignRankings();
   await screen.findAllByText("Public Captain");
   expect(screen.getAllByText("@public_captain")).toHaveLength(2);
   expect(screen.getAllByRole("img", { name: "Verified KOL" })).toHaveLength(4);

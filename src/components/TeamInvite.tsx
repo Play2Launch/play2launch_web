@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { UserRoundPlus } from "lucide-react";
 import { api } from "../lib/api";
 import { shareLinks } from "../lib/entry";
 
@@ -75,59 +76,30 @@ export function TeamInvite({
     );
   return (
     <section className="team-invite-card" aria-label="Team invitation">
-      <h3>Invite to team · {name}</h3>
-      <p>
-        Invite friends to P2L and this team. Players confirm joining after signing in.
-        Existing players can join if eligible, but are not new referrals. Joining
-        adds no unlock points. Your link stops working if you leave or switch teams.
-      </p>
-      <label className="team-invite-field">
-        Web invitation
-        <input
-          aria-label="Web team invitation"
-          readOnly
-          value={links.web}
-          onFocus={(e) => e.target.select()}
-        />
-      </label>
-      <button
-        type="button"
-        className="btn btn-secondary"
-        onClick={() => void copy(links.web)}
-      >
-        Copy web invitation
-      </button>
+      <div className="team-invite-heading">
+        <span className="team-invite-icon"><UserRoundPlus size={20} aria-hidden="true" /></span>
+        <div>
+          <h3>Invite to team</h3>
+          <p>Share a joining invitation for {name}.</p>
+        </div>
+      </div>
+      <div className="team-invite-link-group">
+        <label className="team-invite-field" htmlFor="web-team-invitation">Web invitation</label>
+        <div className="team-invite-link-row">
+          <input id="web-team-invitation" aria-label="Web team invitation" readOnly value={links.web} onFocus={(e) => e.target.select()} />
+          <button type="button" className="btn btn-primary" onClick={() => void copy(links.web)}>Copy link</button>
+        </div>
+      </div>
       {links.telegram ? (
-        <>
-          <label className="team-invite-field">
-            Telegram Mini App invitation
-            <input
-              aria-label="Mini App team invitation"
-              readOnly
-              value={links.telegram}
-              onFocus={(e) => e.target.select()}
-            />
-          </label>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => void copy(links.telegram!)}
-          >
-            Copy Mini App invitation
-          </button>
-        </>
-      ) : (
-        <p className="small muted">
-          Mini App invitation becomes available when the Telegram bot is
-          configured. Use the web link for now.
-        </p>
-      )}
-      {!referrer && (
-        <p className="small muted">
-          Sign in to generate your own referral link. This guest link opens the
-          team without recording an inviter.
-        </p>
-      )}
+        <div className="team-invite-link-group">
+          <label className="team-invite-field" htmlFor="mini-app-team-invitation">Telegram Mini App invitation</label>
+          <div className="team-invite-link-row">
+            <input id="mini-app-team-invitation" aria-label="Mini App team invitation" readOnly value={links.telegram} onFocus={(e) => e.target.select()} />
+            <button type="button" className="btn btn-secondary" onClick={() => void copy(links.telegram!)}>Copy link</button>
+          </div>
+        </div>
+      ) : null}
+      <p className="team-invite-note">Players confirm joining after signing in. Existing players are not new referrals. This link stops working if you leave or switch teams.</p>
       {notice && <p role="status">{notice}</p>}
     </section>
   );

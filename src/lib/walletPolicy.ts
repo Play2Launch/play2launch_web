@@ -1,5 +1,9 @@
 import type { Runtime } from "./entry";
 
+// Temporary product switch: keep wallet connection available in code but hide
+// its entry points until the wallet UI is ready to return.
+export const walletConnectionUiVisible = false;
+
 // UI capability only, not authentication. Fail closed for Telegram launch hints
 // even when the bridge/initData has not finished loading.
 export function walletAllowed(runtime?: Runtime): boolean {

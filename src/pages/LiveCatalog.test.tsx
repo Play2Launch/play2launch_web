@@ -8,8 +8,13 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+const teamMocks = vi.hoisted(() => ({
+  user: null as { id: string } | null,
+  myMembership: vi.fn(),
+}));
 vi.mock("../state", () => ({
   useApp: () => ({
+    user: teamMocks.user,
     campaign: () => undefined,
     entry: {},
     local: { memberships: {}, runs: [] },
@@ -20,6 +25,10 @@ vi.mock("../state", () => ({
       throw new Error("Live views must use the server stage");
     },
   }),
+}));
+vi.mock("../lib/teams", async (original) => ({
+  ...(await original<typeof import("../lib/teams")>()),
+  myMembership: teamMocks.myMembership,
 }));
 vi.mock("../lib/api", async (original) => {
   const mod = await original<typeof import("../lib/api")>();
@@ -45,6 +54,8 @@ const reply = (data: unknown, status = 200, code = 0) =>
   new Response(JSON.stringify({ code, data }), { status });
 let fetcher: ReturnType<typeof vi.fn>;
 beforeEach(() => {
+  teamMocks.user = null;
+  teamMocks.myMembership.mockReset();
   fetcher = vi.fn();
   vi.stubGlobal("fetch", fetcher);
 });
@@ -75,8 +86,8 @@ it("loads server catalog and arbitrary slug detail without prototype counts", as
   mount();
   await screen.findByRole("heading", { name: campaign.name });
   expect(document.querySelector(".catalog-status-note")).toBeNull();
-  expect(document.querySelector(".feature-grid")?.nextElementSibling?.className).toBe("discover-captain");
-  expect(document.getElementById("campaigns")?.nextElementSibling?.className).toBe("platform-vision");
+  expect(document.querySelector(".feature-grid")?.nextElementSibling?.className).toBe("platform-vision");
+  expect(document.getElementById("campaigns")?.nextElementSibling?.className).toBe("discover-captain");
   expect(screen.queryByText("PAPERHOOD")).toBeNull();
   expect(screen.getByText("/ 1,234 unlock points")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Trending" })).toBeNull();
@@ -181,6 +192,16 @@ it("restores the detail layout and disables unconnected actions", async () => {
   expect(document.querySelector(".unlock-number strong")?.textContent).toBe(
     "—",
   );
+});
+it("shows a direct link to the signed-in player's team", async () => {
+  teamMocks.user = { id: "ur1" };
+  teamMocks.myMembership.mockResolvedValue({ id: "mb1", team_id: "tm1", joined_at: new Date().toISOString() });
+  fetcher.mockResolvedValue(reply({ ...campaign, slug: "phood", name: "PAPERHOOD" }));
+  mount("/campaign/phood");
+  const link = await screen.findByRole("link", { name: "View my team" });
+  expect(link.getAttribute("href")).toBe("/campaign/phood/teams?selected=tm1#selected-team");
+  expect(teamMocks.myMembership).toHaveBeenCalledWith("phood", expect.any(AbortSignal));
+  expect(screen.queryByRole("link", { name: "Choose your team" })).toBeNull();
 });
 it("shows qualified progress without promoting the published stage", async () => {
   fetcher.mockImplementation(async (url: string) =>

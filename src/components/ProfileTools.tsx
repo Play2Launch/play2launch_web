@@ -108,7 +108,7 @@ function Tools({
           <ChevronRight size={18} />
         </Link>
       )}
-      <Link to="/verification" className="profile-tool-card">
+      {!approved && <Link to="/verification" className="profile-tool-card">
         <span className="profile-tool-icon">
           <BadgeCheck size={20} />
         </span>
@@ -122,11 +122,10 @@ function Tools({
                 : current === "loading"
                   ? "Checking verification…"
                   : labels[current] || labels.none}
-            {!liveAuth && approved ? " · Demo" : ""}
           </small>
         </span>
         <ChevronRight size={18} />
-      </Link>
+      </Link>}
       {error && (
         <div className="profile-tools-error" role="alert">
           Verification status unavailable.{" "}

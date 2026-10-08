@@ -220,7 +220,7 @@ export function LiveMemberships() {
   const [draft, setDraft] = useState("");
   const [filters, setFilters] = useState<MembershipFilters>({
     q: "",
-    status: "active",
+    status: "all",
     role: "all",
   });
   return (
@@ -228,6 +228,7 @@ export function LiveMemberships() {
       {app.user && (
         <form
           className="membership-filters"
+          hidden
           onSubmit={(e) => {
             e.preventDefault();
             setFilters((f) => ({ ...f, q: draft.trim() }));
@@ -407,10 +408,8 @@ function MembershipList({
       </div>
       {!busy && !error && !items.length && (
         <div className="empty-panel">
-          <p>No teams match these filters.</p>
-          <button className="btn btn-secondary" onClick={reset}>
-            Show all my teams
-          </button>
+          <p>{filters.q || filters.status !== "all" || filters.role !== "all" ? "No teams match these filters." : "You haven't joined a team yet."}</p>
+          {(filters.q || filters.status !== "all" || filters.role !== "all") && <button className="btn btn-secondary" onClick={reset}>Show all my teams</button>}
           <Link to="/">Explore campaigns</Link>
         </div>
       )}

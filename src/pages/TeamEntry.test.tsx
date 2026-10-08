@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach,expect,it,vi} from "vitest";
-import {cleanup,render,screen,fireEvent,waitFor,act} from "@testing-library/react";
+import {cleanup,render,screen,fireEvent,waitFor,act,within} from "@testing-library/react";
 import {MemoryRouter} from "react-router-dom";
 import {campaigns} from "../data";
 const request=vi.hoisted(()=>vi.fn((_path?:string)=>new Promise(()=>{})));
@@ -60,6 +60,8 @@ it("puts my team first, paginates the directory, and returns from detail without
  const names=()=>Array.from(container.querySelectorAll(".team-directory-item .team-name strong"),el=>el.textContent||"");
  expect(names()).toHaveLength(8);
  expect(names()[0]).toContain("Team 17");
+ expect(container.querySelectorAll(".team-directory-item.is-mine")).toHaveLength(1);
+ expect(container.querySelector(".team-directory-item.is-mine .team-membership-label")?.textContent).toBe("YOUR TEAM");
  expect(screen.getByText("Page 1 of 3")).toBeTruthy();
  fireEvent.click(screen.getByRole("button",{name:"Next"}));
  expect(screen.getByText("Page 2 of 3")).toBeTruthy();
@@ -94,4 +96,18 @@ it("allows Community members to join a regular team and shows activity separatel
  expect(screen.getByRole("region",{name:"P2L Community activity"})).toBeTruthy();
  expect((screen.getByRole("button",{name:/Join One/}) as HTMLButtonElement).disabled).toBe(false);
  expect(screen.queryByText(/Team locked/)).toBeNull();
+});
+it("shows my team's daily activity instead of Community data when I belong to a captain team",async()=>{
+ const community={...team,id:"tmcommunity",name:"P2L Community",owner_id:"",team_type:"system_community",players:139};
+ request.mockImplementation((path?:string)=>path?.endsWith('/teams/tm1/activity')
+  ?Promise.resolve({active_today:3,rounds_today:7,as_of:new Date().toISOString()})
+  :new Promise(()=>{}));
+ render(<MemoryRouter><TeamPage live={{campaign,teams:[community,{...team,players:22}],member:"tm1",closed:false,busy:false,join:vi.fn()}}/></MemoryRouter>);
+ const card=screen.getByRole('region',{name:'My team activity'});
+ expect(within(card).getByRole('heading',{name:'One'})).toBeTruthy();
+ expect(within(card).getByText('22')).toBeTruthy();
+ expect(within(card).queryByText('139')).toBeNull();
+ await waitFor(()=>expect(within(card).getByText('7')).toBeTruthy());
+ expect(within(card).getByText('3')).toBeTruthy();
+ expect(request).toHaveBeenCalledWith('/campaigns/brand-new/teams/tm1/activity',undefined,expect.objectContaining({signal:expect.any(AbortSignal)}));
 });

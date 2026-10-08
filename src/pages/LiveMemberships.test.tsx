@@ -37,17 +37,19 @@ function view() {
     </MemoryRouter>,
   );
 }
-it("defaults to active campaigns and links captains to management", async () => {
+it("shows all memberships without the hidden filter form and links captains to management", async () => {
   view();
   const link = await screen.findByRole("link", { name: "Manage my team" });
   expect(link.getAttribute("href")).toBe("/captain?campaign=event");
   expect(mocks.memberships.mock.calls[0][2]).toEqual({
     q: "",
-    status: "active",
+    status: "all",
     role: "all",
   });
+  expect(screen.queryByRole("searchbox")).toBeNull();
+  expect(screen.queryByRole("combobox", { name: "Campaign status" })).toBeNull();
 });
-it("searches on the server and resets pagination on each filter change", async () => {
+it("continues to load more memberships without the filter form", async () => {
   mocks.memberships.mockResolvedValueOnce({
     items: [item],
     next_cursor: "cursor",
@@ -59,40 +61,12 @@ it("searches on the server and resets pagination on each filter change", async (
   await waitFor(() =>
     expect(mocks.memberships.mock.calls.at(-1)?.[0]).toBe("cursor"),
   );
-  fireEvent.change(screen.getByRole("searchbox"), {
-    target: { value: "Hidden squad" },
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Search" }));
-  await waitFor(() =>
-    expect(mocks.memberships.mock.calls.at(-1)?.[2].q).toBe("Hidden squad"),
-  );
-  expect(mocks.memberships.mock.calls.at(-1)?.[0]).toBe("");
-  fireEvent.change(screen.getByRole("combobox", { name: "Campaign status" }), {
-    target: { value: "ended" },
-  });
-  fireEvent.change(screen.getByRole("combobox", { name: "My role" }), {
-    target: { value: "captain" },
-  });
-  await waitFor(() =>
-    expect(mocks.memberships.mock.calls.at(-1)?.[2]).toEqual({
-      q: "Hidden squad",
-      status: "ended",
-      role: "captain",
-    }),
-  );
-  expect(mocks.memberships.mock.calls.at(-1)?.[0]).toBe("");
+  expect(mocks.memberships.mock.calls.at(-1)?.[2]).toEqual({ q: "", status: "all", role: "all" });
 });
-it("offers an all-teams reset instead of implying no memberships exist", async () => {
+it("shows a clear empty state when the player has no teams", async () => {
   mocks.memberships.mockResolvedValue({ items: [], next_cursor: "" });
   view();
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Show all my teams" }),
-  );
-  await waitFor(() =>
-    expect(mocks.memberships.mock.calls.at(-1)?.[2]).toEqual({
-      q: "",
-      status: "all",
-      role: "all",
-    }),
-  );
+  expect(await screen.findByText("You haven't joined a team yet.")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Show all my teams" })).toBeNull();
+  expect(screen.getByRole("link", { name: "Explore campaigns" }).getAttribute("href")).toBe("/");
 });

@@ -34,6 +34,6 @@ export function LiveVerification({userId}:{userId:string}){
  <button className="btn btn-primary" type="submit">{busy?'Submitting…':'Submit for review'}</button></fieldset></form></>}
  {data?.status==='pending'&&<p>Your application is awaiting manual review. If the code expires, the reviewer must reject it so you can request a new code.</p>}
  {data?.status==='approved'&&<><p>Your KOL verification is approved. You can create one team per campaign; this does not grant administrator access.</p><Link className="btn btn-primary" to="/captain">Create or view your team</Link></>}
- {data?.history?.length&&<details style={{marginTop:24}}><summary>Application and review history</summary>{data.history.map(event=><p key={event.id}><strong>{labels[event.status]||event.status}</strong> · {new Date(event.at).toLocaleString()}<br/>{event.reason}</p>)}</details>}
+ {data?.history?.length&&<details style={{marginTop:24}}><summary>Application and review history</summary>{data.history.map(event=><p key={event.id}><strong>{labels[event.status]||event.status}</strong> · {new Date(event.at).toLocaleString()}{event.reason&&<><br/>{event.reason}</>}</p>)}</details>}
  </>}</div>;
 }

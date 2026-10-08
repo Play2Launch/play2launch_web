@@ -72,6 +72,7 @@ it("shows studio only after approval, removes it after revocation and account ch
     </MemoryRouter>,
   );
   await screen.findByRole("link", { name: /Captain studio/ });
+  expect(screen.queryByRole("link", { name: /KOL verification/ })).toBeNull();
   mocks.request.mockResolvedValue({ status: "revoked" });
   fireEvent(window, new Event("focus"));
   await screen.findByText("Verification revoked");

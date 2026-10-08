@@ -1,4 +1,3 @@
-import { TeamBadge } from '../components/TeamBadge';
 import {
   ArrowDownRight,
   ArrowRight,
@@ -20,13 +19,11 @@ import {
   number,
   short,
   stageLabel,
-  teams,
   type Campaign,
 } from "../data";
 import { useEffect, useState } from "react";
 import { useApp } from "../state";
 import { CampaignArtwork } from "../components/CampaignArtwork";
-import { FeaturedTeams } from "../components/FeaturedTeams";
 import { PlatformVision } from "../components/PlatformVision";
 import { ProfileTools } from "../components/ProfileTools";
 import { walletAllowed } from "../lib/walletPolicy";
@@ -116,7 +113,7 @@ export default function Discover({
             <CampaignArtwork campaign={featured} variant="hero" />
             <div className="hero-shade" />
             <div className="genesis-content">
-              <span className="pill acid">
+              <span className="eyebrow featured-label">
                 <Zap size={12} />{" "}
                 {live ? "FEATURED CAMPAIGN" : "P2L ORIGINAL #001"}
               </span>
@@ -255,7 +252,7 @@ export default function Discover({
           )}
         </div>
       </section>
-      <ProfileTools compact />
+      <PlatformVision />
       <section className="section" id="campaigns" aria-label="Campaigns">
         <div className="section-heading">
           <h2>
@@ -378,77 +375,7 @@ export default function Discover({
           </div>
         )}
       </section>
-      <PlatformVision />
-      <section className="section team-preview">
-        <div>
-          <span className="eyebrow">BETTER TOGETHER</span>
-          <h2>
-            Your team.
-            <br />
-            Your unfair advantage.
-          </h2>
-          <p>
-            Pick a side. Climb the ranks.
-            <br />
-            Build the next big thing together.
-          </p>
-          {live ? (
-            <Link to="/teams" className="text-link">
-              Explore all teams <ArrowUpRight size={16} />
-            </Link>
-          ) : (
-            <Link to="/teams" className="text-link">
-              Explore all teams <ArrowUpRight size={16} />
-            </Link>
-          )}
-        </div>
-        <div className="mini-leaderboard">
-          {!live && (
-            <div className="mini-table-head">
-              <span>TOP TEAMS{live ? "" : " / PAPERHOOD"}</span>
-              <span>TEAM SCORE</span>
-            </div>
-          )}
-          {live ? (
-            featured ? (
-              <FeaturedTeams
-                key={featured.id}
-                slug={featured.id}
-                name={featured.name}
-              />
-            ) : (
-              <div className="empty-panel">
-                {loading
-                  ? "Loading featured campaign…"
-                  : "No featured campaign available."}
-              </div>
-            )
-          ) : (
-            app
-              .standings("phood")
-              .teams.slice(0, 3)
-              .map((t, i) => (
-                <Link
-                  to={`/campaign/phood/teams?selected=${t.id}`}
-                  key={t.id}
-                  className="mini-team"
-                >
-                  <span className="rank">0{i + 1}</span>
-                  <span className="avatar team-avatar" style={{ background: t.color }}>
-                    {t.initial}
-                    <TeamBadge />
-                  </span>
-                  <span className="team-name">
-                    <strong>{t.name}</strong>
-                    <small>{number(t.players)} players</small>
-                  </span>
-                  <span className="team-total">{short(t.score)}</span>
-                  <ArrowUpRight size={16} className="accent" />
-                </Link>
-              ))
-          )}
-        </div>
-      </section>
+      <ProfileTools compact />
     </div>
   );
 }

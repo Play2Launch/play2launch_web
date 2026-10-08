@@ -3,6 +3,8 @@ import {Link} from 'react-router-dom';
 import {api,ApiError} from '../lib/api';
 import {notifyPointsChanged} from '../components/PointsProvider';
 import {checkRunner,runnerMessage,runnerURL,RUNNER_RULES,type RunnerSession} from '../lib/runner';
+import {recordInviteEvent,inviteVisitID} from '../lib/inviteAnalytics';
+import {trackGameEvent} from '../lib/firebaseAnalytics';
 
 export function RunnerFrame({slug}:{slug:string}) {
  const frame=useRef<HTMLIFrameElement>(null);
@@ -16,7 +18,7 @@ export function RunnerFrame({slug}:{slug:string}) {
   if(!src||!launch)return;
   const gameID=launch.game_id;
   const ctrl=new AbortController(),origin=new URL(src).origin;
-  let instance='',session:RunnerSession|undefined,busy=false,started=false;
+  let instance='',session:RunnerSession|undefined,busy=false,started=false,runID='',effective=false;
   const timer=setTimeout(()=>setError('Game connection timed out. Check game deployment and allowed parent origins.'),20000);
   const send=(type:string,data:Record<string,unknown>={})=>frame.current?.contentWindow?.postMessage({protocol:'p2l-game-v1',type,game_id:gameID,rules_version:RUNNER_RULES,instance_id:instance,session_id:session?.id??null,...data},origin);
   const init=()=>send('p2l:init',{session:{id:session!.id,seed:session!.seed,expires_at:Date.parse(session!.expires_at),duration_ms:90000,allow_pause:false}});
@@ -26,7 +28,7 @@ export function RunnerFrame({slug}:{slug:string}) {
     const next=checkRunner(await api.authenticated<RunnerSession>(`/campaigns/${encodeURIComponent(slug)}/sessions`,{},ctrl.signal),slug,gameID);
     if(ctrl.signal.aborted)return;
     if(next.status!=='playing')throw Error('This round is no longer playable.');
-    session=next;started=false;setResult(undefined);init();setStatus('Round ready · 90 seconds · No pause');
+    session=next;started=false;runID='';effective=false;setResult(undefined);init();setStatus('Round ready · 90 seconds · No pause');
    }catch(e){if(!ctrl.signal.aborted){setError((e as Error).message);send('p2l:error',{code:'START_FAILED',message:(e as Error).message,retryable:true});}}
    finally{busy=false;}
   }
@@ -39,7 +41,8 @@ export function RunnerFrame({slug}:{slug:string}) {
     if(session?.status==='playing'){init();return;}await startRound();return;
    }
    if(!instance||!session||!runnerMessage(e,frame.current?.contentWindow??null,origin,gameID,instance,session.id))return;
-   if(d.type==='p2l:start'){started=true;setStatus('Round in progress');return;}
+   if(d.type==='p2l:start'){if(started)return;started=true;runID=Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');trackGameEvent('game_start',slug,'ranked',session.id);if(inviteVisitID(slug))void recordInviteEvent(slug,runID,'formal_start',session.id).catch(()=>{});setStatus('Round in progress');return;}
+   if(d.type==='p2l:progress'&&started&&!effective&&Number(d.report?.elapsed_ms)>=15000){effective=true;const currentRun=runID;trackGameEvent('game_effective',slug,'ranked',session.id);void recordInviteEvent(slug,currentRun,'formal_effective',session.id).catch(()=>{});return;}
    if(d.type==='p2l:restart'){
     if(session.status==='accepted')await startRound();
     else {setError('The rejected round must expire before starting another. Return to the campaign.');send('p2l:error',{code:'ROUND_ACTIVE',message:'The rejected round must expire before starting another.',retryable:true});}
@@ -54,6 +57,7 @@ export function RunnerFrame({slug}:{slug:string}) {
     if(ctrl.signal.aborted)return;
     if(accepted.id!==session.id||accepted.status!=='accepted')throw Error('Score was not accepted.');
     session=accepted;setResult(accepted);setError('');setStatus('Score accepted');
+    trackGameEvent('game_score_accepted',slug,'ranked',accepted.id);
     notifyPointsChanged();
     send('p2l:result',{submission_id:d.submission_id,status:'accepted',score:accepted.score,message:'Score accepted by the platform.'});
    }catch(e){

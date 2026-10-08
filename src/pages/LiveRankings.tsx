@@ -14,6 +14,8 @@ import { safeImageSource } from "../components/CampaignArtwork";
 import { CampaignIdentityCard, CampaignNav } from "../components/CampaignHeader";
 import { VerifiedKol } from "../components/VerifiedKol";
 import { TeamBadge } from "../components/TeamBadge";
+import { LeaderboardScope } from "../components/LeaderboardScope";
+import PointsLeaderboard from "./PointsLeaderboard";
 type Rank = {
   id: string;
   score: number;
@@ -60,7 +62,7 @@ export function validRankings(d: Snapshot) {
 }
 export default function LiveRankings() {
   const { id } = useParams();
-  return <Selection key={id || "catalog"} slug={id} />;
+  return id ? <Selection key={id} slug={id} /> : <PointsLeaderboard />;
 }
 const missing = (e: unknown) =>
   typeof e === "object" && e !== null && "status" in e && e.status === 404;
@@ -303,6 +305,7 @@ function Board({
       )}
       <CampaignNav campaign={headerCampaign} live activeTab="leaderboard" />
       <CampaignIdentityCard campaign={headerCampaign} />
+      <LeaderboardScope campaign={campaign.name} chooseCampaign={() => setPicker(true)} />
       {(error || metaError) && (
         <div className="notice" role="alert">
           <span>
@@ -322,9 +325,6 @@ function Board({
           </h2>
         </div>
         <div className="rankings-update">
-          <button className="btn btn-secondary" onClick={() => setPicker(true)}>
-            Switch campaign
-          </button>
           <button
             className="btn btn-secondary"
             disabled={busy}

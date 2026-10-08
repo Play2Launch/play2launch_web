@@ -43,7 +43,7 @@ import { CompetitionRules } from "../CompetitionRules";
 import { KolBadge } from "./Verification";
 import { FriendInvite } from "../components/FriendInvite";
 import { WalletPanel } from "../components/WalletPanel";
-import { walletAllowed } from "../lib/walletPolicy";
+import { walletAllowed, walletConnectionUiVisible } from "../lib/walletPolicy";
 import { ProfileTools } from "../components/ProfileTools";
 import { TeamMembers, type TeamScoreSummary } from "../components/TeamMembers";
 import { TeamActions } from "../components/TeamActions";
@@ -55,7 +55,7 @@ import { PlatformPoints } from "../components/PlatformPoints";
 import { CampaignTeamsPreview } from "../components/CampaignTeamsPreview";
 import { FollowButton } from "../components/FollowButton";
 import { CommunityTeamCard } from "../components/CommunityTeamCard";
-import { ExploreTeams } from "../components/ExploreTeams";
+import { myMembership, type Membership } from "../lib/teams";
 
 export function useCampaign() {
   const { id } = useParams();
@@ -70,7 +70,20 @@ export function CampaignPage({
   const c = liveCampaign ?? demoCampaign;
   const live = liveCampaign !== undefined;
   const app = useApp();
+  const [teamLookup, setTeamLookup] = useState<{ key: string; member: Membership | null; failed: boolean }>();
+  const teamLookupKey = `${c?.id || ""}:${app.user?.id || "guest"}`;
+  useEffect(() => {
+    if (!live || !c?.id || !app.user?.id) return;
+    const ctrl = new AbortController();
+    myMembership(c.id, ctrl.signal)
+      .then((member) => { if (!ctrl.signal.aborted) setTeamLookup({ key: teamLookupKey, member, failed: false }); })
+      .catch(() => { if (!ctrl.signal.aborted) setTeamLookup({ key: teamLookupKey, member: null, failed: true }); });
+    return () => ctrl.abort();
+  }, [live, c?.id, app.user?.id, teamLookupKey]);
   if (!c) return <NotFound />;
+  const liveTeam = live && teamLookup?.key === teamLookupKey ? teamLookup.member : null;
+  const checkingLiveTeam = live && !!app.user && teamLookup?.key !== teamLookupKey;
+  const teamLookupFailed = live && teamLookup?.key === teamLookupKey && teamLookup.failed;
   const stage = live ? c.stage : app.getStage(c.id);
   const teams = live ? [] : app.standings(c.id).teams;
   const joined = teams.find((t) => t.id === app.local.memberships[c.id]);
@@ -306,13 +319,21 @@ export function CampaignPage({
           </section>
           <section className="your-team-panel">
             <span className="eyebrow">
-              {joined
+              {liveTeam || joined
                 ? "YOUR TEAM"
                 : invited
                   ? "YOU’VE BEEN INVITED"
                   : "FIND YOUR PEOPLE"}
             </span>
-            {joined || invited ? (
+            {liveTeam ? (
+              <>
+                <h3>You’re on a team.</h3>
+                <p>Go straight to your team in this campaign.</p>
+                <Link className="btn btn-primary full" to={`/campaign/${c.id}/teams?selected=${encodeURIComponent(liveTeam.team_id)}#selected-team`}>
+                  <Users size={16} /> View my team
+                </Link>
+              </>
+            ) : joined || invited ? (
               <>
                 <div className="your-team">
                   <span
@@ -349,15 +370,15 @@ export function CampaignPage({
               </>
             ) : (
               <>
-                <h3>Better with a crew.</h3>
-                <p>Choose a community and make every play count together.</p>
+                <h3>{checkingLiveTeam ? "Checking your team…" : "Better with a crew."}</h3>
+                <p>{checkingLiveTeam ? "Looking up your team for this campaign." : teamLookupFailed ? "We couldn’t check your team right now. You can still browse teams." : "Choose a community and make every play count together."}</p>
                 {live ? (
                   <Link
                     to={`/campaign/${c.id}/teams`}
                     className="btn btn-secondary full"
                   >
                     <Users size={16} />
-                    Choose your team
+                    {checkingLiveTeam || teamLookupFailed ? "View teams" : "Choose your team"}
                   </Link>
                 ) : (
                   <Link
@@ -474,25 +495,16 @@ export function MyTeams({ compact = false }: { compact?: boolean }) {
 }
 
 export function MyTeamsPage() {
-  const app = useApp();
-  const [view, setView] = useState<"mine" | "explore">(app.user ? "mine" : "explore");
-  useEffect(() => { if (app.user) setView("mine"); }, [app.user?.id]);
   return (
     <>
       <div className={`page-heading ${liveAuth ? "my-teams-heading" : ""}`}>
         <div>
           <span className="eyebrow">YOUR COMMUNITIES</span>
-          <h1>
-            {liveAuth ? "Teams" : <>Different campaigns.<br />Your people<span>.</span></>}
-          </h1>
-          <p>Your teams across campaigns, and more communities to join.</p>
+          <h1>My Teams</h1>
+          <p>Your teams across campaigns.</p>
         </div>
       </div>
-      <div className="teams-hub-tabs" role="group" aria-label="Teams view">
-        <button className={view === "mine" ? "selected" : ""} aria-pressed={view === "mine"} onClick={() => setView("mine")}>My teams</button>
-        <button className={view === "explore" ? "selected" : ""} aria-pressed={view === "explore"} onClick={() => setView("explore")}>Explore teams</button>
-      </div>
-      {view === "mine" ? <MyTeams /> : liveAuth ? <ExploreTeams /> : <div className="empty-panel"><p>Explore teams inside each campaign.</p><Link to="/">Discover campaigns</Link></div>}
+      <MyTeams />
     </>
   );
 }
@@ -539,6 +551,7 @@ export function TeamPage({
   const member = live ? live.member : app.local.memberships[c.id];
   const community = live?.teams.find(t=>t.team_type==='system_community');
   const communityMember = !!community && member===community.id;
+  const featuredTeam = live?.teams.find(t=>t.id===member) || community;
   const teams = live ? live.teams.filter(t=>t.team_type!=='system_community') : app.standings(c.id).teams;
   const sortedTeams = [...teams].sort((a, b) =>
     Number(b.id === member) - Number(a.id === member) ||
@@ -574,7 +587,7 @@ export function TeamPage({
     setPage(next);
     requestAnimationFrame(() => directoryPanel.current?.scrollIntoView?.({ behavior: "smooth", block: "start" }));
   };
-  const communityCard = live && <CommunityTeamCard slug={c.id} team={community} joined={communityMember}/>;
+  const communityCard = live && <CommunityTeamCard key={featuredTeam?.id || 'community'} slug={c.id} team={featuredTeam} joined={!!featuredTeam && member===featuredTeam.id}/>;
   const ownsTeam = !!app.user?.id && live?.teams.some(t => t.owner_id === app.user!.id);
   const captainAction = live && (
     <Link
@@ -629,7 +642,7 @@ export function TeamPage({
               .map((t, i) => (
                 <button
                   key={t.id}
-                  className={`team-directory-item ${current.id === t.id ? "is-selected" : ""}`}
+                  className={`team-directory-item ${current.id === t.id ? "is-selected" : ""} ${member === t.id ? "is-mine" : ""}`}
                   onClick={() => selectTeam(t.id)}
                 >
                   <span className="rank">{live ? "↗" : `0${(activePage - 1) * 8 + i + 1}`}</span>
@@ -1158,20 +1171,10 @@ export function ProfilePage() {
           <h2>{app.user?.name || "Guest player"} {verified && <VerifiedKol />}</h2>
           {app.user?.handle && <div className="profile-username">@{app.user.handle}</div>}
           <KolBadge />
-          <span className="pill neutral">
-            {app.user?.mode === "live"
-              ? "SIGNED IN"
-              : app.user
-                ? "DEMO PROFILE"
-                : liveAuth
-                  ? "GUEST"
-                  : "LOCAL GUEST"}
-          </span>
-          <p>
-            {app.demoToolsAvailable
-              ? "Your preview progress stays on this device."
-              : "Signed-in identity and team memberships are saved by the server. Accepted game scores appear on campaign leaderboards. The practice history below is stored only on this device."}
-          </p>
+          {!app.user && <>
+            <span className="pill neutral">{liveAuth ? "GUEST" : "LOCAL GUEST"}</span>
+            <p>{app.demoToolsAvailable ? "Your preview progress stays on this device." : "Sign in to save your profile and join teams."}</p>
+          </>}
           <ProfileTools onVerified={setKolIdentity} />
           {liveAuth && app.user?.mode === 'live' && <FriendInvite key={app.user.id} userId={app.user.id}/>}
           {app.demoToolsAvailable && (
@@ -1215,11 +1218,12 @@ export function ProfilePage() {
               </div>
             )}
           </div>
-          {walletAllowed(app.platform?.runtime) && <WalletPanel />}
+          {walletConnectionUiVisible && walletAllowed(app.platform?.runtime) && <WalletPanel />}
         </section>
         <section>
           {liveAuth && app.user && <PublicProfileEditor key={app.user.id} userId={app.user.id} />}
           {liveAuth && app.user && <PlatformPoints key={`points-${app.user.id}`} />}
+          {!liveAuth && <>
           <MyTeams compact />
           <div className="section-heading">
             <h2>
@@ -1286,6 +1290,7 @@ export function ProfilePage() {
               )}
             </div>
           )}
+          </>}
         </section>
       </div>
     </>

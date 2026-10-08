@@ -12,10 +12,11 @@ const mock = vi.hoisted(() => ({
   list: vi.fn(),
   get: vi.fn(),
   request: vi.fn(),
+  authenticated: vi.fn(),
   teams: vi.fn(),
   member: vi.fn(),
 }));
-vi.mock("../lib/api", () => ({ api: { request: mock.request } }));
+vi.mock("../lib/api", () => ({ api: { request: mock.request, authenticated: mock.authenticated } }));
 vi.mock("../lib/catalog", () => ({
   getCampaign: mock.get,
   listCampaigns: mock.list,
@@ -52,6 +53,7 @@ beforeEach(() => {
   mock.list.mockResolvedValue({ items: [campaign], next_cursor: "" });
   mock.get.mockResolvedValue(campaign);
   mock.request.mockResolvedValue(snapshot);
+  mock.authenticated.mockResolvedValue({ players: [], as_of: "2026-09-26T00:00:00Z" });
   mock.teams.mockResolvedValue([]);
   mock.member.mockResolvedValue(null);
 });
@@ -70,18 +72,22 @@ function view(path = "/leaderboard") {
     </MemoryRouter>,
   );
 }
-it("selects the first published campaign, never the historical default", async () => {
+it("shows platform points at the leaderboard root without choosing a campaign", async () => {
   view();
-  await waitFor(() => expect(mock.request).toHaveBeenCalled());
-  expect(mock.request.mock.calls[0][0]).toBe("/campaigns/new-event/rankings");
+  await waitFor(() => expect(mock.authenticated).toHaveBeenCalled());
+  expect(mock.authenticated.mock.calls[0][0]).toBe("/points/leaderboard/me");
+  expect(screen.getByRole("heading", { name: "P2L Points leaderboard" })).toBeTruthy();
   expect(mock.get).not.toHaveBeenCalled();
-  expect(mock.teams.mock.calls[0][0]).toBe("new-event");
+  expect(mock.list).not.toHaveBeenCalled();
+  expect(mock.request).not.toHaveBeenCalled();
+  expect(mock.teams).not.toHaveBeenCalled();
 });
-it("shows an empty state without any dependent API calls", async () => {
+it("shows an empty points leaderboard when there are no campaigns", async () => {
   mock.list.mockResolvedValue({ items: [], next_cursor: "" });
   view();
-  await screen.findByText("No published campaigns yet.");
+  await screen.findByText(/No P2L Points have been earned yet/);
   expect(mock.request).not.toHaveBeenCalled();
+  expect(mock.list).not.toHaveBeenCalled();
   expect(mock.teams).not.toHaveBeenCalled();
   expect(mock.member).not.toHaveBeenCalled();
 });
@@ -99,7 +105,7 @@ it("stops at the campaign lookup for an unavailable explicit slug", async () => 
 });
 it("unmounts the board and stops focus refresh after a ranking 404", async () => {
   mock.request.mockRejectedValue(gone);
-  view();
+  view("/campaign/new-event/leaderboard");
   await screen.findByRole("alert");
   const count = mock.request.mock.calls.length;
   fireEvent.focus(window);

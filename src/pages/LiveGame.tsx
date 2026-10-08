@@ -9,6 +9,7 @@ import { PostComposer } from '../components/PostComposer';
 import type { Campaign } from "../data";
 import { RunnerFrame } from './RunnerFrame';
 import { RUNNER_RULES } from '../lib/runner';
+import { trackGameEvent } from '../lib/firebaseAnalytics';
 type Operation = { buy_tick: number; sell_tick: number };
 type Session = {
   game_key?: string;
@@ -122,6 +123,7 @@ function Round({ slug }: { slug: string }) {
         slug,
       );
       if (run.status !== "accepted") throw new Error("Score was not accepted.");
+      trackGameEvent("game_score_accepted", slug, "ranked", run.id);
       window.dispatchEvent(new Event('p2l:points-changed'));
       if (alive.current)
         nav(`/campaign/${slug}/session/${run.id}`, { replace: true });
@@ -175,7 +177,7 @@ function Round({ slug }: { slug: string }) {
       {session && campaign ? (
         <GamePage
           key={session.id}
-          live={{ campaign, seed: session.seed, team: team || "P2L Community", finish: submit }}
+          live={{ campaign, seed: session.seed, sessionId: session.id, team: team || "P2L Community", finish: submit }}
         />
       ) : (
         <div className="empty-panel">

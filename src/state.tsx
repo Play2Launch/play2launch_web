@@ -282,6 +282,15 @@ function useAppState() {
     return () => clearTimeout(timer);
   }, [toast]);
   const authContext = () => ({ guestId: local.guestId, entry });
+  const rememberTeamInvitation = (campaignId: string, teamId: string, referrerId: string, inviteToken: string) => {
+    if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(campaignId) ||
+        !/^tm[0-9a-z]{1,13}$/.test(teamId) ||
+        !/^ur[0-9a-z]{1,32}$/.test(referrerId) ||
+        !/^[A-Za-z0-9_-]{32}$/.test(inviteToken)) return;
+    const next: EntryContext = {campaignId, teamId, referrerId, inviteToken, source:"share", target:"teams"};
+    setEntry(next);
+    write(sessionStorage, "p2l.entry.v1", next);
+  };
   const completeLogin = (next: User) => {
     setUser(next);
     if (next.mode === "demo") setLocal((l) => ({ ...l, demoUser: next }));
@@ -637,6 +646,7 @@ function useAppState() {
     toast,
     setToast,
     authContext,
+    rememberTeamInvitation,
     completeLogin,
     completeLiveLogin,
     executeAuth,

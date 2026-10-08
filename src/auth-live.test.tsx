@@ -146,9 +146,15 @@ afterEach(() => {
 describe("live client flows without sending mail", () => {
   it("signs in, restores on refresh, signs out locally and switches accounts", async () => {
     mount();
+    expect(screen.queryByRole("button", { name: "Connect Wallet" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Wallet connection" })).toBeNull();
     await open();
     submitCredentials();
     await screen.findByRole("heading", { name: "Live Player" });
+    expect(screen.queryByRole("button", { name: "Connect Wallet" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Wallet connection" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "My teams by campaign" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Practice history on this device" })).toBeNull();
     expect(
       screen.getByText("LIVE CAMPAIGNS & RANKINGS"),
     ).toBeTruthy();

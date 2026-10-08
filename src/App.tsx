@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
-import InviteLanding from "./pages/InviteLanding";
+import InviteLanding, { PersonalInviteLanding } from "./pages/InviteLanding";
 import TelegramLogin from './pages/TelegramLogin';
 import { CommunityLinks } from "./components/CommunityLinks";
 import {
@@ -56,9 +56,10 @@ import Tasks from "./pages/Tasks";
 import PublicPlayer from "./pages/PublicPlayer";
 import Following from "./pages/Following";
 import PostDetail from "./pages/PostDetail";
+import InboxPage, { InboxLink } from "./pages/Inbox";
 import { UserAvatar } from './components/UserAvatar';
 import LiveLaunch from "./pages/LiveLaunch";
-import { walletAllowed } from "./lib/walletPolicy";
+import { walletAllowed, walletConnectionUiVisible } from "./lib/walletPolicy";
 import { shareLinks } from "./lib/entry";
 import { campaigns, teams, type Stage } from "./data";
 import { registerCampaignTools } from "./lib/webmcp";
@@ -109,6 +110,7 @@ function Shell() {
         "/verification": "KOL verification",
         "/captain": "Captain studio",
         "/leaderboard": "Leaderboard",
+        "/messages": "Messages",
       } as Record<string, string>
     )[loc.pathname];
     document.title = `${globalTitle || (liveAuth ? (cid ? "Campaign" : "Discover") : campaigns.find((c) => c.id === cid)?.name || "Discover")} · PLAY TO LAUNCH`;
@@ -137,7 +139,7 @@ function Shell() {
           <NavLink to="/leaderboard">Leaderboard</NavLink>
         </nav>
         <div className="header-right">
-          {walletAllowed(app.platform.runtime) && <HeaderWallet />}
+          {walletConnectionUiVisible && walletAllowed(app.platform.runtime) && <HeaderWallet />}
           <span className="network">
             <i />
             {app.platform.runtime === "telegram"
@@ -146,6 +148,7 @@ function Shell() {
             <Globe2 size={13} />
           </span>
           {liveAuth && app.user?.mode==='live' && <HeaderPoints/>}
+          <InboxLink />
           {app.user ? (
             <Link to="/profile" className="profile-button">
               <span className="avatar tiny player-avatar"><UserAvatar key={app.user.id} name={app.user.name} src={app.user.avatarUrl}/></span>
@@ -246,7 +249,7 @@ function Shell() {
           {liveAuth&&<Route path="/auth/telegram" element={<TelegramLogin/>}/>}
           <Route path="/" element={liveAuth ? <LiveCatalog /> : <Discover />} />
           <Route path="/invite/:token" element={<InviteLanding />} />
-          <Route path="/ref/:userId" element={liveAuth ? <LiveCatalog /> : <Discover />} />
+          <Route path="/ref/:userId" element={<PersonalInviteLanding />} />
           <Route
             path="/campaign/:id"
             element={liveAuth ? <LiveCatalog /> : <CampaignPage />}
@@ -267,6 +270,7 @@ function Shell() {
           <Route path="/posts/:postId" element={<PostDetail />} />
           <Route path="/leaderboard" element={liveAuth ? <LiveRankings /> : <LeaderboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/messages" element={<InboxPage />} />
           {liveAuth && <Route path="/players/:userId" element={<PublicPlayer />} />}
           <Route path="/verification" element={<VerificationPage />} />
           <Route path="/captain" element={<CaptainPage />} />
@@ -404,6 +408,7 @@ export function Modal({
 }
 function AuthModal() {
   const app = useApp();
+  const location = useLocation();
   const [name, setName] = useState("Early player");
   return (
     <Modal title="Make your play count." close={app.closeAuth}>
@@ -416,7 +421,7 @@ function AuthModal() {
           : "Keep your scores, find your team, and follow the next launch. Your current campaign and invitation stay with you."}
       </p>
       {liveAuth ? (
-        <LiveAuthForm />
+        <LiveAuthForm initialStep={/^\/(?:invite|ref)\//.test(location.pathname) ? "register" : "login"} />
       ) : (
         <>
           <div className="inline-note">

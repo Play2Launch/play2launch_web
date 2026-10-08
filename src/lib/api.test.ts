@@ -213,6 +213,17 @@ describe("DashFun authentication contract", () => {
     expect(transport.mock.calls[0][1].body).toBe("referrer_id=urref");
     expect(storage.length).toBe(0);
   });
+  it("sends a TMA team token for server-side first-login attribution and marks only a new account for auto-join", async () => {
+    const token = "a".repeat(32);
+    const transport = vi.fn().mockResolvedValueOnce(response({ ...user, new_account: true })).mockResolvedValueOnce(response(user));
+    const client = new ApiClient("https://api.test", transport);
+    const invitation = { ...context, entry: { ...context.entry, inviteToken: token } };
+    const first = await client.telegram("signed-init-data", invitation);
+    expect(transport.mock.calls[0][1].body).toBe(`referrer_id=urref&invite_token=${token}`);
+    expect(first.user.signupInviteToken).toBe(token);
+    const existing = await client.telegram("signed-init-data", invitation);
+    expect(existing.user.signupInviteToken).toBeUndefined();
+  });
   it("does not send prototype referrers or fabricate Telegram identity", async () => {
     const transport = vi.fn().mockResolvedValue(response(user));
     const client = new ApiClient("https://api.test", transport);

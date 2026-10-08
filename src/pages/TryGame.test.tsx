@@ -2,8 +2,9 @@
 import {it,expect,vi,afterEach} from 'vitest';
 import {render,screen,cleanup,waitFor,act} from '@testing-library/react';
 import {MemoryRouter,Route,Routes} from 'react-router-dom';
-const mocks=vi.hoisted(()=>({request:vi.fn(),authenticated:vi.fn()}));
+const mocks=vi.hoisted(()=>({request:vi.fn(),authenticated:vi.fn(),gameEvent:vi.fn()}));
 vi.mock('../lib/api',()=>({api:mocks}));
+vi.mock('../lib/firebaseAnalytics',()=>({trackGameEvent:mocks.gameEvent}));
 import {TryGame} from './TryGame';
 afterEach(()=>{cleanup();vi.clearAllMocks();});
 function mount(){render(<MemoryRouter initialEntries={['/campaign/phood/try']}><Routes><Route path="/campaign/:id/try" element={<TryGame/>}/></Routes></MemoryRouter>);}
@@ -12,6 +13,13 @@ it('embeds a guest trial and never creates or submits a server session',async()=
  mount();const frame=await screen.findByTitle('Game trial') as HTMLIFrameElement;
  const url=new URL(frame.src);expect(url.searchParams.get('mode')).toBe('demo');expect(url.searchParams.get('embed')).toBe('1');expect(url.searchParams.has('seed')).toBe(false);
  expect(screen.getByText(/Trial scores stay local/)).toBeTruthy();
+ const event=(type:string,origin='https://game.test')=>act(async()=>window.dispatchEvent(new MessageEvent('message',{source:frame.contentWindow,origin,data:{protocol:'p2l-invite-analytics-v1',type,run_id:'a'.repeat(32)}})));
+ await event('trial_start','https://evil.test');
+ expect(mocks.gameEvent).not.toHaveBeenCalled();
+ await event('trial_start');
+ await event('trial_effective');
+ expect(mocks.gameEvent).toHaveBeenNthCalledWith(1,'game_start','phood','trial','a'.repeat(32));
+ expect(mocks.gameEvent).toHaveBeenNthCalledWith(2,'game_effective','phood','trial','a'.repeat(32));
  await act(async()=>window.dispatchEvent(new MessageEvent('message',{source:frame.contentWindow,origin:'https://game.test',data:{type:'p2l:finish',report:{score:9000}}})));
  expect(mocks.authenticated).not.toHaveBeenCalled();expect(mocks.request).toHaveBeenCalledTimes(1);
  expect(screen.getByText('Play for your team').getAttribute('href')).toBe('/campaign/phood/compete');

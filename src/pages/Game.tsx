@@ -23,6 +23,7 @@ import { useApp } from "../state";
 import { CompetitionRules } from "../CompetitionRules";
 import { priceAt, scoreTrade, totalScore, type Trade } from "../lib/game";
 import { NotFound, useCampaign } from "./Campaign";
+import { trackGameEvent } from "../lib/firebaseAnalytics";
 
 export function GamePage({
   live,
@@ -30,6 +31,7 @@ export function GamePage({
   live?: {
     campaign: Campaign;
     seed: number;
+    sessionId: string;
     team: string;
     finish: (trades: { buy_tick: number; sell_tick: number }[]) => void;
   };
@@ -53,8 +55,20 @@ export function GamePage({
   const lastAction = useRef(-1);
   const finished = useRef(false);
   const tickRef = useRef(0);
+  const analyticsStarted = useRef(false);
+  const analyticsEffective = useRef(false);
   const remaining = Math.max(0, 30 - Math.floor(tick / 4));
   const price = priceAt(tick, seed);
+  useEffect(() => {
+    if (c?.id !== "phood" || phase !== "playing" || analyticsStarted.current) return;
+    analyticsStarted.current = true;
+    trackGameEvent("game_start", c.id, live ? "ranked" : "trial", live?.sessionId);
+  }, [c?.id, live?.sessionId, phase]);
+  useEffect(() => {
+    if (c?.id !== "phood" || tick < 60 || analyticsEffective.current || !analyticsStarted.current) return;
+    analyticsEffective.current = true;
+    trackGameEvent("game_effective", c.id, live ? "ranked" : "trial", live?.sessionId);
+  }, [c?.id, live?.sessionId, tick]);
   const member = app
     .standings(c?.id || "")
     .teams.find((t) => t.id === app.local.memberships[c?.id || ""]);

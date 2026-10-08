@@ -14,7 +14,8 @@ it('loads captain teams across campaigns with direct management and invite links
  await screen.findByText('Wizards');await screen.findByText('18,418');
  expect(mocks.memberships.mock.calls[0][2]).toEqual({q:'',status:'all',role:'captain'});
  expect(screen.getByRole('link',{name:'Manage team'}).getAttribute('href')).toBe('/captain?campaign=phood');
- expect(screen.getByRole('link',{name:'Invite players'}).getAttribute('href')).toContain('panel=invite');
+ expect(screen.getByRole('link',{name:'Invite to team'}).getAttribute('href')).toContain('panel=invite');
+ expect(screen.getByRole('link',{name:'Invite to team'}).className).toContain('btn-primary');
 });
 it('offers creation when no teams exist',async()=>{
  mocks.memberships.mockResolvedValue({items:[],next_cursor:''});const create=vi.fn();

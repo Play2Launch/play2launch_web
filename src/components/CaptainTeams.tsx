@@ -29,7 +29,7 @@ function CaptainTeam({item:m}:{item:MyTeam}) {
  return <article className="captain-team-card">
   <div className="captain-team-identity"><h3>{m.team_name}</h3><div className="captain-team-meta"><Link to={`/campaign/${m.slug}`}>{m.name}</Link><span className="pill neutral">{m.activity_status==='ended'?'ENDED':m.activity_status==='upcoming'?'UPCOMING':'ONGOING'}</span></div></div>
   <div className="captain-team-metrics"><div><strong>{stats?number(stats.total):'—'}</strong><span>Members</span></div><div><strong>{stats?number(stats.team_score):'—'}</strong><span>Team score</span></div>{error&&<button className="text-link" onClick={()=>setRetry(v=>v+1)}>Retry team stats</button>}</div>
-  <div className="captain-team-controls"><div className="captain-team-buttons"><Link className="btn btn-primary" to={manage}>Manage team</Link><Link className="btn btn-secondary" to={`${manage}&panel=invite`}>Invite players</Link></div>
+  <div className="captain-team-controls"><div className="captain-team-buttons"><Link className="btn btn-primary" to={`${manage}&panel=invite`}>Invite to team</Link><Link className="btn btn-secondary" to={manage}>Manage team</Link></div>
   <div className="captain-team-links"><Link className="text-link" to={`${detail.replace('#selected-team','#team-members')}`}>View members →</Link><Link className="text-link" to={detail}>Public team page →</Link></div>
   </div>
  </article>;

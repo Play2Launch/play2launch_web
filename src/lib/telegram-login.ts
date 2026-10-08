@@ -1,4 +1,5 @@
 import {api,type AuthContext} from './api';
+import {markPersonalInviteAuthRedirect} from './inviteAnalytics';
 
 const key='p2l.telegram-oidc.v1';
 const base64url=(bytes:Uint8Array)=>btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -11,6 +12,7 @@ export async function beginTelegramLogin(context:AuthContext){
  const challenge=base64url(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))));
  const returnPath=safeReturnPath(location.pathname+location.search+location.hash);
  const startURL=await api.telegramStartURL(challenge,context.entry.referrerId);
+ if(location.pathname.startsWith('/ref/'))markPersonalInviteAuthRedirect(context.entry.referrerId);
  sessionStorage.setItem(key,JSON.stringify({verifier,returnPath,context,created:Date.now()}));
  location.assign(startURL);
 }
