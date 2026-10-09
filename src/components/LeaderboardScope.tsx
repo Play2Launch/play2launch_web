@@ -1,9 +1,23 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { ChevronDown, Trophy } from "lucide-react";
+import { Check, ChevronDown, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
 import { listCampaigns, recentCampaigns, type PublicCampaign } from "../lib/catalog";
+import { safeImageSource } from "./CampaignArtwork";
 
-type CampaignLink = Pick<PublicCampaign, "slug" | "name">;
+type CampaignLink = Pick<PublicCampaign, "slug" | "name"> & Partial<Pick<PublicCampaign, "cover_image" | "hero_image" | "symbol" | "color">>;
+
+function CampaignMenuItem({ item, current, onSelect }: { item: CampaignLink; current: boolean; onSelect: () => void }) {
+  const source = safeImageSource(item.cover_image) ?? safeImageSource(item.hero_image);
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => setImageFailed(false), [source]);
+  return <Link className={`leaderboard-campaign-option${current ? " is-current" : ""}`} aria-current={current ? "page" : undefined} to={`/campaign/${encodeURIComponent(item.slug)}/leaderboard`} onClick={onSelect}>
+    <span className="leaderboard-campaign-option-fallback" style={{ color: item.color || "#d2fa69" }} aria-hidden="true">{item.symbol || item.name.charAt(0).toUpperCase()}</span>
+    {source && !imageFailed && <img className="leaderboard-campaign-option-art" src={source} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} />}
+    <span className="leaderboard-campaign-option-shade" aria-hidden="true" />
+    <span className="leaderboard-campaign-option-name">{item.name}</span>
+    {current && <Check size={17} className="leaderboard-campaign-option-check" aria-hidden="true" />}
+  </Link>;
+}
 
 function CampaignPicker({ campaign, recent, mobile }: { campaign?: CampaignLink; recent: PublicCampaign[]; mobile: boolean }) {
   const [open, setOpen] = useState(false);
@@ -51,7 +65,7 @@ function CampaignPicker({ campaign, recent, mobile }: { campaign?: CampaignLink;
 
   const activeRecent = recent.some((item) => item.slug === campaign?.slug);
   const featured: CampaignLink[] = mobile && !query.trim()
-    ? [...(campaign && !activeRecent ? [campaign] : []), ...recent]
+    ? [...(campaign && !activeRecent ? [rows.find((item) => item.slug === campaign.slug) || campaign] : []), ...recent]
     : [];
   const visible = [...featured, ...rows.filter((item) =>
     !featured.some((featuredItem) => featuredItem.slug === item.slug)
@@ -65,7 +79,7 @@ function CampaignPicker({ campaign, recent, mobile }: { campaign?: CampaignLink;
     {open && <div id={menuId} className="leaderboard-scope-menu">
       <label>Find a campaign<input autoFocus type="search" value={query} placeholder="Name or symbol" onChange={(event) => { setQuery(event.target.value); setAfter(""); setNext(""); setRows([]); }} /></label>
       <div className="leaderboard-scope-results" aria-busy={busy}>
-        {visible.map((item) => <Link key={item.slug} className={item.slug === campaign?.slug ? "is-current" : undefined} aria-current={item.slug === campaign?.slug ? "page" : undefined} to={`/campaign/${encodeURIComponent(item.slug)}/leaderboard`} onClick={() => setOpen(false)}>{item.name}</Link>)}
+        {visible.map((item) => <CampaignMenuItem key={item.slug} item={item} current={item.slug === campaign?.slug} onSelect={() => setOpen(false)} />)}
         {busy && <p role="status">Loading campaigns…</p>}
         {error && <p role="alert">{error}</p>}
         {!busy && !error && !visible.length && <p>{mobile ? "No campaigns found." : "No other campaigns found."}</p>}

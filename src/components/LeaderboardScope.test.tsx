@@ -8,15 +8,15 @@ const mocks = vi.hoisted(() => ({ recentCampaigns: vi.fn(), listCampaigns: vi.fn
 vi.mock("../lib/catalog", () => ({ recentCampaigns: mocks.recentCampaigns, listCampaigns: mocks.listCampaigns }));
 
 const recent = [
-  { slug: "newest", name: "Newest campaign" },
-  { slug: "second", name: "Second campaign" },
+  { slug: "newest", name: "Newest campaign", cover_image: "https://example.test/newest.png" },
+  { slug: "second", name: "Second campaign", symbol: "SC", color: "#99cc44" },
   { slug: "third", name: "Third campaign" },
 ];
 afterEach(() => { cleanup(); mocks.recentCampaigns.mockReset(); mocks.listCampaigns.mockReset(); });
 
 it("keeps P2L Points first and exposes at most three recent campaign tabs", async () => {
   mocks.recentCampaigns.mockResolvedValue({ items: [...recent, { slug: "fourth", name: "Fourth campaign" }], hasMore: true });
-  mocks.listCampaigns.mockResolvedValue({ items: [recent[0], { id: "cp5", slug: "older", name: "Older campaign" }], next_cursor: "" });
+  mocks.listCampaigns.mockResolvedValue({ items: [recent[0], { id: "cp5", slug: "older", name: "Older campaign", cover_image: "https://example.test/older.png" }], next_cursor: "" });
   render(<MemoryRouter><LeaderboardScope /></MemoryRouter>);
   const nav = screen.getByRole("navigation", { name: "Leaderboard scope" });
   expect(nav.firstElementChild?.firstElementChild?.textContent).toBe("P2L Points");
@@ -24,7 +24,9 @@ it("keeps P2L Points first and exposes at most three recent campaign tabs", asyn
   expect(screen.getByRole("link", { name: "Third campaign" })).toBeTruthy();
   expect(screen.queryByText("Fourth campaign")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Other campaigns" }));
-  expect((await screen.findByRole("link", { name: "Older campaign" })).getAttribute("href")).toBe("/campaign/older/leaderboard");
+  const older = await screen.findByRole("link", { name: "Older campaign" });
+  expect(older.getAttribute("href")).toBe("/campaign/older/leaderboard");
+  expect(older.querySelector("img")?.getAttribute("src")).toBe("https://example.test/older.png");
   expect(screen.getAllByText("Newest campaign")).toHaveLength(1);
 });
 
@@ -45,6 +47,13 @@ it("keeps Other campaigns hidden when there are no extra desktop tabs, while mob
   const mobilePicker = screen.getByRole("button", { name: "Campaign scores" });
   expect(mobilePicker.getAttribute("aria-current")).toBe("page");
   fireEvent.click(mobilePicker);
-  expect((await screen.findByRole("link", { name: "Newest campaign", current: "page" })).getAttribute("href")).toBe("/campaign/newest/leaderboard");
+  const selected = await screen.findByRole("link", { name: "Newest campaign", current: "page" });
+  expect(selected.getAttribute("href")).toBe("/campaign/newest/leaderboard");
+  expect(selected.querySelector("img")?.getAttribute("src")).toBe("https://example.test/newest.png");
+  expect(selected.querySelector(".leaderboard-campaign-option-check")).toBeTruthy();
+  fireEvent.error(selected.querySelector("img") as HTMLImageElement);
+  expect(selected.querySelector("img")).toBeNull();
+  expect(selected.querySelector(".leaderboard-campaign-option-fallback")?.textContent).toBe("N");
   expect(screen.getAllByRole("link", { name: "Second campaign" })).toHaveLength(2);
+  expect(screen.getAllByRole("link", { name: "Second campaign" }).find((link) => link.classList.contains("leaderboard-campaign-option"))?.querySelector(".leaderboard-campaign-option-fallback")?.textContent).toBe("SC");
 });
