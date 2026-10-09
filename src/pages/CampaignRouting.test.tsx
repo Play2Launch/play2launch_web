@@ -20,6 +20,7 @@ vi.mock("../lib/api", () => ({ api: { request: mock.request, authenticated: mock
 vi.mock("../lib/catalog", () => ({
   getCampaign: mock.get,
   listCampaigns: mock.list,
+  recentCampaigns: async () => ({ items: [], hasMore: false }),
 }));
 vi.mock("../lib/teams", () => ({
   listTeams: mock.teams,

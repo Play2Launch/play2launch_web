@@ -5,8 +5,11 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 const mocks = vi.hoisted(() => ({ request: vi.fn(), authenticated: vi.fn(), user: { id: "ur1", name: "My player" } as { id: string; name: string } | undefined }));
 vi.mock("../lib/api", () => ({ api: { request: mocks.request, authenticated: mocks.authenticated } }));
+vi.mock("../lib/catalog", () => ({
+  recentCampaigns: async () => ({ items: [{ slug: "phood", name: "PAPERHOOD" }], hasMore: true }),
+  listCampaigns: async () => ({ items: [{ id: "cp2", slug: "older", name: "Older campaign" }], next_cursor: "" }),
+}));
 vi.mock("../state", () => ({ useApp: () => ({ user: mocks.user, setAuthOpen: vi.fn() }) }));
-vi.mock("../components/CampaignPicker", () => ({ CampaignPicker: ({ choose }: { choose: (campaign: { slug: string }) => void }) => <button onClick={() => choose({ slug: "phood" })}>Choose PAPERHOOD</button> }));
 import PointsLeaderboard, { validPointsLeaderboard } from "./PointsLeaderboard";
 
 const snapshot = {
@@ -28,8 +31,8 @@ it("shows global points, an outside-top-100 own rank, and campaign navigation", 
   expect(screen.getByRole("heading", { name: "P2L Points leaderboard" })).toBeTruthy();
   expect(screen.getByRole("link", { name: "Top player" }).getAttribute("href")).toBe("/players/ur2");
   expect(mocks.authenticated.mock.calls[0][0]).toBe("/points/leaderboard/me");
-  fireEvent.click(screen.getByRole("button", { name: /Campaign scores/ }));
-  fireEvent.click(screen.getByRole("button", { name: "Choose PAPERHOOD" }));
+  fireEvent.click(screen.getByRole("button", { name: /Other campaigns/ }));
+  fireEvent.click(await screen.findByRole("link", { name: "Older campaign" }));
   expect(screen.getByRole("heading", { name: "Campaign scores page" })).toBeTruthy();
 });
 it("uses the public endpoint for guests", async () => {

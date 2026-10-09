@@ -17,6 +17,7 @@ vi.mock("../state", () => ({
   }),
 }));
 vi.mock("../lib/catalog", () => ({
+  recentCampaigns: async () => ({ items: [{ name: "PAPERHOOD", slug: "phood" }], hasMore: false }),
   listCampaigns: async () => ({
     items: [
       { name: "PAPERHOOD", slug: "phood", stage: "prelaunch", ticker: "PHOOD" },

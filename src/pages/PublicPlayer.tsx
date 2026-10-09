@@ -7,7 +7,7 @@ import {ActivityFeed} from '../components/ActivityFeed';
 
 type PlayedGame={game_key:string;name:string;rules:string;best:number;rounds:number;last_played:string|null};
 type Participation={id:string;slug:string;name:string;stage:string;team:{id:string;name:string;type?:string}|null;games:PlayedGame[]};
-export type PublicPlayerData={id:string;display_name:string;handle:string;avatar_url:string;kol_verified:boolean;campaigns:Participation[];next_cursor:string};
+export type PublicPlayerData={id:string;display_name:string;handle:string;avatar_url:string;kol_verified:boolean;p2l_points:number;campaigns:Participation[];next_cursor:string};
 export default function PublicPlayer(){
  const {userId=''}=useParams();
  return <Player key={userId} userId={userId}/>;
@@ -27,7 +27,7 @@ function Player({userId}:{userId:string}){
   try{
    const page=await api.request<PublicPlayerData>(`/players/${encodeURIComponent(userId)}${after?'?after='+encodeURIComponent(after):''}`,undefined,{signal:ctrl.signal});
    if(ctrl.signal.aborted)return;
-   if(page.id!==userId||!Array.isArray(page.campaigns))throw new Error('Invalid player profile response.');
+   if(page.id!==userId||!Array.isArray(page.campaigns)||!Number.isSafeInteger(page.p2l_points))throw new Error('Invalid player profile response.');
    setData(old=>after&&old?{...page,campaigns:[...old.campaigns,...page.campaigns.filter(c=>!old.campaigns.some(o=>o.id===c.id))]}:page);
    document.title=`${page.display_name||page.handle||'Player'} · PLAY TO LAUNCH`;
   }catch(e){if(!ctrl.signal.aborted)setError(e instanceof Error?e.message:'Could not load player profile.');}
@@ -43,6 +43,7 @@ function Player({userId}:{userId:string}){
     {data?.kol_verified&&<VerifiedKol avatar/>}
    </span>
    <div><span className="eyebrow">PLAYER PROFILE</span><h1>{data?name:'Player profile'}</h1>{data?.handle&&<p className="accent">@{data.handle}</p>}{data?.kol_verified&&<VerifiedKol/>}</div>
+   {data&&<div className="public-player-points"><span>P2L Points</span><strong>{data.p2l_points.toLocaleString()}</strong></div>}
    {data&&<FollowButton kind="user" targetId={data.id}/>}
   </header>
   <div className="tabs"><button className={tab==='games'?'selected':''} onClick={()=>setTab('games')}>Campaigns & games</button><button className={tab==='posts'?'selected':''} onClick={()=>setTab('posts')}>Posts</button></div>

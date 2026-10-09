@@ -28,7 +28,8 @@ export type PublicCampaign = {
   featured?: boolean;
   sort_order?: number;
 };
-export type CampaignPage = { items: PublicCampaign[]; next_cursor: string };
+export type CampaignPage = { items: PublicCampaign[]; next_cursor: string; order?: string; has_more?: boolean };
+export type RecentCampaigns = { items: PublicCampaign[]; hasMore: boolean };
 
 function isCampaign(value: unknown): value is PublicCampaign {
   if (!value || typeof value !== "object") return false;
@@ -106,6 +107,21 @@ export async function listCampaigns(
     throw new Error("The campaign response was invalid. Please try again.");
   }
   return data;
+}
+export async function recentCampaigns(signal?: AbortSignal): Promise<RecentCampaigns> {
+  const data = await api.request<CampaignPage>(
+    "/campaigns?limit=3&order=recent",
+    undefined,
+    { signal },
+  );
+  if (!data || data.order !== "recent" || !Array.isArray(data.items) || data.items.length > 3 ||
+      (data.has_more !== undefined && typeof data.has_more !== "boolean") ||
+      !data.items.every(isCampaign) || data.next_cursor !== "") {
+    throw new Error("The recent campaign response was invalid. Please try again.");
+  }
+  // Servers deployed before has_more still prove there is no fourth item when
+  // fewer than three were returned. With exactly three, keep the picker visible.
+  return { items: data.items, hasMore: data.has_more ?? data.items.length === 3 };
 }
 export async function getCampaign(
   slug: string,

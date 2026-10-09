@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
 import { api } from "../lib/api";
 import { useApp } from "../state";
-import { CampaignPicker } from "../components/CampaignPicker";
 import { LeaderboardScope } from "../components/LeaderboardScope";
 import { UserAvatar } from "../components/UserAvatar";
 
@@ -22,8 +21,6 @@ export function validPointsLeaderboard(data: PointsLeaderboardData): boolean {
 
 export default function PointsLeaderboard() {
   const app = useApp();
-  const navigate = useNavigate();
-  const [picker, setPicker] = useState(false);
   const [data, setData] = useState<PointsLeaderboardData>();
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState("");
@@ -64,7 +61,6 @@ export default function PointsLeaderboard() {
   }, [userId, retry]);
 
   return <section className="rankings-page points-leaderboard-page">
-    {picker && <CampaignPicker purpose="leaderboard" close={() => setPicker(false)} choose={(campaign) => { setPicker(false); navigate(`/campaign/${campaign.slug}/leaderboard`); }} />}
     <div className="rankings-heading">
       <div>
         <span className="eyebrow">PLATFORM-WIDE STANDINGS</span>
@@ -76,7 +72,7 @@ export default function PointsLeaderboard() {
         <small>{data ? `Updated ${new Date(data.as_of).toLocaleString()}` : "Waiting for standings"}</small>
       </div>
     </div>
-    <LeaderboardScope chooseCampaign={() => setPicker(true)} />
+    <LeaderboardScope />
     <div className="points-board-summary"><strong>P2L Points · Top 100</strong><span>Platform participation points—not a token allocation or campaign score.</span></div>
     {app.user ? <div className="rankings-own"><span>Your P2L Points standing</span><strong>{data?.mine ? `#${data.mine.rank} · ${data.mine.points.toLocaleString()} P2L Points` : busy && !data ? "Loading standing…" : "Not ranked yet"}</strong></div>
       : <div className="rankings-own"><span>See your standing</span><button className="text-link" onClick={() => app.setAuthOpen(true)}>Sign in</button></div>}

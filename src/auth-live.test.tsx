@@ -144,6 +144,26 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("live client flows without sending mail", () => {
+  it("keeps mobile public-profile editing collapsed until the name-row edit button is pressed", async () => {
+    vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    mount();
+    await open();
+    submitCredentials();
+    const name = await screen.findByRole("heading", { name: "Live Player" });
+    const identity = name.closest(".profile-identity");
+    expect(identity).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Public profile" })).toBeNull();
+    const edit = within(identity as HTMLElement).getByRole("button", { name: "Edit" });
+    fireEvent.click(edit);
+    expect(await screen.findByRole("heading", { name: "Public profile" })).toBeTruthy();
+    expect(identity?.querySelector(".profile-mobile-editor")?.nextElementSibling?.classList.contains("profile-tools")).toBe(true);
+    fireEvent.click(within(identity as HTMLElement).getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("heading", { name: "Public profile" })).toBeNull();
+  });
   it("signs in, restores on refresh, signs out locally and switches accounts", async () => {
     mount();
     expect(screen.queryByRole("button", { name: "Connect Wallet" })).toBeNull();
@@ -155,6 +175,7 @@ describe("live client flows without sending mail", () => {
     expect(screen.queryByRole("region", { name: "Wallet connection" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "My teams by campaign" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Practice history on this device" })).toBeNull();
+    expect(screen.queryByText("Practice rounds on this device")).toBeNull();
     expect(
       screen.getByText("LIVE CAMPAIGNS & RANKINGS"),
     ).toBeTruthy();

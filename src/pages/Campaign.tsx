@@ -11,6 +11,7 @@ import {
   Gamepad2,
   LockKeyhole,
   LogOut,
+  Pencil,
   Play,
   Radio,
   Rocket,
@@ -1136,6 +1137,16 @@ export function LaunchPage() {
 export function ProfilePage() {
   const app = useApp();
   const [kolIdentity,setKolIdentity] = useState<{id?:string;approved:boolean}>({approved:false});
+  const [mobileProfile, setMobileProfile] = useState(() => window.matchMedia?.("(max-width: 600px)").matches ?? false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia?.("(max-width: 600px)");
+    if (!media) return;
+    const update = () => setMobileProfile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
   const verified = !!app.user && kolIdentity.id === app.user.id && kolIdentity.approved;
   const total = app.local.runs.length;
   return (
@@ -1168,13 +1179,19 @@ export function ProfilePage() {
       <div className="profile-grid">
         <section className="profile-identity">
           <span className="avatar jumbo kol-avatar-host player-avatar"><UserAvatar key={app.user?.id} name={app.user?.name} src={app.user?.avatarUrl}/>{verified && <VerifiedKol avatar />}</span>
-          <h2>{app.user?.name || "Guest player"} {verified && <VerifiedKol />}</h2>
+          <div className="profile-name-row">
+            <h2>{app.user?.name || "Guest player"} {verified && <VerifiedKol />}</h2>
+            {liveAuth && app.user && mobileProfile && <button type="button" className="profile-edit-trigger" aria-expanded={editProfileOpen} aria-controls="mobile-public-profile-editor" onClick={() => setEditProfileOpen((open) => !open)}>
+              <Pencil size={15} aria-hidden="true" />{editProfileOpen ? "Close" : "Edit"}
+            </button>}
+          </div>
           {app.user?.handle && <div className="profile-username">@{app.user.handle}</div>}
           <KolBadge />
           {!app.user && <>
             <span className="pill neutral">{liveAuth ? "GUEST" : "LOCAL GUEST"}</span>
             <p>{app.demoToolsAvailable ? "Your preview progress stays on this device." : "Sign in to save your profile and join teams."}</p>
           </>}
+          {liveAuth && app.user && mobileProfile && editProfileOpen && <div id="mobile-public-profile-editor" className="profile-mobile-editor"><PublicProfileEditor key={app.user.id} userId={app.user.id} /></div>}
           <ProfileTools onVerified={setKolIdentity} />
           {liveAuth && app.user?.mode === 'live' && <FriendInvite key={app.user.id} userId={app.user.id}/>}
           {app.demoToolsAvailable && (
@@ -1204,24 +1221,20 @@ export function ProfilePage() {
               <ArrowUpRight size={16} />
             </button>
           )}
-          <div className="profile-stats">
+          {!liveAuth && <div className="profile-stats">
             <div>
               <strong>{total}</strong>
-              <span>
-                {liveAuth ? "Practice rounds on this device" : "Rounds played"}
-              </span>
+              <span>Rounds played</span>
             </div>
-            {!liveAuth && (
-              <div>
-                <strong>{Object.keys(app.local.memberships).length}</strong>
-                <span>Campaign teams joined</span>
-              </div>
-            )}
-          </div>
+            <div>
+              <strong>{Object.keys(app.local.memberships).length}</strong>
+              <span>Campaign teams joined</span>
+            </div>
+          </div>}
           {walletConnectionUiVisible && walletAllowed(app.platform?.runtime) && <WalletPanel />}
         </section>
         <section>
-          {liveAuth && app.user && <PublicProfileEditor key={app.user.id} userId={app.user.id} />}
+          {liveAuth && app.user && !mobileProfile && <PublicProfileEditor key={app.user.id} userId={app.user.id} />}
           {liveAuth && app.user && <PlatformPoints key={`points-${app.user.id}`} />}
           {!liveAuth && <>
           <MyTeams compact />

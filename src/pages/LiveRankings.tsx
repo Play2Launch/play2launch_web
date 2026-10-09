@@ -156,8 +156,6 @@ function Board({
   campaign: PublicCampaign;
   unavailable: () => void;
 }) {
-  const navigate = useNavigate();
-  const [picker, setPicker] = useState(false);
   const app = useApp();
   const [teams, setTeams] = useState<ServerTeam[]>([]);
   const [data, setData] = useState<Snapshot>(),
@@ -293,19 +291,9 @@ function Board({
   }
   return (
     <section className="rankings-page">
-      {picker && (
-        <CampaignPicker
-          purpose="leaderboard"
-          close={() => setPicker(false)}
-          choose={(c) => {
-            setPicker(false);
-            navigate(`/campaign/${c.slug}/leaderboard`);
-          }}
-        />
-      )}
       <CampaignNav campaign={headerCampaign} live activeTab="leaderboard" />
       <CampaignIdentityCard campaign={headerCampaign} />
-      <LeaderboardScope campaign={campaign.name} chooseCampaign={() => setPicker(true)} />
+      <LeaderboardScope campaign={campaign} />
       {(error || metaError) && (
         <div className="notice" role="alert">
           <span>
