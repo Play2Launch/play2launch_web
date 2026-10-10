@@ -13,6 +13,7 @@ export type ServerTeam = {
   handle: string;
   initial: string;
   color: string;
+  avatar_url?: string;
   description: string;
   players: number;
 };

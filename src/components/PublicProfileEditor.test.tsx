@@ -1,25 +1,20 @@
 // @vitest-environment jsdom
 import {afterEach,it,expect,vi} from 'vitest';
-import {cleanup,render,screen,fireEvent} from '@testing-library/react';
+import {cleanup,render,screen,fireEvent,waitFor} from '@testing-library/react';
 const mock=vi.hoisted(()=>({request:vi.fn(),update:vi.fn()}));
 vi.mock('../lib/api',async(importOriginal)=>({...await importOriginal<typeof import('../lib/api')>(),api:{authenticated:mock.request}}));
 vi.mock('../state',()=>({useApp:()=>({updatePublicName:mock.update})}));
 import {PublicProfileEditor} from './PublicProfileEditor';
 afterEach(()=>{cleanup();vi.clearAllMocks();});
-it('synchronizes the server avatar on load, save and removal',async()=>{
+it('synchronizes the server avatar on load and removal',async()=>{
  mock.request.mockResolvedValueOnce({id:'ur1',nickname:'Bee',avatar_url:'https://example.com/old.png'})
- .mockResolvedValueOnce({id:'ur1',nickname:'Bee',avatar_url:'https://example.com/new.png'})
- .mockResolvedValueOnce({id:'ur1',nickname:'Bee',avatar_url:''});
+ .mockResolvedValueOnce({avatar_url:''});
  render(<PublicProfileEditor userId="ur1"/>);
- const avatar=await screen.findByPlaceholderText('https://… (optional)');
+ await screen.findByAltText('Current avatar');
  expect(mock.update).toHaveBeenLastCalledWith('ur1','Bee','','https://example.com/old.png');
- fireEvent.change(avatar,{target:{value:'https://example.com/new.png'}});
- fireEvent.click(screen.getByRole('button',{name:'Save public profile'}));
- await screen.findByText(/Public profile saved/);
- expect(mock.update).toHaveBeenLastCalledWith('ur1','Bee','','https://example.com/new.png');
- fireEvent.change(avatar,{target:{value:''}});
- fireEvent.click(screen.getByRole('button',{name:'Save public profile'}));
- await screen.findByText(/Public profile saved/);
+ fireEvent.click(screen.getByRole('button',{name:'Remove avatar'}));
+ await waitFor(()=>expect(screen.queryByAltText('Current avatar')).toBeNull());
+ expect(mock.request).toHaveBeenLastCalledWith('/user/avatar/remove',{});
  expect(mock.update).toHaveBeenLastCalledWith('ur1','Bee','','');
 });
 it('loads and saves only public fields',async()=>{

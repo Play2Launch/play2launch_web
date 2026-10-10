@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Users } from 'lucide-react';
 import { api } from '../lib/api';
 import { joinTeam } from '../lib/teams';
 import type { Activity } from './ActivityFeed';
+import { TeamAvatarImage } from './TeamAvatarImage';
 export type TeamChoice = { campaign_id: string; slug: string; name: string; team_name: string; membership: { team_id: string } };
-export type TeamAttachment = { id: string; name: string; color: string; players: number; score: number; rank: number; contribution: number; member_rank: number; invite_token: string; as_of: string };
+export type TeamAttachment = { id: string; name: string; color: string; avatar_url?: string; players: number; score: number; rank: number; contribution: number; member_rank: number; invite_token: string; as_of: string };
 export type TeamEntryAction = 'join' | 'own' | 'none' | 'expired' | 'closed' | 'guest';
 
 export function TeamPostPicker({ select }: { select: (t: TeamChoice) => void }) {
@@ -35,7 +35,7 @@ export function TeamPostCard({ item }: { item: Activity }) {
   catch(e){setError(e instanceof Error?e.message:'Could not join team.');}finally{lock.current=false;setBusy(false);}
  }
  return <div className="post-result team-post-card">
-  <div className="team-post-heading"><div className="following-identity"><span className="avatar team-avatar" style={{background:/^#[0-9a-f]{6}$/i.test(t.color)?t.color:undefined}}><Users size={18}/></span><div><strong>{t.name}</strong><p className="small muted">{item.name} · {t.players.toLocaleString()} players</p></div></div><span className="eyebrow">TEAM REPORT</span></div>
+  <div className="team-post-heading"><div className="following-identity"><span className="avatar team-avatar" style={{background:/^#[0-9a-f]{6}$/i.test(t.color)?t.color:undefined}}><TeamAvatarImage url={t.avatar_url} initial={t.name.charAt(0).toUpperCase()||'T'}/></span><div><strong>{t.name}</strong><p className="small muted">{item.name} · {t.players.toLocaleString()} players</p></div></div><span className="eyebrow">TEAM REPORT</span></div>
   <div className="team-post-stats"><div><small>Team rank</small><strong>{t.rank>0?`#${t.rank}`:'—'}</strong></div><div><small>Team game points</small><strong>{t.score.toLocaleString()}</strong></div><div><small>Author’s contribution</small><strong>{t.contribution.toLocaleString()}</strong></div><div><small>Author’s team rank</small><strong>{t.member_rank>0?`#${t.member_rank}`:'—'}</strong></div></div>
   <div className="team-post-footer"><small className="muted">Snapshot · {new Date(t.as_of).toLocaleString()}</small>
   {item.team_action==='join'&&<button className="btn btn-primary" disabled={busy} onClick={()=>void join()}>{busy?'Joining…':'Join team'}</button>}

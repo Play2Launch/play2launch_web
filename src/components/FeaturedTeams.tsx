@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 import { listTeams, type ServerTeam } from "../lib/teams";
 import { number, short } from "../data";
 import { TeamBadge } from './TeamBadge';
+import { TeamAvatarImage } from './TeamAvatarImage';
 
 type Entry = { id: string; score: number; team?: ServerTeam };
 
@@ -108,7 +109,7 @@ export function FeaturedTeams({ slug, name }: { slug: string; name: string }) {
         >
           <span className="rank">0{i + 1}</span>
           <span className="avatar team-avatar" style={{ background: r.team?.color }}>
-            {r.team?.initial || "T"}
+            <TeamAvatarImage url={r.team?.avatar_url} initial={r.team?.initial || "T"}/>
             <TeamBadge />
           </span>
           <span className="team-name">

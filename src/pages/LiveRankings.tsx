@@ -14,6 +14,7 @@ import { safeImageSource } from "../components/CampaignArtwork";
 import { CampaignIdentityCard, CampaignNav } from "../components/CampaignHeader";
 import { VerifiedKol } from "../components/VerifiedKol";
 import { TeamBadge } from "../components/TeamBadge";
+import { TeamAvatarImage } from "../components/TeamAvatarImage";
 import { LeaderboardScope } from "../components/LeaderboardScope";
 import PointsLeaderboard from "./PointsLeaderboard";
 type Rank = {
@@ -435,7 +436,7 @@ function Board({
                   }}
                 >
                   {kind === "teams" ? (
-                    <>{teams.find((t) => t.id === r.id)?.initial || "T"}<TeamBadge /></>
+                    <><TeamAvatarImage url={teams.find((t) => t.id === r.id)?.avatar_url} initial={teams.find((t) => t.id === r.id)?.initial || "T"}/><TeamBadge /></>
                   ) : (
                     <Link to={`/players/${encodeURIComponent(r.id)}`} aria-label={`View ${label(r)} profile`}><PlayerAvatar
                       key={r.avatar_url || r.id}
@@ -489,7 +490,7 @@ function Board({
                       <div className="rankings-identity">
                       {kind === "teams" ? (
                         <Link className="rankings-player-name" to={`/campaign/${slug}/teams?selected=${r.id}`}>
-                          <span className="rankings-avatar rankings-avatar-small team-avatar" style={{background:teams.find(t=>t.id===r.id)?.color}}>{teams.find(t=>t.id===r.id)?.initial||'T'}<TeamBadge /></span>{' '}
+                          <span className="rankings-avatar rankings-avatar-small team-avatar" style={{background:teams.find(t=>t.id===r.id)?.color}}><TeamAvatarImage url={teams.find(t=>t.id===r.id)?.avatar_url} initial={teams.find(t=>t.id===r.id)?.initial||'T'}/><TeamBadge /></span>{' '}
                           <span className="rankings-player-label">
                             <span>{label(r)}</span>
                             <span className="rankings-mobile-detail">{teams.find((t) => t.id === r.id)?.players ?? "—"} members</span>

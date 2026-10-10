@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { TeamJoinSettings } from "../components/TeamJoinSettings";
+import { AvatarEditor } from "../components/AvatarEditor";
 import { CaptainTeams } from "../components/CaptainTeams";
 import { TeamInvite } from "../components/TeamInvite";
 import { getCampaign } from "../lib/catalog";
@@ -180,6 +181,7 @@ export function LiveCaptain({ userId }: { userId: string }) {
             <p>Loading membership…</p>
           ) : owned ? (
             <>
+              <AvatarEditor title="Team avatar" endpoint={`/campaigns/${encodeURIComponent(slug)}/teams/${encodeURIComponent(owned.id)}/avatar`} value={owned.avatar_url} onChange={url=>setTeams(previous=>previous.map(t=>t.id===owned.id?{...t,avatar_url:url}:t))}/>
               <TeamJoinSettings key={`${owned.id}:${owned.version||0}`} slug={slug} team={owned} onChange={setTeams}/>
               <p>
                 You already lead {owned.name}. Each captain can create one team

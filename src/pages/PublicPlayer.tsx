@@ -4,6 +4,7 @@ import {api} from '../lib/api';
 import {VerifiedKol} from '../components/VerifiedKol';
 import {FollowButton} from '../components/FollowButton';
 import {ActivityFeed} from '../components/ActivityFeed';
+import {publicAvatarURL} from '../lib/avatar';
 
 type PlayedGame={game_key:string;name:string;rules:string;best:number;rounds:number;last_played:string|null};
 type Participation={id:string;slug:string;name:string;stage:string;team:{id:string;name:string;type?:string}|null;games:PlayedGame[]};
@@ -39,7 +40,7 @@ function Player({userId}:{userId:string}){
   <Link className="muted" to="/leaderboard">← Leaderboard</Link>
   <header className="public-player-header membership-card">
    <span className="avatar large public-player-avatar player-avatar">
-    {data?.avatar_url?.startsWith('https://')&&!failedImage?<img src={data.avatar_url} alt="" referrerPolicy="no-referrer" onError={()=>setFailedImage(true)}/>:name.charAt(0).toUpperCase()}
+    {publicAvatarURL(data?.avatar_url)&&!failedImage?<img src={publicAvatarURL(data?.avatar_url)} alt="" referrerPolicy="no-referrer" onError={()=>setFailedImage(true)}/>:name.charAt(0).toUpperCase()}
     {data?.kol_verified&&<VerifiedKol avatar/>}
    </span>
    <div><span className="eyebrow">PLAYER PROFILE</span><h1>{data?name:'Player profile'}</h1>{data?.handle&&<p className="accent">@{data.handle}</p>}{data?.kol_verified&&<VerifiedKol/>}</div>

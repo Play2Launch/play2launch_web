@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { listTeams, type ServerTeam } from '../lib/teams';
 import { number, short } from '../data';
 import { TeamBadge } from './TeamBadge';
+import { TeamAvatarImage } from './TeamAvatarImage';
 
 type Ranking = { id: string; score: number };
 type Preview = { team: ServerTeam; score?: number; rank?: number };
@@ -72,7 +73,7 @@ function PreviewContent({ slug }: { slug: string }) {
       {rows?.length === 0 && <div className="empty-panel"><Users /><h3>No teams yet</h3><Link to={`/campaign/${slug}/teams`}>Explore team options</Link></div>}
       {rows?.map(({ team, score, rank }) => <Link key={team.id} className="team-tile" to={`/campaign/${slug}/teams?selected=${encodeURIComponent(team.id)}`}>
         <span className="eyebrow">{rank ? `#${rank} IN THE BATTLE` : 'JOIN THE BATTLE'}</span>
-        <span className="avatar large team-avatar" style={{ background: team.color }}>{team.initial}<TeamBadge /></span>
+        <span className="avatar large team-avatar" style={{ background: team.color }}><TeamAvatarImage url={team.avatar_url} initial={team.initial}/><TeamBadge /></span>
         <h3>{team.name}</h3>
         <span className="muted">{number(team.players)} players</span>
         <div className="team-tile-bottom"><strong title={score === undefined ? undefined : `${number(score)} points`}>{score === undefined ? 'No scores yet' : short(score)}</strong><ArrowUpRight size={18} /></div>

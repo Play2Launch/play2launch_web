@@ -4,6 +4,7 @@ import { useApp } from "../state";
 import { Modal } from "../App";
 import { ArrowRight, AtSign } from "lucide-react";
 import { createPortal } from "react-dom";
+import { AvatarEditor } from "./AvatarEditor";
 type Profile = { id: string; nickname: string; avatar_url: string; handle?: string; handle_changes_remaining?: number };
 export function PublicProfileEditor({ userId }: { userId: string }) {
   const app = useApp();
@@ -68,7 +69,7 @@ export function PublicProfileEditor({ userId }: { userId: string }) {
       setSaved(true);
     } catch (e) {
       setError(
-        e instanceof ApiError ? e.message : "Could not save. Use a 2–60 character display name without an email address, and an HTTPS image URL.",
+        e instanceof ApiError ? e.message : "Could not save. Use a 2–60 character display name without an email address.",
       );
     } finally {
       setBusy(false);
@@ -127,28 +128,13 @@ export function PublicProfileEditor({ userId }: { userId: string }) {
               {profile.handle ? ` ${profile.handle_changes_remaining ?? 1} username change remaining. Old usernames stay reserved.` : " First setup is optional; you can change it once afterward."}
               {" "}This does not change your sign-in email or Telegram username.
             </small>
-            <label>
-              Avatar image URL
-              <input
-                type="url"
-                placeholder="https://… (optional)"
-                maxLength={2048}
-                value={avatar}
-                onChange={(e) => {
-                  setAvatar(e.target.value);
-                  setSaved(false);
-                }}
-              />
-            </label>
-            <small>
-              Use a public HTTPS image URL. Leave blank for the default avatar.
-            </small>
             <button className="btn btn-primary" type="submit">
               {busy ? "Saving…" : "Save public profile"}
             </button>
           </fieldset>
         </form>
       )}
+      {profile && <AvatarEditor title="Profile avatar" endpoint="/user/avatar" value={avatar} onChange={url=>{setAvatar(url);setProfile(p=>p?{...p,avatar_url:url}:p);app.updatePublicName(userId,profile.nickname,profile.handle??"",url);setSaved(false);}} />}
       {error && <p role="alert">{error}</p>}
       {confirmRename && createPortal(
         <Modal title="Change your username?" close={() => setConfirmRename(false)}>

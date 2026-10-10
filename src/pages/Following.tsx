@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Radio, ArrowUpRight, SlidersHorizontal, Compass, Layers, Flag } from 'lucide-react';
+import { Users, Radio, ArrowUpRight, SlidersHorizontal, Compass, Layers, Flag, Search, X } from 'lucide-react';
 import { useApp } from '../state';
 import { api, liveAuth } from '../lib/api';
 import { followingPage, type FollowCounts, type FollowItem, type FollowKind } from '../lib/follow';
@@ -8,6 +8,7 @@ import { FollowButton } from '../components/FollowButton';
 import { UserAvatar } from '../components/UserAvatar';
 import { ActivityFeed } from '../components/ActivityFeed';
 import { PostComposer } from '../components/PostComposer';
+import { FeedPeopleSearch } from '../components/FeedPeopleSearch';
 
 export default function Following() {
   const app = useApp();
@@ -21,15 +22,19 @@ function Subscriptions() {
   const [revision,setRevision] = useState(0);
   const [kind, setKind] = useState<FollowKind | ''>('');
   const [view,setView] = useState<'discover'|'activity'|'manage'>('discover');
+  const [peopleQuery,setPeopleQuery] = useState('');
   const filters=<div className="feed-chips" aria-label="Following filters">{([['', 'All', Layers], ['user', 'People', Users], ['campaign', 'Campaigns', Flag]] as const).map(([value, label, Icon]) => <button key={value} className={kind===value?'selected':''} aria-pressed={kind===value} onClick={()=>setKind(value)}><Icon size={14}/>{label}</button>)}</div>;
   return <div className="feed-workspace">
     <div className="feed-main">
+    <div className="feed-people-search"><Search size={18} aria-hidden="true"/><input type="search" aria-label="Search people" placeholder="Search people by name or @username" value={peopleQuery} maxLength={40} onChange={event=>setPeopleQuery(event.target.value)} onKeyDown={event=>{if(event.key==='Escape')setPeopleQuery('');}}/>{peopleQuery&&<button type="button" aria-label="Clear people search" onClick={()=>setPeopleQuery('')}><X size={16}/></button>}</div>
+    {peopleQuery.trim() ? <FeedPeopleSearch query={peopleQuery}/> : <>
     <div className="feed-primary-tabs" aria-label="Feed view"><button className={view==='discover'?'selected':''} aria-pressed={view==='discover'} onClick={()=>setView('discover')}>For you</button><button className={view==='activity'?'selected':''} aria-pressed={view==='activity'} onClick={()=>setView('activity')}>Following</button></div>
     {signedIn && view!=='manage' && <PostComposer entryAvatar={<span className="avatar player-avatar"><UserAvatar name={app.user?.name} src={app.user?.avatarUrl}/></span>} onPosted={() => {setRevision(n=>n+1);setView('discover');setKind('');}} />}
     {view==='manage' && <div className="feed-manage-heading"><h2>Manage following</h2>{filters}</div>}
     {view==='discover' ? <ActivityFeed key={`discover:${kind}:${revision}`} kind={kind} discover filters={filters}/> : !signedIn ? <div className="empty-panel"><Radio size={28}/><h2>Start with people you believe in.</h2><p>Sign in to see updates from the people and campaigns you follow.</p><button className="btn btn-primary" onClick={()=>app.setAuthOpen(true)}>Sign in to follow</button></div> : view==='activity'?<ActivityFeed key={`${kind}:${revision}`} kind={kind} filters={filters}/>:<SubscriptionList key={kind} kind={kind} />}
+    </>}
     </div>
-    <aside className="feed-sidebar" aria-label="Community shortcuts">{signedIn && <div className="feed-side-panel"><span className="eyebrow">YOUR CORNER</span><h2>Keep your people close.</h2><button aria-pressed={view==='manage'} onClick={()=>setView('manage')}><SlidersHorizontal size={18}/><span>Manage following</span><ArrowUpRight size={15}/></button></div>}<div className="feed-side-panel feed-explore"><Compass size={24}/><h2>Find your next campaign.</h2><p>Explore games, meet teams and see what the community is building.</p><Link to="/">Explore campaigns <ArrowUpRight size={16}/></Link></div></aside>
+    {!peopleQuery.trim()&&<aside className="feed-sidebar" aria-label="Community shortcuts">{signedIn && <div className="feed-side-panel"><span className="eyebrow">YOUR CORNER</span><h2>Keep your people close.</h2><button aria-pressed={view==='manage'} onClick={()=>setView('manage')}><SlidersHorizontal size={18}/><span>Manage following</span><ArrowUpRight size={15}/></button></div>}<div className="feed-side-panel feed-explore"><Compass size={24}/><h2>Find your next campaign.</h2><p>Explore games, meet teams and see what the community is building.</p><Link to="/">Explore campaigns <ArrowUpRight size={16}/></Link></div></aside>}
   </div>;
 }
 function SubscriptionList({ kind }: { kind: FollowKind | '' }) {

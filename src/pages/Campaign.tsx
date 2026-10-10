@@ -50,6 +50,7 @@ import { TeamMembers, type TeamScoreSummary } from "../components/TeamMembers";
 import { TeamActions } from "../components/TeamActions";
 import { VerifiedKol } from "../components/VerifiedKol";
 import { TeamBadge } from "../components/TeamBadge";
+import { TeamAvatarImage, teamAvatarURL } from "../components/TeamAvatarImage";
 import { UserAvatar } from '../components/UserAvatar';
 import { PublicProfileEditor } from "../components/PublicProfileEditor";
 import { PlatformPoints } from "../components/PlatformPoints";
@@ -165,7 +166,7 @@ export function CampaignPage({
               >
                 <span className="eyebrow">#{i + 1} IN THE BATTLE</span>
                 <span className="avatar large team-avatar" style={{ background: t.color }}>
-                  {t.initial}
+                  <TeamAvatarImage url={teamAvatarURL(t)} initial={t.initial}/>
                   <TeamBadge />
                 </span>
                 <h3>{t.name}</h3>
@@ -527,6 +528,7 @@ export function TeamPage({
       handle: string;
       initial: string;
       color: string;
+      avatar_url?: string;
       description: string;
       players: number;
       score: number;
@@ -651,7 +653,7 @@ export function TeamPage({
                     className="avatar large team-avatar"
                     style={{ background: t.color }}
                   >
-                    {t.initial}
+                    <TeamAvatarImage url={teamAvatarURL(t)} initial={t.initial}/>
                     <TeamBadge />
                   </span>
                   <span className="team-name">
@@ -703,7 +705,7 @@ export function TeamPage({
               className="avatar jumbo team-avatar"
               style={{ background: current.color }}
             >
-              {current.initial}
+              <TeamAvatarImage url={teamAvatarURL(current)} initial={current.initial}/>
               <TeamBadge />
             </span>
             <span className="team-detail-rank">
@@ -861,7 +863,7 @@ export function LeaderboardPage() {
               )}
             </span>
             <span className="avatar jumbo team-avatar" style={{ background: t.color }}>
-              {t.initial}
+              <TeamAvatarImage url={teamAvatarURL(t)} initial={t.initial}/>
               <TeamBadge />
             </span>
             <h3>{t.name}</h3>
@@ -917,7 +919,7 @@ export function LeaderboardPage() {
                       className="table-team"
                     >
                       <span className="avatar team-avatar" style={{ background: t.color }}>
-                        {t.initial}
+                        <TeamAvatarImage url={teamAvatarURL(t)} initial={t.initial}/>
                         <TeamBadge />
                       </span>
                       <span>

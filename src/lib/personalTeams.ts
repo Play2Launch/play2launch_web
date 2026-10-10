@@ -1,6 +1,7 @@
 import { api } from "./api";
 
 export type PersonalTeam = {
+  avatar_url?: string;
   slug: string;
   team_id: string;
   team_name: string;

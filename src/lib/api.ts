@@ -128,13 +128,14 @@ export class ApiClient {
       controller.abort();
     }, 12000);
     const form = data instanceof URLSearchParams;
+    const multipart = data instanceof FormData;
     try {
       const response = await this.transport(this.base + path, {
         method: data === undefined ? "GET" : "POST",
         credentials: options.authorization==='cookie' ? 'include' : 'omit',
         cache: "no-store",
         headers: {
-          ...(data === undefined
+          ...(data === undefined || multipart
             ? {}
             : {
                 "Content-Type": form
@@ -150,7 +151,9 @@ export class ApiClient {
         body:
           data === undefined
             ? undefined
-            : form
+            : multipart
+              ? data
+              : form
               ? data.toString()
               : JSON.stringify(data),
         signal: controller.signal,

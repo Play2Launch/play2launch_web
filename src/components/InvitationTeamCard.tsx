@@ -1,6 +1,7 @@
 import { UsersRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { safeImageSource } from "./CampaignArtwork";
+import { TeamAvatarImage } from "./TeamAvatarImage";
 
 export type InvitationTeam = {
   slug: string;
@@ -11,6 +12,7 @@ export type InvitationTeam = {
   inviterName: string;
   initial?: string;
   color?: string;
+  avatarUrl?: string;
   players?: number;
   joinDeadline?: string;
 };
@@ -25,7 +27,7 @@ export function InvitationTeamCard({ team, action, status }: {
   return <article className="invitation-team-card">
     {cover && <img className="invitation-team-watermark" src={cover} alt="" aria-hidden="true" referrerPolicy="no-referrer" onError={event => { event.currentTarget.hidden = true; }} />}
     <div className="invitation-team-card-main">
-      <span className="invitation-team-avatar" style={team.color ? { backgroundColor: team.color } : undefined} aria-hidden="true">{initial}</span>
+      <span className="invitation-team-avatar" style={team.color ? { backgroundColor: team.color, position:"relative", overflow:"hidden" } : {position:"relative",overflow:"hidden"}} aria-hidden="true"><TeamAvatarImage url={team.avatarUrl} initial={initial}/></span>
       <div className="invitation-team-info">
         <span className="invitation-team-campaign">{team.campaignName}</span>
         <h2>{team.teamName}</h2>

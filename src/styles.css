@@ -4576,6 +4576,21 @@ body:has(.game-embed) .page-container {
 .following-page .following-heading { margin-bottom:22px; }
 .following-page .following-heading h1 { display:flex;align-items:center;gap:12px;font-size:34px;margin:6px 0;letter-spacing:-1px; }
 .following-page .following-heading p { margin:0;font-size:13px; }
+.feed-people-search { display:flex;align-items:center;gap:10px;margin:0 0 14px;padding:0 13px;min-height:46px;border:1px solid var(--border);border-radius:12px;background:#141a11;color:var(--muted); }
+.feed-people-search:focus-within { border-color:var(--accent); }
+.feed-people-search input { flex:1;min-width:0;border:0;outline:0;background:transparent;color:#f0f1e9;font:inherit;font-size:14px; }
+.feed-people-search input::placeholder { color:var(--muted); }
+.feed-people-search button { display:grid;place-items:center;padding:6px;border:0;background:transparent;color:var(--muted);cursor:pointer; }
+.feed-people-search button:hover { color:var(--accent); }
+.feed-people-results { min-height:180px; }
+.feed-people-results h2 { margin:8px 0 16px;font-size:20px; }
+.feed-people-list { display:grid;gap:8px; }
+.feed-person { display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:#f0f1e9;text-decoration:none; }
+.feed-person:hover { border-color:var(--accent); }
+.feed-person-label { display:grid;gap:3px;flex:1;min-width:0; }
+.feed-person-label strong,.feed-person-label small { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.feed-person-label small { color:var(--accent); }
+.feed-person > svg { color:var(--muted); }
 .feed-live-dot { width:7px;height:7px;border-radius:50%;background:var(--accent); }
 .feed-workspace { display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:28px;align-items:start; }
 .feed-main { min-width:0; }

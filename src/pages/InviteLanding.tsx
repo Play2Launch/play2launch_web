@@ -150,7 +150,7 @@ function PersonalLanding({ userId }: { userId: string }) {
           <div className="personal-invite-team-list">{teams.slice(0, visibleTeams).map((team) => {
             const joined = team.viewer_team_id === team.team_id;
             const otherTeam = !!team.viewer_team_id && !joined;
-            return <InvitationTeamCard key={`${team.slug}:${team.team_id}`} team={{slug:team.slug,teamId:team.team_id,teamName:team.team_name,campaignName:team.campaign_name,coverImage:campaignCovers[team.slug],inviterName:person.name,initial:team.initial,color:team.color,players:team.players,joinDeadline:team.join_deadline_at}}
+            return <InvitationTeamCard key={`${team.slug}:${team.team_id}`} team={{slug:team.slug,teamId:team.team_id,teamName:team.team_name,campaignName:team.campaign_name,coverImage:campaignCovers[team.slug],inviterName:person.name,initial:team.initial,color:team.color,avatarUrl:team.avatar_url,players:team.players,joinDeadline:team.join_deadline_at}}
               status={joined ? "Already on this team" : otherTeam ? "You already have a team in this campaign" : !app.user ? "Included when you create an account" : undefined}
               action={app.user && !joined && !otherTeam ? <button className="btn btn-secondary" disabled={!visitID || !!joiningTeam} onClick={() => void join(team)}>{joiningTeam === team.team_id ? "Joining…" : "Join this team"}</button> : undefined} />;
           })}</div>
@@ -227,7 +227,7 @@ function TeamLanding({ token }: { token: string }) {
         <h1><span>{preview.inviter_name}</span> invited you to join <span>{preview.team_name}</span>.</h1>
         <p>Play {preview.campaign_name} together. Your team membership applies only to this campaign; past scores stay with the team where you earned them.</p>
         {joinClosed && !joined && <p className="invite-warning" role="status">This campaign is no longer accepting new team members. You can still explore or try the game.</p>}
-        <InvitationTeamCard team={{slug:preview.slug,teamId:preview.team_id,teamName:preview.team_name,campaignName:preview.campaign_name,coverImage:campaign?.cover_image,inviterName:preview.inviter_name,initial:teamDetails?.initial,color:teamDetails?.color,players:teamDetails?.players}}
+        <InvitationTeamCard team={{slug:preview.slug,teamId:preview.team_id,teamName:preview.team_name,campaignName:preview.campaign_name,coverImage:campaign?.cover_image,inviterName:preview.inviter_name,initial:teamDetails?.initial,color:teamDetails?.color,avatarUrl:teamDetails?.avatar_url,players:teamDetails?.players}}
           status={joined ? `You’re on ${preview.team_name}.` : undefined}
           action={!joined && (!app.user ? <button className="btn btn-primary" disabled={joinClosed} onClick={() => {
               setAutoJoinRequested(true);

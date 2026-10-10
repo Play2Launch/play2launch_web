@@ -10,7 +10,19 @@ vi.mock('../lib/api', () => ({ liveAuth: true, api: { authenticated: vi.fn(), re
 const person = { user_id: 'ur1', target_type: 'user', target_id: 'ur2', name: 'Paper Captain', handle: 'captain' };
 const campaign = { user_id: 'ur1', target_type: 'campaign', target_id: 'cp1', name: 'Moon Run', slug: 'moon-run' };
 function mount() { const view=render(<MemoryRouter><Following /></MemoryRouter>); if(mock.user)fireEvent.click(screen.getByRole('button',{name:'Manage following'})); return view; }
-afterEach(() => { cleanup(); mock.user = { id: 'ur1', mode: 'live' }; vi.mocked(api.authenticated).mockReset(); mock.signIn.mockReset(); });
+afterEach(() => { cleanup(); mock.user = { id: 'ur1', mode: 'live' }; vi.mocked(api.authenticated).mockReset(); vi.mocked(api.request).mockReset(); vi.mocked(api.request).mockImplementation(async()=>({items:[],next_cursor:''})); mock.signIn.mockReset(); });
+it('searches public people from Feed without searching posts or campaigns',async()=>{
+ mock.user=null;
+ vi.mocked(api.request).mockImplementation(async path=>path.startsWith('/players/search?')?{items:[{id:'ur2',name:'Paper Captain',handle:'captain'}]}:{items:[],next_cursor:''});
+ mount();
+ fireEvent.change(screen.getByRole('searchbox',{name:'Search people'}),{target:{value:'@cap'}});
+ const result=await screen.findByRole('link',{name:/Paper Captain/});
+ expect(result.getAttribute('href')).toBe('/players/ur2');
+ expect(vi.mocked(api.request).mock.calls.some(([path])=>path==='/players/search?q=%40cap')).toBe(true);
+ expect(screen.queryByRole('button',{name:'For you'})).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'Clear people search'}));
+ expect(screen.getByRole('button',{name:'For you'})).toBeTruthy();
+});
 it('keeps guest state private and leaves team navigation out of Feed', () => {
   mock.user = null; mount(); expect(api.authenticated).not.toHaveBeenCalled();
   expect(screen.queryByRole('link', { name: /My teams/ })).toBeNull();

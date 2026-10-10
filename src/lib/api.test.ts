@@ -39,6 +39,17 @@ function memoryStorage() {
   };
 }
 describe("DashFun authentication contract", () => {
+ it("sends avatar uploads as authenticated multipart without forcing JSON headers",async()=>{
+  const transport=vi.fn().mockResolvedValue(response({avatar_url:"https://api.test/avatar.jpg"}));
+  const client=new ApiClient("https://api.test",transport,memoryStorage());
+  client.remember({kind:"authenticated",user:{id:"ur1",name:"P",mode:"live"},credential:{kind:"account",accountId:"AC1",token:"secret"}});
+  const form=new FormData();form.append("avatar",new Blob(["image"],{type:"image/jpeg"}),"avatar.jpg");
+  await client.authenticated("/user/avatar",form);
+  const options=transport.mock.calls[0][1] as RequestInit;
+  expect(options.body).toBe(form);
+  expect((options.headers as Record<string,string>).Authorization).toBe("bearer secret");
+  expect((options.headers as Record<string,string>)["Content-Type"]).toBeUndefined();
+ });
  it.each(['login','activation'])('uses a persistent cookie after email %s, without check_token renewal',async flow=>{
   let signedIn=false;
   const storage=memoryStorage();
