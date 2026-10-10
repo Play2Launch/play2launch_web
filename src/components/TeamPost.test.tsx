@@ -33,10 +33,12 @@ it('sends guests through the existing invitation route',()=>{
 });
 it('loads eligibility for all cards in one authenticated batch',async()=>{
  const second={...item,id:'sp'+'b'.repeat(64)};
- vi.mocked(api.authenticated).mockResolvedValueOnce({items:[item,second],next_cursor:''}).mockResolvedValueOnce({[item.id]:'none',[second.id]:'join'});
+ vi.mocked(api.authenticated).mockResolvedValueOnce({items:[item,second],next_cursor:''}).mockResolvedValueOnce({[item.id]:'none',[second.id]:'join'}).mockResolvedValueOnce({[item.id]:false,[second.id]:true});
  render(<MemoryRouter><ActivityFeed kind="user"/></MemoryRouter>);
  await screen.findByRole('button',{name:'Join team'});
  expect(screen.getAllByRole('button',{name:'Join team'})).toHaveLength(1);
- expect(api.authenticated).toHaveBeenCalledTimes(2);
- expect(api.authenticated).toHaveBeenLastCalledWith('/social/team-entries',{post_ids:[item.id,second.id]},expect.anything());
+ expect(api.authenticated).toHaveBeenCalledTimes(3);
+ expect(api.authenticated).toHaveBeenNthCalledWith(2,'/social/team-entries',{post_ids:[item.id,second.id]},expect.anything());
+ expect(api.authenticated).toHaveBeenNthCalledWith(3,'/social/post-like-states',{post_ids:[item.id,second.id]},expect.anything());
+ expect(screen.getByRole('button',{name:'Unlike post'})).toBeTruthy();
 });

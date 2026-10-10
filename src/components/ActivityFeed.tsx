@@ -9,7 +9,7 @@ import { CampaignActivity, type CampaignEvent } from './CampaignActivity';
 import { useApp } from '../state';
 import type { TeamAttachment, TeamEntryAction } from './TeamPost';
 
-export type Activity = { cover_image?: string; event?: CampaignEvent; scoring_ends_at?: string; author_kol_verified?: boolean; author_avatar_url?: string; team?: TeamAttachment; team_action?: TeamEntryAction; type?: 'score' | 'post' | 'campaign'; text?: string; session_id?: string; played_at?: string; user_id?: string; author?: string; score?: number; game_key?: string; rules?: string; id: string; campaign_id: string; name: string; slug: string; milestone: number; points: number; target: number; score_per_point: number; reason: 'participation' | 'goal_adjusted'; at: string };
+export type Activity = { cover_image?: string; event?: CampaignEvent; scoring_ends_at?: string; author_kol_verified?: boolean; author_avatar_url?: string; like_count?: number; liked_by_me?: boolean; team?: TeamAttachment; team_action?: TeamEntryAction; type?: 'score' | 'post' | 'campaign'; text?: string; session_id?: string; played_at?: string; user_id?: string; author?: string; score?: number; game_key?: string; rules?: string; id: string; campaign_id: string; name: string; slug: string; milestone: number; points: number; target: number; score_per_point: number; reason: 'participation' | 'goal_adjusted'; at: string };
 type FeedPage = { items: Activity[]; next_cursor: string };
 function valid(page: FeedPage): boolean {
   return !!page && typeof page.next_cursor === 'string' && Array.isArray(page.items) && page.items.every(i => {
@@ -18,7 +18,7 @@ function valid(page: FeedPage): boolean {
     const author = /^ur[0-9a-z]{1,32}$/.test(i.user_id || '') && typeof i.author === 'string';
     const result = /^cp[0-9a-z]{1,32}$/.test(i.campaign_id) && typeof i.name === 'string' && typeof i.slug === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(i.slug) && Number.isSafeInteger(i.score) && i.score! >= 0;
     if (i.team && (!result || i.session_id || !/^tm[0-9a-z]{1,13}$/.test(i.team.id) || typeof i.team.name !== 'string' || !/^[A-Za-z0-9_-]{32}$/.test(i.team.invite_token) || !Number.isFinite(Date.parse(i.team.as_of)) || ![i.team.players,i.team.score,i.team.rank,i.team.contribution,i.team.member_rank].every(n=>Number.isSafeInteger(n)&&n>=0))) return false;
-    if (i.type === 'post') return /^sp[0-9a-f]{64}$/.test(i.id) && author && typeof i.text === 'string' && Array.from(i.text).length <= 500 && (!i.session_id || result && /^gs[0-9a-z]{1,13}$/.test(i.session_id) && Number.isFinite(Date.parse(i.played_at || '')));
+    if (i.type === 'post') return /^sp[0-9a-f]{64}$/.test(i.id) && author && typeof i.text === 'string' && Array.from(i.text).length <= 500 && (i.like_count === undefined || Number.isSafeInteger(i.like_count) && i.like_count >= 0) && (!i.session_id || result && /^gs[0-9a-z]{1,13}$/.test(i.session_id) && Number.isFinite(Date.parse(i.played_at || '')));
     if (i.type === 'score') return author && result;
     return /^cp[0-9a-z]{1,32}$/.test(i.campaign_id) && typeof i.name === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(i.slug) && [25, 50, 75, 100].includes(i.milestone) && Number.isSafeInteger(i.points) && i.points >= 0 && Number.isSafeInteger(i.target) && i.target > 0 && ['participation', 'goal_adjusted'].includes(i.reason);
   });
@@ -66,6 +66,13 @@ export function ActivityFeed({ kind, authorId, discover = false, filters, postId
       if(teamPosts.length){
         const actions=viewer?await api.authenticated<Record<string,TeamEntryAction>>('/social/team-entries',{post_ids:teamPosts.map(i=>i.id)},ctrl.signal):{};
         for(const item of teamPosts) item.team_action=viewer?(['join','own','none','expired','closed'].includes(actions?.[item.id])?actions[item.id]:'none'):'guest';
+      }
+      const posts=page.items.filter(i=>i.type==='post');
+      if(viewer && posts.length){
+        try {
+          const liked=await api.authenticated<Record<string,boolean>>('/social/post-like-states',{post_ids:posts.map(i=>i.id)},ctrl.signal);
+          for(const post of posts) if(typeof liked?.[post.id]==='boolean') post.liked_by_me=liked[post.id];
+        } catch { /* Public feed remains readable if personal like states cannot load. */ }
       }
       if (ctrl.signal.aborted) return;
       setItems(old => after ? [...old, ...page.items.filter(i => !old.some(o => o.id === i.id))] : page.items);

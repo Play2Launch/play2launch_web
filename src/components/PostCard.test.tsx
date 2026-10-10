@@ -61,3 +61,17 @@ it('offers report instead of delete on another player’s post',async()=>{
  fireEvent.click(screen.getByLabelText('Post options'));
  expect(screen.queryByRole('button',{name:'Delete post'})).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Report post'}));fireEvent.click(screen.getByRole('button',{name:'Submit report'}));await screen.findByText('Report submitted for review.');expect(api.authenticated).toHaveBeenCalledWith(`/social/posts/${item.id}/report`,{reason:'spam'});
 });
+it('likes and unlikes a post without counting duplicate clicks',async()=>{
+ vi.mocked(api.authenticated).mockResolvedValueOnce({liked:true,count:3}).mockResolvedValueOnce({liked:false,count:2});
+ render(<MemoryRouter><PostCard item={{...item,like_count:2}} removed={vi.fn()}/></MemoryRouter>);
+ const like=screen.getByRole('button',{name:'Like post'});
+ expect(like.textContent).toContain('2');fireEvent.click(like);fireEvent.click(like);
+ await screen.findByRole('button',{name:'Unlike post'});
+ expect(api.authenticated).toHaveBeenCalledTimes(1);
+ expect(screen.getByRole('button',{name:'Unlike post'}).textContent).toContain('3');
+ fireEvent.click(screen.getByRole('button',{name:'Unlike post'}));
+ await screen.findByRole('button',{name:'Like post'});
+ expect(screen.getByRole('button',{name:'Like post'}).textContent).toContain('2');
+ expect(api.authenticated).toHaveBeenNthCalledWith(1,`/social/posts/${item.id}/like`,{liked:true});
+ expect(api.authenticated).toHaveBeenNthCalledWith(2,`/social/posts/${item.id}/like`,{liked:false});
+});

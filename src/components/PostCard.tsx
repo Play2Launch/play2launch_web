@@ -10,12 +10,25 @@ import { FollowButton } from './FollowButton';
 import { PostShare } from './PostShare';
 import { ResultGameLabel } from './ResultGameLabel';
 import { ResultWatermark } from './ResultWatermark';
-import { Trash2, Flag, MoreHorizontal } from 'lucide-react';
+import { Trash2, Flag, MoreHorizontal, Heart } from 'lucide-react';
 
 export function PostCard({ item, removed, discover = false, following = false, onFollowChange }: { item: Activity; removed: () => void; discover?: boolean; following?: boolean; onFollowChange?: (value: boolean) => void }) {
   const app = useApp(), own = app.user?.id === item.user_id;
   const [confirm, setConfirm] = useState(false), [report, setReport] = useState(false), [reason, setReason] = useState('spam'), [sent, setSent] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const [liked, setLiked] = useState(item.liked_by_me === true), [likeCount, setLikeCount] = useState(item.like_count ?? 0), [likeBusy, setLikeBusy] = useState(false);
   const lock = useRef(false);
+  const likeLock = useRef(false);
+  async function toggleLike() {
+    if (app.user?.mode !== 'live') { app.setAuthOpen(true); return; }
+    if (likeLock.current) return;
+    likeLock.current=true;setLikeBusy(true);setError('');
+    try {
+      const result=await api.authenticated<{liked:boolean;count:number}>(`/social/posts/${item.id}/like`,{liked:!liked});
+      if(typeof result?.liked!=='boolean'||!Number.isSafeInteger(result.count)||result.count<0) throw new Error('Could not update like.');
+      setLiked(result.liked);setLikeCount(result.count);
+    } catch(e) {setError(e instanceof Error?e.message:'Could not update like.');}
+    finally {likeLock.current=false;setLikeBusy(false);}
+  }
   async function act(action: 'delete' | 'report') {
     if (lock.current) return; lock.current = true; setBusy(true); setError('');
     try { await api.authenticated(`/social/posts/${item.id}/${action}`, action === 'report' ? { reason } : {}); if (action === 'delete') removed(); else { setSent(true); setReport(false); } }
@@ -32,6 +45,6 @@ export function PostCard({ item, removed, discover = false, following = false, o
     {confirm && <div className="notice">Delete this public post? Your score and ranking stay unchanged.<div className="following-links"><button className="btn btn-secondary" disabled={busy} onClick={() => void act('delete')}>Confirm delete</button><button className="text-link" disabled={busy} onClick={() => setConfirm(false)}>Cancel</button></div></div>}
     {report && <div className="notice"><label>Report reason <select value={reason} disabled={busy} onChange={e => setReason(e.target.value)}><option value="spam">Spam</option><option value="abuse">Abuse</option><option value="misleading">Misleading</option><option value="other">Other</option></select></label><div className="following-links"><button className="btn btn-secondary" disabled={busy} onClick={() => void act('report')}>Submit report</button><button className="text-link" disabled={busy} onClick={() => setReport(false)}>Cancel</button></div></div>}
     {sent && <p role="status">Report submitted for review.</p>}{error && <p role="alert">{error}</p>}
-    <PostShare id={item.id}/>
+    <div className="post-engagement"><button className={`post-like${liked?' is-liked':''}`} type="button" aria-label={liked?'Unlike post':'Like post'} aria-pressed={liked} disabled={likeBusy} onClick={()=>void toggleLike()}><Heart size={16} fill={liked?'currentColor':'none'}/> <span>{likeCount}</span></button><PostShare id={item.id}/></div>
   </div>;
 }

@@ -4639,7 +4639,12 @@ body:has(.game-embed) .page-container {
 .post-options-menu .post-action { margin:0;padding:8px 0; }
 .post-detail { max-width:760px;margin:0 auto; }
 .post-detail h1 { font-size:28px;margin:18px 0; }
+.post-engagement { display:flex;align-items:center;gap:18px;flex-wrap:wrap; }
+.post-like { display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--muted);padding:4px 0;cursor:pointer;font:inherit;font-size:12px; }
+.post-like:hover,.post-like.is-liked { color:var(--accent); }
+.post-like:disabled { cursor:wait;opacity:.65; }
 .post-share { display:flex;align-items:center;gap:18px;flex-wrap:wrap; }
+.post-engagement .post-action { margin-top:0;padding:4px 0; }
 .post-share-panel { flex-basis:100%;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:12px;background:var(--surface); }
 .post-share-panel button { display:inline-flex;align-items:center;gap:6px; }
 .post-share-panel label { width:100%; }
