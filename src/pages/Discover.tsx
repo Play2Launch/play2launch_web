@@ -180,7 +180,7 @@ export default function Discover({
                       ? "PARTICIPATION —"
                       : featured.unlockPoints >= featured.target
                         ? "COMMUNITY GOAL REACHED"
-                        : `${Math.floor((featured.unlockPoints / Math.max(featured.target, 1)) * 100)}% TO UNLOCK`
+                        : `${Math.floor((featured.unlockPoints / Math.max(featured.target, 1)) * 100)}% COMPLETE`
                     : featuredStage === "prelaunch"
                       ? `${Math.round(((featured.unlockPoints ?? 0) / Math.max(featured.target, 1)) * 100)}% TO LAUNCH`
                       : stageLabel(featuredStage)}{" "}
@@ -341,7 +341,7 @@ export default function Discover({
                         ? "Participation —"
                         : c.unlockPoints >= c.target
                           ? "Community goal reached"
-                          : `${Math.floor((c.unlockPoints / Math.max(c.target, 1)) * 100)}% to unlock`
+                          : `${Math.floor((c.unlockPoints / Math.max(c.target, 1)) * 100)}% complete`
                       : getStage(c.id) !== "prelaunch"
                         ? "Community unlocked"
                         : `${Math.round(((c.unlockPoints ?? 0) / Math.max(c.target, 1)) * 100)}% to launch`}
