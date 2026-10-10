@@ -56,14 +56,16 @@ export function AvatarEditor({title,endpoint,value,onChange}: Props) {
   return <div className="avatar-editor">
     <strong>{title}</strong>
     {publicAvatarURL(value) && !image && <img className="avatar-editor-current" src={publicAvatarURL(value)} alt="Current avatar" />}
-    <label className={`btn btn-secondary avatar-editor-select${busy?" is-disabled":""}`}>Choose image<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={e=>{choose(e.target.files?.[0]);e.currentTarget.value="";}} /></label>
+    <div className="avatar-editor-pickers">
+      <label className={`btn btn-secondary avatar-editor-select${busy?" is-disabled":""}`}>Choose image<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={e=>{choose(e.target.files?.[0]);e.currentTarget.value="";}} /></label>
+      {!!value && !image && <button type="button" className="btn btn-secondary" disabled={busy} onClick={()=>void remove()}>Remove avatar</button>}
+    </div>
     {image && <div className="avatar-editor-tools">
       <div className="avatar-editor-preview"><canvas ref={canvas} width={512} height={512} aria-label="Drag to reposition avatar" onPointerDown={e=>{drag.current={x:e.clientX,y:e.clientY,panX:pan.x,panY:pan.y};e.currentTarget.setPointerCapture(e.pointerId);}} onPointerMove={e=>{if(!drag.current)return;const unit=512/e.currentTarget.getBoundingClientRect().width;setPan({x:drag.current.panX+(e.clientX-drag.current.x)*unit,y:drag.current.panY+(e.clientY-drag.current.y)*unit});}} onPointerUp={()=>{drag.current=null;}} /></div>
       <label>Zoom <input type="range" min="1" max="3" step="0.01" value={zoom} onChange={e=>setZoom(Number(e.target.value))} /></label>
       <p>Drag to reposition. The circle previews how it will appear.</p>
       <div className="avatar-editor-actions"><button type="button" className="btn btn-primary" disabled={busy} onClick={()=>void upload()}>{busy?"Uploading…":"Save avatar"}</button><button type="button" className="btn btn-secondary" disabled={busy} onClick={()=>setImage(null)}>Cancel</button></div>
     </div>}
-    {!!value && !image && <button type="button" className="btn btn-secondary" disabled={busy} onClick={()=>void remove()}>Remove avatar</button>}
     {error && <p role="alert">{error}</p>}
   </div>;
 }
