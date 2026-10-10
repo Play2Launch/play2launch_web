@@ -1,6 +1,6 @@
 import type { EntryContext } from "./entry";
 import { publicAvatarURL } from './avatar';
-export type User = { id: string; name: string; handle?: string; avatarUrl?: string; signupInviteToken?: string; mode: "demo" | "live" };
+export type User = { id: string; name: string; handle?: string; avatarUrl?: string; email?: string; signupInviteToken?: string; mode: "demo" | "live" };
 export type AuthContext = { guestId: string; entry: EntryContext };
 export type Account = {
   account_id: string;
@@ -236,7 +236,8 @@ export class ApiClient {
     const name = [data.nickname, data.from === 1 ? data.display_name : undefined].find(
       (value) => typeof value === "string" && value.trim() && !value.includes("@") && !/[\u0000-\u001f\u007f]/.test(value),
     );
-    return { id: data.id, name: name?.trim() || `Player #${data.id}`, ...(publicAvatarURL(data.avatar_url) ? {avatarUrl:publicAvatarURL(data.avatar_url)} : {}), ...(typeof data.handle === "string" && /^[a-z][a-z0-9_]{2,23}$/.test(data.handle) ? {handle:data.handle} : {}), ...(data.new_account === true && inviteToken ? {signupInviteToken:inviteToken} : {}), mode: "live" };
+    const email = data.from === 2 && typeof data.user_name === 'string' && /^[^\s@]+@[^\s@]+$/.test(data.user_name) ? data.user_name : undefined;
+    return { id: data.id, name: name?.trim() || `Player #${data.id}`, ...(publicAvatarURL(data.avatar_url) ? {avatarUrl:publicAvatarURL(data.avatar_url)} : {}), ...(typeof data.handle === "string" && /^[a-z][a-z0-9_]{2,23}$/.test(data.handle) ? {handle:data.handle} : {}), ...(email ? {email} : {}), ...(data.new_account === true && inviteToken ? {signupInviteToken:inviteToken} : {}), mode: "live" };
   }
   private async finish(
     account: Account,

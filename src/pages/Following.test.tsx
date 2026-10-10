@@ -13,11 +13,12 @@ function mount() { const view=render(<MemoryRouter><Following /></MemoryRouter>)
 afterEach(() => { cleanup(); mock.user = { id: 'ur1', mode: 'live' }; vi.mocked(api.authenticated).mockReset(); vi.mocked(api.request).mockReset(); vi.mocked(api.request).mockImplementation(async()=>({items:[],next_cursor:''})); mock.signIn.mockReset(); });
 it('searches public people from Feed without searching posts or campaigns',async()=>{
  mock.user=null;
- vi.mocked(api.request).mockImplementation(async path=>path.startsWith('/players/search?')?{items:[{id:'ur2',name:'Paper Captain',handle:'captain'}]}:{items:[],next_cursor:''});
+ vi.mocked(api.request).mockImplementation(async path=>path.startsWith('/players/search?')?{items:[{id:'ur2',name:'Paper Captain',handle:'captain',kol_verified:true}]}:{items:[],next_cursor:''});
  mount();
  fireEvent.change(screen.getByRole('searchbox',{name:'Search people'}),{target:{value:'@cap'}});
  const result=await screen.findByRole('link',{name:/Paper Captain/});
  expect(result.getAttribute('href')).toBe('/players/ur2');
+ expect(screen.getByRole('img',{name:'Verified KOL'})).toBeTruthy();
  expect(vi.mocked(api.request).mock.calls.some(([path])=>path==='/players/search?q=%40cap')).toBe(true);
  expect(screen.queryByRole('button',{name:'For you'})).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'Clear people search'}));

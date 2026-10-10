@@ -53,6 +53,7 @@ import { TeamBadge } from "../components/TeamBadge";
 import { TeamAvatarImage, teamAvatarURL } from "../components/TeamAvatarImage";
 import { UserAvatar } from '../components/UserAvatar';
 import { PublicProfileEditor } from "../components/PublicProfileEditor";
+import { ProfilePasswordChange } from "../components/ProfilePasswordChange";
 import { PlatformPoints } from "../components/PlatformPoints";
 import { CampaignTeamsPreview } from "../components/CampaignTeamsPreview";
 import { FollowButton } from "../components/FollowButton";
@@ -1195,6 +1196,13 @@ export function ProfilePage() {
           </>}
           {liveAuth && app.user && mobileProfile && editProfileOpen && <div id="mobile-public-profile-editor" className="profile-mobile-editor"><PublicProfileEditor key={app.user.id} userId={app.user.id} /></div>}
           <ProfileTools onVerified={setKolIdentity} />
+          {liveAuth && app.user?.email && (
+            <ProfilePasswordChange key={`password-${app.user.id}`} email={app.user.email} onChanged={async () => {
+              await app.logout();
+              app.setToast("Password updated. Sign in with your new password.");
+              app.setAuthOpen(true);
+            }} />
+          )}
           {liveAuth && app.user?.mode === 'live' && <FriendInvite key={app.user.id} userId={app.user.id}/>}
           {app.demoToolsAvailable && (
             <details className="demo-settings">

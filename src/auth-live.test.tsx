@@ -33,6 +33,7 @@ const liveUser = {
   id: "ur1",
   channel_id: "AC1",
   display_name: "Live Player",
+  user_name: "player@example.test",
   from: 2,
 };
 const reply = (data: unknown, status = 200, code = 0) =>
@@ -144,6 +145,16 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("live client flows without sending mail", () => {
+  it("keeps one password card beside the invite card across profile refreshes", async () => {
+    mount();
+    await open();
+    submitCredentials();
+    await screen.findByRole("heading", { name: "Live Player" });
+    await waitFor(() => expect(screen.getAllByRole("button", { name: /Change password/ })).toHaveLength(1));
+    act(() => window.dispatchEvent(new Event("focus")));
+    await waitFor(() => expect(screen.getAllByRole("button", { name: /Change password/ })).toHaveLength(1));
+    expect(screen.getByRole("region", { name: "Invite friends" })).toBeTruthy();
+  });
   it("keeps mobile public-profile editing collapsed until the name-row edit button is pressed", async () => {
     vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({
       matches: true,

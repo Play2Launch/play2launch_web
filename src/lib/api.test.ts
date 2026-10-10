@@ -134,6 +134,16 @@ describe("DashFun authentication contract", () => {
     const tg=await client.telegram('signed-init-data',context);
     expect(tg.user.avatarUrl).toBe('https://example.com/tg.png');
   });
+  it('exposes the own email only for an email account',async()=>{
+    const transport=vi.fn().mockResolvedValueOnce(response(account))
+      .mockResolvedValueOnce(response({...user,user_name:'player@example.test'}))
+      .mockResolvedValueOnce(response({...user,from:1,user_name:'player@example.test'}));
+    const client=new ApiClient('https://api.test',transport);
+    const emailLogin=await client.login('player@example.test','password123',context);
+    expect(emailLogin.kind==='authenticated'&&emailLogin.user.email).toBe('player@example.test');
+    const telegramLogin=await client.telegram('signed-init-data',context);
+    expect(telegramLogin.user.email).toBeUndefined();
+  });
   it("uses account password login then bearer user login; stores only on commit", async () => {
     const transport = vi
       .fn()

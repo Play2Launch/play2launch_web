@@ -4588,6 +4588,8 @@ body:has(.game-embed) .page-container {
 .feed-person { display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:#f0f1e9;text-decoration:none; }
 .feed-person:hover { border-color:var(--accent); }
 .feed-person-label { display:grid;gap:3px;flex:1;min-width:0; }
+.feed-person-name { display:flex;align-items:center;gap:8px;min-width:0; }
+.feed-person-name strong { min-width:0; }
 .feed-person-label strong,.feed-person-label small { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .feed-person-label small { color:var(--accent); }
 .feed-person > svg { color:var(--muted); }
