@@ -153,7 +153,11 @@ describe("live client flows without sending mail", () => {
     await waitFor(() => expect(screen.getAllByRole("button", { name: /Change password/ })).toHaveLength(1));
     act(() => window.dispatchEvent(new Event("focus")));
     await waitFor(() => expect(screen.getAllByRole("button", { name: /Change password/ })).toHaveLength(1));
-    expect(screen.getByRole("region", { name: "Invite friends" })).toBeTruthy();
+    const invite = screen.getByRole("region", { name: "Invite friends" });
+    const community = invite.closest(".profile-community");
+    const security = screen.getByRole("region", { name: "Account security" });
+    expect(community).toBeTruthy();
+    expect((community!.compareDocumentPosition(security) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0).toBe(true);
   });
   it("keeps mobile public-profile editing collapsed until the name-row edit button is pressed", async () => {
     vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({
@@ -171,7 +175,7 @@ describe("live client flows without sending mail", () => {
     const edit = within(identity as HTMLElement).getByRole("button", { name: "Edit" });
     fireEvent.click(edit);
     expect(await screen.findByRole("heading", { name: "Public profile" })).toBeTruthy();
-    expect(identity?.querySelector(".profile-mobile-editor")?.nextElementSibling?.classList.contains("profile-tools")).toBe(true);
+    expect(identity?.querySelector(".profile-mobile-editor")?.nextElementSibling?.classList.contains("profile-community")).toBe(true);
     fireEvent.click(within(identity as HTMLElement).getByRole("button", { name: "Close" }));
     expect(screen.queryByRole("heading", { name: "Public profile" })).toBeNull();
   });
