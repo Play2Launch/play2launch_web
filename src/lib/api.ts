@@ -1,6 +1,7 @@
+import {clientIdentityHeaders} from "./clientIdentity";
 import type { EntryContext } from "./entry";
 import { publicAvatarURL } from './avatar';
-export type User = { id: string; name: string; handle?: string; avatarUrl?: string; email?: string; signupInviteToken?: string; mode: "demo" | "live" };
+export type User = { id: string; personalInviteCode?: string; name: string; handle?: string; avatarUrl?: string; email?: string; signupInviteToken?: string; mode: "demo" | "live" };
 export type AuthContext = { guestId: string; entry: EntryContext };
 export type Account = {
   account_id: string;
@@ -23,6 +24,8 @@ export type SignedIn = {
 };
 export type LoginResult = SignedIn | { kind: "verification"; account: Account };
 const messages: Record<number, string> = {
+  10008: "Please complete the security check to continue.",
+  10009: "Verification expired or failed. Please try again.",
   11008: "Use 3–24 letters, digits or underscores, starting with a letter. Official names are reserved.",
   11009: "This username is already used or reserved. Choose another.",
   11010: "You have used your one username change. Your display name can still be edited.",
@@ -112,7 +115,7 @@ export class ApiClient {
   async request<T>(
     path: string,
     data?: unknown,
-    options: { authorization?: string; signal?: AbortSignal } = {},
+    options: { authorization?: string; signal?: AbortSignal; turnstileToken?: string } = {},
   ): Promise<T> {
     if (!this.base)
       throw new Error(
@@ -135,6 +138,8 @@ export class ApiClient {
         credentials: options.authorization==='cookie' ? 'include' : 'omit',
         cache: "no-store",
         headers: {
+          ...clientIdentityHeaders(),
+          ...(options.turnstileToken ? {"X-P2L-Turnstile": options.turnstileToken} : {}),
           ...(data === undefined || multipart
             ? {}
             : {
@@ -167,6 +172,17 @@ export class ApiClient {
       }
       if (controller.signal.aborted) throw aborted();
       if (!result || typeof result !== "object") throw invalid();
+      // Retry only an explicit pre-operation challenge, once. Never retry network
+      // failures or ambiguous writes, and never persist the one-use token.
+      if ((result.code === 10008 || result.code === 10009) && !options.turnstileToken) {
+        const challenge = result.data as {site_key?:unknown;action?:unknown} | null;
+        if (!challenge || typeof challenge.site_key !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(challenge.site_key) || typeof challenge.action !== 'string' || !['register','send_email','password_reset','signup'].includes(challenge.action)) throw new ApiError(response.status,10006);
+        clearTimeout(timeout);
+        options.signal?.removeEventListener('abort',cancel);
+        const {acquireTurnstile}=await import('./turnstile');
+        const token=await acquireTurnstile(challenge.site_key,challenge.action,options.signal);
+        return await this.request<T>(path,data,{...options,turnstileToken:token});
+      }
       if (!response.ok || result.code !== 0)
         throw new ApiError(
           response.status,
@@ -222,6 +238,7 @@ export class ApiClient {
     const data = await this.request<{
       id: string;
       new_account?: boolean;
+      personal_invite_code?: string;
       display_name?: string;
       user_name?: string;
       nickname?: string;
@@ -237,7 +254,7 @@ export class ApiClient {
       (value) => typeof value === "string" && value.trim() && !value.includes("@") && !/[\u0000-\u001f\u007f]/.test(value),
     );
     const email = data.from === 2 && typeof data.user_name === 'string' && /^[^\s@]+@[^\s@]+$/.test(data.user_name) ? data.user_name : undefined;
-    return { id: data.id, name: name?.trim() || `Player #${data.id}`, ...(publicAvatarURL(data.avatar_url) ? {avatarUrl:publicAvatarURL(data.avatar_url)} : {}), ...(typeof data.handle === "string" && /^[a-z][a-z0-9_]{2,23}$/.test(data.handle) ? {handle:data.handle} : {}), ...(email ? {email} : {}), ...(data.new_account === true && inviteToken ? {signupInviteToken:inviteToken} : {}), mode: "live" };
+    return { id: data.id, ...(typeof data.personal_invite_code==='string'&&/^ur[0-9a-z]{1,32}$/.test(data.personal_invite_code)?{personalInviteCode:data.personal_invite_code}:{}), name: name?.trim() || `Player #${data.id}`, ...(publicAvatarURL(data.avatar_url) ? {avatarUrl:publicAvatarURL(data.avatar_url)} : {}), ...(typeof data.handle === "string" && /^[a-z][a-z0-9_]{2,23}$/.test(data.handle) ? {handle:data.handle} : {}), ...(email ? {email} : {}), ...(data.new_account === true && inviteToken ? {signupInviteToken:inviteToken} : {}), mode: "live" };
   }
   private async finish(
     account: Account,

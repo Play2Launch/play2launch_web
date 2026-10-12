@@ -2,7 +2,8 @@
 import {it,expect,vi,afterEach} from 'vitest';
 import {render,screen,act,cleanup,waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
-const mocks=vi.hoisted(()=>({authenticated:vi.fn(),request:vi.fn(),gameEvent:vi.fn()}));
+const mocks=vi.hoisted(()=>({authenticated:vi.fn(),request:vi.fn(),gameEvent:vi.fn(),sign:vi.fn(async()=>({payload:'signed-payload',signature:'proof'})),signer:vi.fn()}));
+vi.mock('../lib/runnerSigning',()=>({SIGNING_VERSION:'p2l-sign-v1',createRoundSigner:async()=>mocks.sign}));
 vi.mock('../lib/api',()=>({api:mocks,ApiError:class extends Error{code=0;}}));
 vi.mock('../lib/firebaseAnalytics',()=>({trackGameEvent:mocks.gameEvent}));
 import {RunnerFrame} from './RunnerFrame';
@@ -11,7 +12,7 @@ afterEach(()=>{cleanup();vi.unstubAllEnvs();vi.restoreAllMocks();mocks.authentic
 it('creates a real session and sends only the SDK payload; forwards accepted score',async()=>{
  vi.stubEnv('VITE_PAPERHOOD_GAME_URL','https://game.test/');
  const session={id:'gs1',slug:'run',game_key:'gx1',rules:RUNNER_RULES,protocol_version:'p2l-game-v1',seed:42,expires_at:new Date(Date.now()+300000).toISOString(),status:'playing',score:0};
- mocks.authenticated.mockImplementation(async(path:string)=>path.endsWith('/sessions')?session:{...session,status:'accepted',score:712});
+ mocks.authenticated.mockImplementation(async(path:string)=>path.includes('/sessions?signing_version=')?session:path.endsWith('/runner-submit-signed')?{received:true}:{...session,status:'accepted',score:712});
  mocks.request.mockResolvedValue({game_id:'gx1',entry_url:'https://game.test/',rules_version:RUNNER_RULES});
  render(<MemoryRouter><RunnerFrame slug="run"/></MemoryRouter>);
  const frame=await screen.findByTitle('PAPERHOOD game') as HTMLIFrameElement;
@@ -21,7 +22,7 @@ it('creates a real session and sends only the SDK payload; forwards accepted sco
  await message({type:'p2l:ready'},'https://evil.test');expect(mocks.authenticated).not.toHaveBeenCalled();
  await message({type:'p2l:ready'});
  expect(send.mock.calls[0][0]).toMatchObject({type:'p2l:init',session:{id:'gs1',seed:42,duration_ms:90000,allow_pause:false}});
- expect(JSON.stringify(send.mock.calls)).not.toMatch(/token|authorization|account_id/i);
+ expect(JSON.stringify(send.mock.calls)).not.toMatch(/token|authorization|account_id|key_material|private_key/i);
  await message({type:'p2l:start',session_id:'gs1'});
  await message({type:'p2l:start',session_id:'gs1'});
  expect(mocks.gameEvent).toHaveBeenCalledTimes(1);
@@ -34,8 +35,26 @@ it('creates a real session and sends only the SDK payload; forwards accepted sco
  await message({type:'p2l:finish',session_id:'gs1',submission_id:'b'.repeat(32),report});
  await waitFor(()=>expect(screen.getByText('Score accepted')).toBeTruthy());
  expect(mocks.gameEvent).toHaveBeenCalledWith('game_score_accepted','run','ranked','gs1');
- expect(mocks.authenticated.mock.calls[1][0]).toBe('/game/sessions/gs1/runner-submit');
- expect(mocks.authenticated.mock.calls[1][1]).toEqual({submission_id:'b'.repeat(32),report});
+ expect(mocks.authenticated.mock.calls[1][0]).toBe('/game/sessions/gs1/runner-submit-signed');
+ expect(mocks.sign).toHaveBeenCalledWith('b'.repeat(32),report);
+ expect(mocks.authenticated.mock.calls[1][1]).toEqual({payload:'signed-payload',signature:'proof'});
  expect(send.mock.calls.at(-1)?.[0]).toMatchObject({type:'p2l:result',status:'accepted',score:712});
  expect(screen.getByText('View score & contribution').getAttribute('href')).toBe('/campaign/run/session/gs1');
+});
+it('does not treat a 200 receipt as an accepted score',async()=>{
+ vi.stubEnv('VITE_PAPERHOOD_GAME_URL','https://game.test/');
+ const session={id:'gs1',slug:'run',game_key:'gx1',rules:RUNNER_RULES,protocol_version:'p2l-game-v1',seed:42,expires_at:new Date(Date.now()+300000).toISOString(),status:'playing',score:0};
+ mocks.authenticated.mockImplementation(async(path:string)=>path.endsWith('/runner-submit-signed')?{received:true}:session);
+ mocks.request.mockResolvedValue({game_id:'gx1',entry_url:'https://game.test/',rules_version:RUNNER_RULES});
+ render(<MemoryRouter><RunnerFrame slug="run"/></MemoryRouter>);
+ const frame=await screen.findByTitle('PAPERHOOD game') as HTMLIFrameElement;
+ const send=vi.spyOn(frame.contentWindow!,'postMessage');
+ const message=async(data:object)=>{await act(async()=>{window.dispatchEvent(new MessageEvent('message',{origin:'https://game.test',source:frame.contentWindow,data:{protocol:'p2l-game-v1',game_id:'gx1',rules_version:RUNNER_RULES,instance_id:'a'.repeat(32),session_id:'gs1',...data}}));});};
+ await message({type:'p2l:ready'});
+ await message({type:'p2l:start'});
+ await message({type:'p2l:finish',submission_id:'b'.repeat(32),report:{elapsed_ms:10000,score:99999,metrics:{},inputs:[]}});
+ await waitFor(()=>expect(screen.getByText('Score not accepted')).toBeTruthy());
+ expect(send.mock.calls.at(-1)?.[0]).toMatchObject({type:'p2l:result',status:'rejected'});
+ expect(mocks.gameEvent).not.toHaveBeenCalledWith('game_score_accepted',expect.anything(),expect.anything(),expect.anything());
+ expect(screen.queryByText('View score & contribution')).toBeNull();
 });

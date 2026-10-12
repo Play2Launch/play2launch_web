@@ -1,3 +1,4 @@
+import type {SigningMaterial} from './runnerSigning';
 export const RUNNER_RULES = 'paper-run-practice-v5';
 export function runnerURL(entry:string,parent:string,mode:'platform'|'demo'='platform') {
   if(!entry)throw Error('PAPERHOOD game URL is not configured.');
@@ -8,7 +9,7 @@ export function runnerURL(entry:string,parent:string,mode:'platform'|'demo'='pla
   if(mode==='demo')url.searchParams.delete('seed');
   return url.toString();
 }
-export type RunnerSession={id:string;slug:string;game_key:string;rules:string;protocol_version:string;seed:number;expires_at:string;status:string;score:number};
+export type RunnerSession={signing?:SigningMaterial;id:string;slug:string;game_key:string;rules:string;protocol_version:string;seed:number;expires_at:string;status:string;score:number};
 export function checkRunner(s:RunnerSession,slug:string,gameID?:string) {
   if(!s||!/^gs[0-9a-z]{1,13}$/.test(s.id)||s.slug!==slug||!/^gx[0-9a-z]{1,13}$/.test(s.game_key)||(gameID&&s.game_key!==gameID)||s.rules!==RUNNER_RULES||s.protocol_version!=='p2l-game-v1'||!Number.isInteger(s.seed)||s.seed<0||s.seed>0xffffffff||!Number.isFinite(Date.parse(s.expires_at))||!['playing','accepted','expired'].includes(s.status)||!Number.isSafeInteger(s.score)||s.score<0)throw Error('Invalid platform round.');
   return s;

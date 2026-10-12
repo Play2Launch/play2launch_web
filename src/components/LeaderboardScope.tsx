@@ -77,7 +77,7 @@ function CampaignPicker({ campaign, recent, mobile }: { campaign?: CampaignLink;
       <span>{label}</span><ChevronDown size={16} aria-hidden="true" />
     </button>
     {open && <div id={menuId} className="leaderboard-scope-menu">
-      <label>Find a campaign<input autoFocus type="search" value={query} placeholder="Name or symbol" onChange={(event) => { setQuery(event.target.value); setAfter(""); setNext(""); setRows([]); }} /></label>
+      <label>Find a campaign<input autoFocus={!mobile} type="search" value={query} placeholder="Name or symbol" onChange={(event) => { setQuery(event.target.value); setAfter(""); setNext(""); setRows([]); }} /></label>
       <div className="leaderboard-scope-results" aria-busy={busy}>
         {visible.map((item) => <CampaignMenuItem key={item.slug} item={item} current={item.slug === campaign?.slug} onSelect={() => setOpen(false)} />)}
         {busy && <p role="status">Loading campaigns…</p>}

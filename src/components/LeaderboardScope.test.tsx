@@ -47,6 +47,7 @@ it("keeps Other campaigns hidden when there are no extra desktop tabs, while mob
   const mobilePicker = screen.getByRole("button", { name: "Campaign scores" });
   expect(mobilePicker.getAttribute("aria-current")).toBe("page");
   fireEvent.click(mobilePicker);
+  expect((screen.getByPlaceholderText("Name or symbol") as HTMLInputElement).hasAttribute("autofocus")).toBe(false);
   const selected = await screen.findByRole("link", { name: "Newest campaign", current: "page" });
   expect(selected.getAttribute("href")).toBe("/campaign/newest/leaderboard");
   expect(selected.querySelector("img")?.getAttribute("src")).toBe("https://example.test/newest.png");

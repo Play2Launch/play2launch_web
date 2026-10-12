@@ -483,7 +483,7 @@ function ShareModal({ campaignId }: { campaignId: string }) {
     {
       campaignId,
       teamId,
-      referrerId: app.user?.id,
+      referrerId: app.user?.personalInviteCode||app.user?.id,
       source: "share",
       target: "campaign",
     },

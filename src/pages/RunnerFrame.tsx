@@ -1,3 +1,4 @@
+import {createRoundSigner,SIGNING_VERSION} from '../lib/runnerSigning';
 import {useEffect,useRef,useState} from 'react';
 import {Link} from 'react-router-dom';
 import {api,ApiError} from '../lib/api';
@@ -18,6 +19,7 @@ export function RunnerFrame({slug}:{slug:string}) {
   if(!src||!launch)return;
   const gameID=launch.game_id;
   const ctrl=new AbortController(),origin=new URL(src).origin;
+  let signer:Awaited<ReturnType<typeof createRoundSigner>>|undefined;
   let instance='',session:RunnerSession|undefined,busy=false,started=false,runID='',effective=false;
   const timer=setTimeout(()=>setError('Game connection timed out. Check game deployment and allowed parent origins.'),20000);
   const send=(type:string,data:Record<string,unknown>={})=>frame.current?.contentWindow?.postMessage({protocol:'p2l-game-v1',type,game_id:gameID,rules_version:RUNNER_RULES,instance_id:instance,session_id:session?.id??null,...data},origin);
@@ -25,10 +27,11 @@ export function RunnerFrame({slug}:{slug:string}) {
   async function startRound(){
    if(busy)return;busy=true;setError('');setStatus('Creating platform round…');
    try{
-    const next=checkRunner(await api.authenticated<RunnerSession>(`/campaigns/${encodeURIComponent(slug)}/sessions`,{},ctrl.signal),slug,gameID);
+    const next=checkRunner(await api.authenticated<RunnerSession>(`/campaigns/${encodeURIComponent(slug)}/sessions?signing_version=${SIGNING_VERSION}`,{},ctrl.signal),slug,gameID);
     if(ctrl.signal.aborted)return;
     if(next.status!=='playing')throw Error('This round is no longer playable.');
-    session=next;started=false;runID='';effective=false;setResult(undefined);init();setStatus('Round ready · 90 seconds · No pause');
+    signer=await createRoundSigner(next);if(ctrl.signal.aborted)return;
+    delete next.signing;session=next;started=false;runID='';effective=false;setResult(undefined);init();setStatus('Round ready · 90 seconds · No pause');
    }catch(e){if(!ctrl.signal.aborted){setError((e as Error).message);send('p2l:error',{code:'START_FAILED',message:(e as Error).message,retryable:true});}}
    finally{busy=false;}
   }
@@ -53,9 +56,19 @@ export function RunnerFrame({slug}:{slug:string}) {
    busy=true;setStatus('Checking score…');
    try{
     // Only the host has account credentials; never forward them to the iframe.
-    const accepted=checkRunner(await api.authenticated<RunnerSession>(`/game/sessions/${session.id}/runner-submit`,{submission_id:d.submission_id,report:d.report},ctrl.signal),slug,gameID);
+    if(!signer)throw Error('Round signing is unavailable. Reconnect the game.');
+    const signed=await signer(d.submission_id,d.report);
+    const receipt=await api.authenticated<{received?:boolean;id?:string;status?:string}>(`/game/sessions/${session.id}/runner-submit-signed`,signed,ctrl.signal);
+    // Signed submission has a uniform receipt; acceptance is queried separately.
+    if(receipt.received!==true)throw Error('Score receipt unavailable.');
+    const accepted=checkRunner(await api.authenticated<RunnerSession>(`/game/sessions/${session.id}`,undefined,ctrl.signal),slug,gameID);
     if(ctrl.signal.aborted)return;
-    if(accepted.id!==session.id||accepted.status!=='accepted')throw Error('Score was not accepted.');
+    if(accepted.id!==session.id)throw Error('Unexpected round result.');
+    if(accepted.status!=='accepted'){
+     setStatus('Score not accepted');setError('This round did not produce an accepted score.');
+     send('p2l:result',{submission_id:d.submission_id,status:'rejected',message:'This round did not produce an accepted score.'});
+     return;
+    }
     session=accepted;setResult(accepted);setError('');setStatus('Score accepted');
     trackGameEvent('game_score_accepted',slug,'ranked',accepted.id);
     notifyPointsChanged();

@@ -47,7 +47,7 @@ export default function Tasks() {
           <span>P2L Points</span>
         </div>
       </div>
-      {liveAuth && app.user?.mode === 'live' && <FriendInvite key={app.user.id} userId={app.user.id}/>}
+      {liveAuth && app.user?.mode === 'live' && <FriendInvite key={app.user.id} userId={app.user.personalInviteCode||app.user.id}/>}
       {!app.user || !liveAuth ? (
         <div className="task-notice">
           <h2>Make every qualifying game count</h2>

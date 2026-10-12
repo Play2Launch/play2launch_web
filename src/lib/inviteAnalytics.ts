@@ -1,14 +1,11 @@
+import {visitorID} from './clientIdentity';
 import { api } from './api';
 
-const visitorKey='p2l.invite-visitor.v1';
 const activeKey='p2l.active-invite-visit.v1';
 const resumeKey='p2l.personal-invite-auth-return.v1';
 const hex=()=>Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
 const validID=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{32}$/.test(v);
 type ActiveVisit={id:string;kind:'personal'|'team';value?:string;slug?:string;at:number};
-function visitorID(){
- try{const old=localStorage.getItem(visitorKey);if(validID(old))return old;const id=hex();localStorage.setItem(visitorKey,id);return id;}catch{return hex();}
-}
 export async function openInviteVisit(kind:'personal'|'team',value:string,slug?:string){
  if(kind==='personal')try{
   const previous=JSON.parse(sessionStorage.getItem(activeKey)||'null') as ActiveVisit;

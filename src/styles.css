@@ -36,6 +36,17 @@ button,
 a {
   touch-action: manipulation;
 }
+@media (pointer: coarse) {
+  html,
+  body,
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: pan-x pan-y;
+  }
+}
 button {
   cursor: pointer;
 }
@@ -1575,7 +1586,7 @@ footer > span:last-child {
 .leaderboard-scope-more > .leaderboard-scope-option { height:100%; }
 .leaderboard-scope-menu { position:absolute;z-index:20;top:calc(100% + 4px);right:0;width:min(350px,calc(100vw - 32px));max-height:min(440px,70dvh);overflow:auto;padding:16px;border:1px solid #49563d;border-radius:10px;background:#141b11;box-shadow:0 18px 42px #000a; }
 .leaderboard-scope-menu label { display:grid;gap:7px;color:#aab49f;font-size:12px; }
-.leaderboard-scope-menu input { min-width:0;min-height:42px;padding:9px 11px;border:1px solid #49563d;border-radius:7px;background:#0b1009;color:#f0f1e9;font-size:14px; }
+.leaderboard-scope-menu input { min-width:0;min-height:42px;padding:9px 11px;border:1px solid #49563d;border-radius:7px;background:#0b1009;color:#f0f1e9;font-size:16px; }
 .leaderboard-scope-results { display:grid;gap:4px;margin-top:10px; }
 .leaderboard-scope-results > .leaderboard-campaign-option { position:relative;isolation:isolate;display:flex;align-items:center;gap:10px;min-height:64px;overflow:hidden;padding:11px 13px;border:1px solid #35432c;border-radius:8px;background:#172014;color:#f0f4e8;font-size:14px;font-weight:700;text-decoration:none; }
 .leaderboard-campaign-option-fallback { position:absolute;z-index:0;top:50%;right:14px;transform:translateY(-50%);opacity:.35;font-size:38px;font-weight:800;line-height:1;pointer-events:none; }

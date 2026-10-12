@@ -1194,7 +1194,7 @@ export function ProfilePage() {
             <span className="pill neutral">{liveAuth ? "GUEST" : "LOCAL GUEST"}</span>
             <p>{app.demoToolsAvailable ? "Your preview progress stays on this device." : "Sign in to save your profile and join teams."}</p>
           </>}
-          {liveAuth && app.user && mobileProfile && editProfileOpen && <div id="mobile-public-profile-editor" className="profile-mobile-editor"><PublicProfileEditor key={app.user.id} userId={app.user.id} /></div>}
+          {liveAuth && app.user && mobileProfile && editProfileOpen && <div id="mobile-public-profile-editor" className="profile-mobile-editor"><PublicProfileEditor key={app.user.id} userId={app.user.personalInviteCode||app.user.id} /></div>}
           <div className="profile-community">
             <ProfileTools onVerified={setKolIdentity} />
             {liveAuth && app.user?.mode === 'live' && <FriendInvite key={app.user.id} userId={app.user.id}/>}
