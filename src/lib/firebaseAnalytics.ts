@@ -20,7 +20,7 @@ export function analyticsPagePath(pathname: string): string {
   if (/^\/campaign\/[^/]+\/?$/.test(pathname)) return "/campaign/:id";
   const campaignSection = pathname.match(/^\/campaign\/[^/]+\/(play|compete|try|teams|leaderboard|launch)\/?$/);
   if (campaignSection) return `/campaign/:id/${campaignSection[1]}`;
-  if (["/", "/teams", "/following", "/leaderboard", "/profile", "/verification", "/captain", "/tasks", "/auth/telegram"].includes(pathname)) return pathname;
+  if (["/", "/teams", "/following", "/leaderboard", "/profile", "/verification", "/captain", "/tasks", "/auth/telegram", "/terms", "/privacy"].includes(pathname)) return pathname;
   return "/other";
 }
 

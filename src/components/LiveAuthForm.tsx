@@ -20,6 +20,7 @@ export function LiveAuthForm({ initialStep = "login" }: { initialStep?: "login" 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [code, setCode] = useState("");
   const [account, setAccount] = useState<Account | null>(null);
   const [message, setMessage] = useState("");
@@ -62,6 +63,7 @@ export function LiveAuthForm({ initialStep = "login" }: { initialStep?: "login" 
     setStep(next);
     setPassword("");
     setConfirm("");
+    setTermsAccepted(false);
     setCode("");
     setMessage("");
     app.setAuthError("");
@@ -80,6 +82,7 @@ export function LiveAuthForm({ initialStep = "login" }: { initialStep?: "login" 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (app.authBusy) return;
+    if (step === "register" && !termsAccepted) return;
     app.setAuthError("");
     setMessage("");
     if ((step === "register" || step === "reset") && password !== confirm) {
@@ -223,7 +226,21 @@ export function LiveAuthForm({ initialStep = "login" }: { initialStep?: "login" 
             />
           </label>
         )}
-        <button className="btn btn-primary full" disabled={app.authBusy}>
+        {step === "register" && (
+          <label className="auth-agreement">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(event) => setTermsAccepted(event.target.checked)}
+              required
+              disabled={app.authBusy}
+            />
+            <span>
+              I have read and agree to the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and acknowledge the <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+            </span>
+          </label>
+        )}
+        <button className="btn btn-primary full" disabled={app.authBusy || (step === "register" && !termsAccepted)}>
           {app.authBusy
             ? "Please wait…"
             : {

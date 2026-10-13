@@ -879,6 +879,9 @@ footer > span:last-child {
   font-size: 12px;
   letter-spacing: 0.5px;
 }
+.footer-legal { display: flex; flex-wrap: wrap; gap: 12px; }
+.footer-legal a { color: #a7b39c; text-underline-offset: 3px; }
+.footer-legal a:hover, .footer-legal a:focus-visible { color: var(--accent); }
 .footer-brand {
   display: flex;
   align-items: center;
@@ -1784,6 +1787,10 @@ footer > span:last-child {
   gap: 8px;
   font-size: 14px;
 }
+.auth-form .auth-agreement { flex-direction: row; align-items: flex-start; gap: 11px; color: #b9c8ab; font-size: 13px; line-height: 1.55; cursor: pointer; }
+.auth-form .auth-agreement input { width: 18px; height: 18px; min-width: 18px; margin: 2px 0 0; padding: 0; accent-color: var(--accent); cursor: pointer; }
+.auth-agreement a { color: var(--accent); text-underline-offset: 3px; }
+.auth-agreement a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .auth-alternative {
   display: grid;
   gap: 12px;

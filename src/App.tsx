@@ -63,6 +63,7 @@ import { walletAllowed, walletConnectionUiVisible } from "./lib/walletPolicy";
 import { shareLinks } from "./lib/entry";
 import { campaigns, teams, type Stage } from "./data";
 import { registerCampaignTools } from "./lib/webmcp";
+import { PrivacyPage, TermsPage } from "./pages/Legal";
 
 export default function App() {
   return (
@@ -111,6 +112,8 @@ function Shell() {
         "/captain": "Captain studio",
         "/leaderboard": "Leaderboard",
         "/messages": "Messages",
+        "/terms": "Terms of Service",
+        "/privacy": "Privacy Policy",
       } as Record<string, string>
     )[loc.pathname];
     document.title = `${globalTitle || (liveAuth ? (cid ? "Campaign" : "Discover") : campaigns.find((c) => c.id === cid)?.name || "Discover")} · PLAY TO LAUNCH`;
@@ -271,6 +274,8 @@ function Shell() {
           <Route path="/leaderboard" element={liveAuth ? <LiveRankings /> : <LeaderboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/messages" element={<InboxPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           {liveAuth && <Route path="/players/:userId" element={<PublicPlayer />} />}
           <Route path="/verification" element={<VerificationPage />} />
           <Route path="/captain" element={<CaptainPage />} />
@@ -288,6 +293,7 @@ function Shell() {
           </Link>
           <span>Ideas become games. Communities unlock tokens.</span>
           <CommunityLinks />
+          <div className="footer-legal"><Link to="/terms">Terms of Service</Link><Link to="/privacy">Privacy Policy</Link></div>
           <span>
             <Globe2 size={14} /> PLAY IT BEFORE YOU TRADE IT.{" "}
             <ArrowDownRight size={15} />

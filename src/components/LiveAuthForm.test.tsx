@@ -30,8 +30,25 @@ async function enterVerification(register:boolean){
  fireEvent.change(screen.getByLabelText('Email address'),{target:{value:account.username}});
  fireEvent.change(screen.getByLabelText('Password'),{target:{value:'password123'}});
  if(register)fireEvent.change(screen.getByLabelText('Confirm password'),{target:{value:'password123'}});
+ if(register)fireEvent.click(screen.getByRole('checkbox',{name:/Terms of Service/}));
  await act(async()=>{fireEvent.click(screen.getByRole('button',{name:register?'Create account':'Sign in'}));});
 }
+it('requires an unchecked-by-default agreement before email registration',async()=>{
+ mocks.register.mockResolvedValue(account);
+ render(<LiveAuthForm/>);
+ fireEvent.click(screen.getByText('Create an account'));
+ const checkbox=screen.getByRole('checkbox',{name:/Terms of Service/}) as HTMLInputElement;
+ const submit=screen.getByRole('button',{name:'Create account'}) as HTMLButtonElement;
+ expect(checkbox.checked).toBe(false);
+ expect(submit.disabled).toBe(true);
+ expect(screen.getByRole('link',{name:'Terms of Service'}).getAttribute('href')).toBe('/terms');
+ expect(screen.getByRole('link',{name:'Privacy Policy'}).getAttribute('href')).toBe('/privacy');
+ fireEvent.click(checkbox);
+ expect(submit.disabled).toBe(false);
+ fireEvent.click(checkbox);
+ expect(submit.disabled).toBe(true);
+ expect(mocks.register).not.toHaveBeenCalled();
+});
 it('automatically sends once after registration and allows resend only after 60 seconds',async()=>{
  vi.useFakeTimers();mocks.sendVerification.mockResolvedValue({});
  await enterVerification(true);

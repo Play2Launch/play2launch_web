@@ -253,6 +253,7 @@ describe("live client flows without sending mail", () => {
     field("Email address", account.username);
     field("Password", "password123");
     field("Confirm password", "password123");
+    fireEvent.click(screen.getByRole("checkbox", { name: /Terms of Service/ }));
     click("Create account");
     await screen.findByRole("heading", { name: "Activate your email" });
     await screen.findByRole("alert");
@@ -290,6 +291,7 @@ describe("live client flows without sending mail", () => {
     field("Email address", account.username);
     field("Password", "password123");
     field("Confirm password", "different123");
+    fireEvent.click(screen.getByRole("checkbox", { name: /Terms of Service/ }));
     click("Create account");
     expect(screen.getByRole("alert").textContent).toContain("do not match");
     expect(transport).not.toHaveBeenCalled();
