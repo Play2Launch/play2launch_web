@@ -1,3 +1,4 @@
+import { formatTicker } from "../lib/ticker";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { listCampaigns, type PublicCampaign } from "../lib/catalog";
@@ -24,7 +25,7 @@ export function CampaignChoice({ campaign }: { campaign: CaptainCampaign }) {
       <span className="campaign-choice-text">
         <strong>{campaign.name}</strong>
         <small>
-          {stageLabel(campaign.stage)} · ${campaign.ticker}
+          {stageLabel(campaign.stage)} · {formatTicker(campaign.ticker)}
         </small>
         <small>
           {campaign.join_deadline_at

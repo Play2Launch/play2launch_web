@@ -304,6 +304,7 @@ function useAppState() {
         : "Signed in. Your campaign and invitation are preserved.",
     );
     // Pending actions may provide a more specific result (e.g. live writes unavailable).
+    if(next.mode==='live'&&next.nicknameSet===false){nav("/profile",{replace:true});return;}
     callback?.(next);
   };
   const completeLiveLogin = (result: SignedIn) => {
@@ -485,7 +486,7 @@ function useAppState() {
   };
   return {
     local,
-    updatePublicName: (id: string, name: string, handle?: string, avatarUrl?: string) => setUser(current => current?.id === id ? {...current, name, ...(handle !== undefined ? {handle} : {}), ...(avatarUrl !== undefined ? {avatarUrl:publicAvatarURL(avatarUrl)} : {})} : current),
+    updatePublicName: (id: string, name: string, handle?: string, avatarUrl?: string, nicknameSet?: boolean) => setUser(current => current?.id === id ? {...current, name, ...(nicknameSet!==undefined?{nicknameSet}:{}), ...(handle !== undefined ? {handle} : {}), ...(avatarUrl !== undefined ? {avatarUrl:publicAvatarURL(avatarUrl)} : {})} : current),
     demoTools: !liveAuth && demoTools,
     demoToolsAvailable: !liveAuth,
     toggleDemoTools: (enabled: boolean) => {

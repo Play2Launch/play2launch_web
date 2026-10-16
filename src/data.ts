@@ -9,6 +9,8 @@ export type Campaign = {
   id: string;
   name: string;
   ticker: string;
+  launch_at?: string | null;
+  availability?: { server_time: string };
   category: string;
   description: string;
   players: number;

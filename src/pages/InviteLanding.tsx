@@ -1,3 +1,4 @@
+import { formatTicker } from "../lib/ticker";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Gamepad2, UserRoundPlus, UsersRound } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
@@ -255,7 +256,7 @@ function CampaignTeaser({ campaign }: { campaign: PublicCampaign }) {
     </div>
     <div className="invite-campaign-body">
       <span className="eyebrow">INVITED CAMPAIGN</span>
-      <div className="invite-campaign-title"><strong>{campaign.name}</strong>{campaign.ticker && <span>{campaign.ticker.startsWith("$") ? campaign.ticker : `$${campaign.ticker}`}</span>}</div>
+      <div className="invite-campaign-title"><strong>{campaign.name}</strong>{campaign.ticker && <span>{formatTicker(campaign.ticker)}</span>}</div>
       {campaign.category && <small>{campaign.category}</small>}
       {campaign.description && <p>{campaign.description}</p>}
     </div>

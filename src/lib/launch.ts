@@ -12,7 +12,7 @@ export const launchCopy = {
   },
   countdown: {
     title: "The next chapter is close.",
-    detail: "The demo schedule is set. Launch still requires confirmation.",
+    detail: "The launch schedule is set. Launch still requires confirmation.",
     action: "View launch countdown",
   },
   live: {

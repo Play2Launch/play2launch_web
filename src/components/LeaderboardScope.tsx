@@ -1,6 +1,7 @@
+import { Link } from "react-router-dom";
 import { useEffect, useId, useRef, useState } from "react";
 import { Check, ChevronDown, Trophy } from "lucide-react";
-import { Link } from "react-router-dom";
+
 import { listCampaigns, recentCampaigns, type PublicCampaign } from "../lib/catalog";
 import { safeImageSource } from "./CampaignArtwork";
 
@@ -70,7 +71,7 @@ function CampaignPicker({ campaign, recent, mobile }: { campaign?: CampaignLink;
   const visible = [...featured, ...rows.filter((item) =>
     !featured.some((featuredItem) => featuredItem.slug === item.slug)
     && (mobile || !recent.some((recentItem) => recentItem.slug === item.slug)))];
-  const label = mobile ? "Campaign scores" : "Other campaigns";
+  const label = mobile ? campaign?.name || "Campaign scores" : "Other campaigns";
 
   return <div className={mobile ? "leaderboard-scope-mobile-switch" : "leaderboard-scope-more"} ref={wrapper}>
     <button ref={trigger} type="button" className={`leaderboard-scope-option${(mobile ? !!campaign : !!campaign && !activeRecent) ? " is-current" : ""}`} aria-current={mobile && campaign ? "page" : undefined} aria-expanded={open} aria-controls={menuId} onClick={() => setOpen((value) => !value)}>

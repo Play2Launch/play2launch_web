@@ -11,7 +11,7 @@ it('synchronizes the server avatar on load and removal',async()=>{
  .mockResolvedValueOnce({avatar_url:''});
  render(<PublicProfileEditor userId="ur1"/>);
  await screen.findByAltText('Current avatar');
- expect(mock.update).toHaveBeenLastCalledWith('ur1','Bee','','https://example.com/old.png');
+ expect(mock.update).toHaveBeenLastCalledWith('ur1','Bee','','https://example.com/old.png',undefined);
  fireEvent.click(screen.getByRole('button',{name:'Remove avatar'}));
  await waitFor(()=>expect(screen.queryByAltText('Current avatar')).toBeNull());
  expect(mock.request).toHaveBeenLastCalledWith('/user/avatar/remove',{});
@@ -25,7 +25,7 @@ it('loads and saves only public fields',async()=>{
  fireEvent.click(screen.getByRole('button',{name:'Save public profile'}));
  await screen.findByText(/Public profile saved/);
  expect(mock.request).toHaveBeenLastCalledWith('/user/profile',{nickname:'Captain Bee',avatar_url:''});
- expect(mock.update).toHaveBeenLastCalledWith('ur1','Captain Bee','','');
+ expect(mock.update).toHaveBeenLastCalledWith('ur1','Captain Bee','','',true);
 });
 it('saves a lowercase username separately from the display name',async()=>{
  mock.request.mockResolvedValueOnce({id:'ur1',nickname:'Bee',avatar_url:'',handle:'',handle_changes_remaining:1}).mockResolvedValueOnce({id:'ur1',nickname:'Bee',avatar_url:'',handle:'captain_bee',handle_changes_remaining:1});
@@ -34,7 +34,7 @@ it('saves a lowercase username separately from the display name',async()=>{
  fireEvent.click(screen.getByRole('button',{name:'Save public profile'}));
  await screen.findByText(/Public profile saved/);
  expect(mock.request).toHaveBeenLastCalledWith('/user/profile',{nickname:'Bee',avatar_url:'',handle:'captain_bee'});
- expect(mock.update).toHaveBeenLastCalledWith('ur1','Bee','captain_bee','');
+ expect(mock.update).toHaveBeenLastCalledWith('ur1','Bee','captain_bee','',true);
 });
 it('locks username after one rename but keeps display name editable',async()=>{
  mock.request.mockResolvedValueOnce({id:'ur1',nickname:'Bee',avatar_url:'',handle:'captain_bee',handle_changes_remaining:0});

@@ -1,3 +1,4 @@
+import { formatTicker } from "../lib/ticker";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, Users } from "lucide-react";
@@ -55,7 +56,7 @@ export function ExploreTeams() {
         {items.map((campaign) => (
           <article className="membership-card teams-explore-card" key={campaign.id}>
             <div>
-              <span className="eyebrow">{stageLabel(campaign.stage)} · ${campaign.ticker}</span>
+              <span className="eyebrow">{stageLabel(campaign.stage)} · {formatTicker(campaign.ticker)}</span>
               <h2>{campaign.name}</h2>
               <p className="muted">{campaign.description}</p>
               {campaign.availability?.join_open === false && <span className="small muted">Joining currently closed · Teams can still be viewed</span>}

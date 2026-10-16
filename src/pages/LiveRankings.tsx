@@ -1,5 +1,6 @@
+import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { CampaignPicker } from "../components/CampaignPicker";
 import { Trophy, RefreshCw, Users, ArrowUpRight } from "lucide-react";
 import { api } from "../lib/api";
@@ -295,6 +296,7 @@ function Board({
       <CampaignNav campaign={headerCampaign} live activeTab="leaderboard" />
       <CampaignIdentityCard campaign={headerCampaign} />
       <LeaderboardScope campaign={campaign} />
+
       {(error || metaError) && (
         <div className="notice" role="alert">
           <span>

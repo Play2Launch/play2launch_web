@@ -1,8 +1,9 @@
+import { formatTicker } from "../lib/ticker";
 import type { CSSProperties } from "react";
 import { ArrowLeft, ArrowUpRight, ChevronRight, Send } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import type { Campaign } from "../data";
-import { stageLabel } from "../data";
+import { CampaignStatus } from "./CampaignStatus";
 import { useApp } from "../state";
 import { walletAllowed } from "../lib/walletPolicy";
 import { CampaignArtwork } from "./CampaignArtwork";
@@ -108,8 +109,8 @@ export function CampaignIdentityCard({
       </div>
       <div className="campaign-identity-content">
         <div className="campaign-identity-meta">
-          <span className={`pill ${stage}`}>{stageLabel(stage)}</span>
-          <span>${campaign.ticker}</span>
+          <CampaignStatus stage={stage} />
+          <span>{formatTicker(campaign.ticker)}</span>
           <span className="campaign-identity-category">{campaign.category}</span>
         </div>
         <h1>{campaign.name}</h1>

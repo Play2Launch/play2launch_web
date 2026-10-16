@@ -1,7 +1,7 @@
 import {clientIdentityHeaders} from "./clientIdentity";
 import type { EntryContext } from "./entry";
 import { publicAvatarURL } from './avatar';
-export type User = { id: string; personalInviteCode?: string; name: string; handle?: string; avatarUrl?: string; email?: string; signupInviteToken?: string; mode: "demo" | "live" };
+export type User = { id: string; nicknameSet?: boolean; personalInviteCode?: string; name: string; handle?: string; avatarUrl?: string; email?: string; signupInviteToken?: string; mode: "demo" | "live" };
 export type AuthContext = { guestId: string; entry: EntryContext };
 export type Account = {
   account_id: string;
@@ -115,7 +115,7 @@ export class ApiClient {
   async request<T>(
     path: string,
     data?: unknown,
-    options: { authorization?: string; signal?: AbortSignal; turnstileToken?: string } = {},
+    options: { authorization?: string; signal?: AbortSignal; turnstileToken?: string; hcaptchaToken?: string; challengeAttempted?: boolean } = {},
   ): Promise<T> {
     if (!this.base)
       throw new Error(
@@ -129,7 +129,7 @@ export class ApiClient {
     const timeout = setTimeout(() => {
       timedOut = true;
       controller.abort();
-    }, 12000);
+    }, options.hcaptchaToken ? 22000 : 12000);
     const form = data instanceof URLSearchParams;
     const multipart = data instanceof FormData;
     try {
@@ -139,6 +139,7 @@ export class ApiClient {
         cache: "no-store",
         headers: {
           ...clientIdentityHeaders(),
+          ...(options.hcaptchaToken ? {"X-P2L-HCaptcha": options.hcaptchaToken} : {}),
           ...(options.turnstileToken ? {"X-P2L-Turnstile": options.turnstileToken} : {}),
           ...(data === undefined || multipart
             ? {}
@@ -174,14 +175,26 @@ export class ApiClient {
       if (!result || typeof result !== "object") throw invalid();
       // Retry only an explicit pre-operation challenge, once. Never retry network
       // failures or ambiguous writes, and never persist the one-use token.
-      if ((result.code === 10008 || result.code === 10009) && !options.turnstileToken) {
-        const challenge = result.data as {site_key?:unknown;action?:unknown} | null;
-        if (!challenge || typeof challenge.site_key !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(challenge.site_key) || typeof challenge.action !== 'string' || !['register','send_email','password_reset','signup'].includes(challenge.action)) throw new ApiError(response.status,10006);
+      if ((result.code === 10008 || result.code === 10009) && !options.challengeAttempted && !options.turnstileToken && !options.hcaptchaToken) {
+        const challenge = result.data as {site_key?:unknown;hcaptcha_site_key?:unknown;action?:unknown} | null;
+        const key=(v:unknown):v is string=>typeof v==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(v);
+        if (!challenge || typeof challenge.action !== 'string' || !['register','send_email','password_reset','signup'].includes(challenge.action) ||
+          (challenge.site_key!==undefined&&!key(challenge.site_key)) || (challenge.hcaptcha_site_key!==undefined&&!key(challenge.hcaptcha_site_key)) ||
+          (!key(challenge.site_key)&&!key(challenge.hcaptcha_site_key)) || (challenge.hcaptcha_site_key!==undefined&&!['register','signup'].includes(challenge.action))) throw new ApiError(response.status,10006);
         clearTimeout(timeout);
         options.signal?.removeEventListener('abort',cancel);
-        const {acquireTurnstile}=await import('./turnstile');
-        const token=await acquireTurnstile(challenge.site_key,challenge.action,options.signal);
-        return await this.request<T>(path,data,{...options,turnstileToken:token});
+        let hcaptchaToken:string|undefined,turnstileToken:string|undefined;
+        if(key(challenge.hcaptcha_site_key)){
+          const {acquireHCaptcha}=await import('./hcaptcha');
+          hcaptchaToken=await acquireHCaptcha(challenge.hcaptcha_site_key,options.signal,reason=>{
+            void this.request('/security/challenge-failure',{action:challenge.action,reason},{challengeAttempted:true}).catch(()=>{});
+          });
+        }
+        if(key(challenge.site_key)){
+          const {acquireTurnstile}=await import('./turnstile');
+          turnstileToken=await acquireTurnstile(challenge.site_key,challenge.action,options.signal);
+        }
+        return await this.request<T>(path,data,{...options,turnstileToken,hcaptchaToken,challengeAttempted:true});
       }
       if (!response.ok || result.code !== 0)
         throw new ApiError(
@@ -254,7 +267,7 @@ export class ApiClient {
       (value) => typeof value === "string" && value.trim() && !value.includes("@") && !/[\u0000-\u001f\u007f]/.test(value),
     );
     const email = data.from === 2 && typeof data.user_name === 'string' && /^[^\s@]+@[^\s@]+$/.test(data.user_name) ? data.user_name : undefined;
-    return { id: data.id, ...(typeof data.personal_invite_code==='string'&&/^ur[0-9a-z]{1,32}$/.test(data.personal_invite_code)?{personalInviteCode:data.personal_invite_code}:{}), name: name?.trim() || `Player #${data.id}`, ...(publicAvatarURL(data.avatar_url) ? {avatarUrl:publicAvatarURL(data.avatar_url)} : {}), ...(typeof data.handle === "string" && /^[a-z][a-z0-9_]{2,23}$/.test(data.handle) ? {handle:data.handle} : {}), ...(email ? {email} : {}), ...(data.new_account === true && inviteToken ? {signupInviteToken:inviteToken} : {}), mode: "live" };
+    return { id: data.id, nicknameSet: typeof data.nickname === "string" && Array.from(data.nickname.trim()).length >= 2 && Array.from(data.nickname.trim()).length <= 60 && !data.nickname.includes("@") && !/[\p{Cc}]/u.test(data.nickname), ...(typeof data.personal_invite_code==='string'&&/^ur[0-9a-z]{1,32}$/.test(data.personal_invite_code)?{personalInviteCode:data.personal_invite_code}:{}), name: name?.trim() || `Player #${data.id}`, ...(publicAvatarURL(data.avatar_url) ? {avatarUrl:publicAvatarURL(data.avatar_url)} : {}), ...(typeof data.handle === "string" && /^[a-z][a-z0-9_]{2,23}$/.test(data.handle) ? {handle:data.handle} : {}), ...(email ? {email} : {}), ...(data.new_account === true && inviteToken ? {signupInviteToken:inviteToken} : {}), mode: "live" };
   }
   private async finish(
     account: Account,

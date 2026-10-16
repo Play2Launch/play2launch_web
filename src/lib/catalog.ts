@@ -16,6 +16,7 @@ export type PublicCampaign = {
   slug: string;
   name: string;
   ticker: string;
+  launch_at?: string | null;
   category: string;
   description: string;
   stage: Stage;

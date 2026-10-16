@@ -1,5 +1,6 @@
+import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { ArrowRight, UsersRound } from "lucide-react";
 import { useApp } from "../state";
 import { getCampaign } from "../lib/catalog";

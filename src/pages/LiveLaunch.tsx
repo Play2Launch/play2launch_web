@@ -1,3 +1,4 @@
+import { LaunchTimer } from "../LaunchTimer";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getCampaign, type PublicCampaign } from "../lib/catalog";
@@ -77,6 +78,7 @@ function Launch({ slug }: { slug: string }) {
           <span className="pill">{stageLabel(campaign.stage)}</span>
           <h1>{campaign.name}</h1>
           <p>Campaign launch status</p>
+          {campaign.stage === "countdown" && <LaunchTimer campaignId={campaign.id} live launchAt={campaign.launch_at} serverTime={campaign.availability?.server_time} />}
           <div className="launch-progress">
             <strong>
               {points === undefined

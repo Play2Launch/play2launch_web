@@ -1,3 +1,5 @@
+import { formatTicker } from "../lib/ticker";
+import { CampaignStatus } from "../components/CampaignStatus";
 import {
   ArrowDownRight,
   ArrowRight,
@@ -150,9 +152,10 @@ export default function Discover({
             </div>
             <div className="genesis-bottom">
               <div>
-                <span className="micro">
-                  ${featured.ticker} · {stageLabel(featuredStage)}
-                </span>
+                <div className="featured-campaign-status">
+                  <span className="micro">{formatTicker(featured.ticker)}</span>
+                  <CampaignStatus stage={featuredStage} />
+                </div>
                 <div>
                   <strong>
                     {live
@@ -296,10 +299,7 @@ export default function Discover({
             <Link key={c.id} to={`/campaign/${c.id}`} className="campaign-card">
               <div className={`card-art art-${c.id}`}>
                 <CampaignArtwork campaign={c} variant="cover" />
-                <span className={`pill stage-${getStage(c.id)}`}>
-                  <i />
-                  {stageLabel(getStage(c.id))}
-                </span>
+                <CampaignStatus stage={getStage(c.id)} />
                 <span className="art-index">
                   0{catalog.findIndex((item) => item.id === c.id) + 1} / GENESIS
                 </span>
@@ -307,7 +307,7 @@ export default function Discover({
               <div className="card-body">
                 <div className="card-title">
                   <h3>{c.name}</h3>
-                  <span>${c.ticker}</span>
+                  <span>{formatTicker(c.ticker)}</span>
                 </div>
                 <div className="card-category">{c.category}</div>
                 <div className="card-metrics">

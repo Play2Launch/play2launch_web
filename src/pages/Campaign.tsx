@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import { formatTicker } from "../lib/ticker";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
@@ -25,7 +27,7 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import {
   campaigns,
   number,
@@ -187,7 +189,7 @@ export function CampaignPage({
                 <i />
                 {stageLabel(stage)}
               </span>
-              <span className="muted">${c.ticker}</span>
+              <span className="muted">{formatTicker(c.ticker)}</span>
             </div>
             <div className="lock-emblem">
               {stage === "prelaunch" ? (
@@ -200,8 +202,8 @@ export function CampaignPage({
             </div>
             <h2>{launchCopy[stage].title}</h2>
             <p>{launchCopy[stage].detail}</p>
-            {!live && stage === "countdown" && (
-              <LaunchTimer campaignId={c.id} />
+            {stage === "countdown" && (
+              <LaunchTimer campaignId={c.id} live={live} launchAt={c.launch_at} serverTime={c.availability?.server_time} />
             )}
             <div className="unlock-number">
               <strong>
@@ -1028,7 +1030,7 @@ export function LaunchPage() {
             <UnlockKeyhole size={52} />
           )}
         </div>
-        <span className="eyebrow">${c.ticker} / THE COMMUNITY DID THIS</span>
+        <span className="eyebrow">{formatTicker(c.ticker)} / THE COMMUNITY DID THIS</span>
         <h1>{launchCopy[stage].title}</h1>
         <p>{launchCopy[stage].detail}</p>
         <p>
@@ -1179,6 +1181,10 @@ export function ProfilePage() {
           </button>
         )}
       </div>
+      {app.user?.nicknameSet===false&&<div className="profile-name-notice" role="status">
+        <span className="profile-name-notice-icon"><Pencil size={24} aria-hidden="true" /></span>
+        <div><strong>Set your display name to continue</strong><p>Fill in the highlighted Display name field below, then save your public profile to unlock games and other pages.</p></div>
+      </div>}
       <div className="profile-grid">
         <section className="profile-identity">
           <span className="avatar jumbo kol-avatar-host player-avatar"><UserAvatar key={app.user?.id} name={app.user?.name} src={app.user?.avatarUrl}/>{verified && <VerifiedKol avatar />}</span>
@@ -1194,7 +1200,7 @@ export function ProfilePage() {
             <span className="pill neutral">{liveAuth ? "GUEST" : "LOCAL GUEST"}</span>
             <p>{app.demoToolsAvailable ? "Your preview progress stays on this device." : "Sign in to save your profile and join teams."}</p>
           </>}
-          {liveAuth && app.user && mobileProfile && editProfileOpen && <div id="mobile-public-profile-editor" className="profile-mobile-editor"><PublicProfileEditor key={app.user.id} userId={app.user.personalInviteCode||app.user.id} /></div>}
+          {liveAuth && app.user && mobileProfile && (editProfileOpen || app.user.nicknameSet===false) && <div id="mobile-public-profile-editor" className="profile-mobile-editor"><PublicProfileEditor key={app.user.id} userId={app.user.personalInviteCode||app.user.id} /></div>}
           <div className="profile-community">
             <ProfileTools onVerified={setKolIdentity} />
             {liveAuth && app.user?.mode === 'live' && <FriendInvite key={app.user.id} userId={app.user.id}/>}

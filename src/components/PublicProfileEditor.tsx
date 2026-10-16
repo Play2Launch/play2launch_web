@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { api, ApiError } from "../lib/api";
 import { useApp } from "../state";
 import { Modal } from "../App";
 import { ArrowRight, AtSign } from "lucide-react";
 import { createPortal } from "react-dom";
 import { AvatarEditor } from "./AvatarEditor";
-type Profile = { id: string; nickname: string; avatar_url: string; handle?: string; handle_changes_remaining?: number };
+type Profile = { has_nickname?:boolean; id: string; nickname: string; avatar_url: string; handle?: string; handle_changes_remaining?: number };
 export function PublicProfileEditor({ userId }: { userId: string }) {
   const app = useApp();
   const [profile, setProfile] = useState<Profile>();
@@ -17,6 +17,8 @@ export function PublicProfileEditor({ userId }: { userId: string }) {
   const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
   const [confirmRename, setConfirmRename] = useState(false);
+  const nameHintId = useId();
+  const needsDisplayName = !saved && (app.user?.nicknameSet === false || profile?.has_nickname === false);
   function valid(p: Profile) {
     return (
       p &&
@@ -34,11 +36,11 @@ export function PublicProfileEditor({ userId }: { userId: string }) {
         if (ctrl.signal.aborted) return;
         if (!valid(p)) throw new Error("Invalid public profile");
         setProfile(p);
-        setName(p.nickname);
+        setName(p.has_nickname===false?"":p.nickname);
         setHandle(p.handle ?? "");
         setAvatar(p.avatar_url);
         setError("");
-        app.updatePublicName(userId, p.nickname, p.handle ?? "", p.avatar_url);
+        app.updatePublicName(userId, p.nickname, p.handle ?? "", p.avatar_url, p.has_nickname);
       })
       .catch(() => {
         if (!ctrl.signal.aborted) setError("Could not load public profile.");
@@ -65,7 +67,8 @@ export function PublicProfileEditor({ userId }: { userId: string }) {
       if (!valid(p)) throw new Error();
       setProfile(p);
       setHandle(p.handle ?? "");
-      app.updatePublicName(userId, p.nickname, p.handle ?? "", p.avatar_url);
+      app.updatePublicName(userId, p.nickname, p.handle ?? "", p.avatar_url, p.has_nickname);
+      app.updatePublicName(userId, p.nickname, p.handle ?? "", p.avatar_url, true);
       setSaved(true);
     } catch (e) {
       setError(
@@ -78,6 +81,7 @@ export function PublicProfileEditor({ userId }: { userId: string }) {
   return (
     <section className="public-profile-editor">
       <h3>Public profile</h3>
+      {needsDisplayName&&<p className="profile-name-required-copy" role="status">Choose and save a display name to continue. A username (@) and avatar are optional.</p>}
       <p>
         Your display name, @username and avatar are public. Display names can be shared by multiple players. Never include
         your email or private information. KOL verification details are managed
@@ -103,9 +107,12 @@ export function PublicProfileEditor({ userId }: { userId: string }) {
           }}
         >
           <fieldset disabled={busy}>
-            <label>
-              Display name
+            <label className={needsDisplayName ? "profile-name-required" : undefined}>
+              <span className="profile-name-label">Display name {needsDisplayName && <span className="profile-name-required-badge" aria-hidden="true">Required to continue</span>}</span>
               <input
+                aria-label="Display name"
+                aria-describedby={needsDisplayName ? nameHintId : undefined}
+                placeholder={needsDisplayName ? "Enter your display name" : undefined}
                 required
                 minLength={2}
                 maxLength={60}
@@ -116,6 +123,7 @@ export function PublicProfileEditor({ userId }: { userId: string }) {
                 }}
               />
             </label>
+            {needsDisplayName && <small className="profile-name-hint" id={nameHintId}>2–60 characters. Save your public profile to finish setup.</small>}
             <label>
               Unique username (@username)
               <input aria-label="Unique username" value={handle} placeholder="your_username (optional)"

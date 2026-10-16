@@ -1,3 +1,5 @@
+import LiveTeams from "./pages/LiveTeams";
+import { formatTicker } from "./lib/ticker";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import InviteLanding, { PersonalInviteLanding } from "./pages/InviteLanding";
@@ -31,7 +33,6 @@ import {
 } from "react-router-dom";
 import Discover from "./pages/Discover";
 import LiveCatalog from "./pages/LiveCatalog";
-import LiveTeams from "./pages/LiveTeams";
 import CaptainPage, { CaptainDemoControls } from "./pages/Captain";
 import VerificationPage, { ReviewDemoControls } from "./pages/Verification";
 import {
@@ -57,6 +58,7 @@ import PublicPlayer from "./pages/PublicPlayer";
 import Following from "./pages/Following";
 import PostDetail from "./pages/PostDetail";
 import InboxPage, { InboxLink } from "./pages/Inbox";
+import { NicknameGate } from "./components/NicknameGate";
 import { UserAvatar } from './components/UserAvatar';
 import LiveLaunch from "./pages/LiveLaunch";
 import { walletAllowed, walletConnectionUiVisible } from "./lib/walletPolicy";
@@ -248,7 +250,7 @@ function Shell() {
         </div>
       )}
       <main className="page-container">
-        <Routes>
+        <NicknameGate><Routes>
           {liveAuth&&<Route path="/auth/telegram" element={<TelegramLogin/>}/>}
           <Route path="/" element={liveAuth ? <LiveCatalog /> : <Discover />} />
           <Route path="/invite/:token" element={<InviteLanding />} />
@@ -262,7 +264,7 @@ function Shell() {
           {liveAuth && <Route path="/campaign/:id/try" element={<TryGame />} />}
           {liveAuth && <Route path="/campaign/:id/session/:sessionId" element={<LiveScore />} />}
           <Route path="/campaign/:id/result/:runId" element={<ResultPage />} />
-          <Route path="/campaign/:id/teams" element={liveAuth ? <LiveTeams/> : <TeamPage />} />
+          <Route path="/campaign/:id/teams" element={liveAuth ? <LiveTeams /> : <TeamPage />} />
           <Route
             path="/campaign/:id/leaderboard"
             element={liveAuth ? <LiveRankings /> : <LeaderboardPage />}
@@ -286,7 +288,7 @@ function Shell() {
           />
           <Route path="/:slug/:team?" element={<NotFound />} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
+        </Routes></NicknameGate>
         <footer>
           <Link to="/" className="footer-brand">
             <img src="/brand-mark.svg" width="28" height="28" alt="" /> P2L
@@ -523,7 +525,7 @@ function ShareModal({ campaignId }: { campaignId: string }) {
             ? `Play for ${app.standings(campaignId).teams.find((t) => t.id === teamId)?.name || "your team"}.`
             : "Play. Compete. Unlock together."}
         </p>
-        <span>${c.ticker} · PLAY TO UNLOCK</span>
+        <span>{formatTicker(c.ticker)} · PLAY TO UNLOCK</span>
       </div>
       <div className="tabs share-tabs">
         <button

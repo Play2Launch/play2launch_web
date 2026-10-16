@@ -33,7 +33,7 @@ it("keeps P2L Points first and exposes at most three recent campaign tabs", asyn
 it("marks the current campaign tab, or Other campaigns for an older campaign", async () => {
   mocks.recentCampaigns.mockResolvedValue({ items: recent, hasMore: true });
   const { rerender } = render(<MemoryRouter><LeaderboardScope campaign={{ slug: "second", name: "Second campaign" }} /></MemoryRouter>);
-  expect((await screen.findByText("Second campaign")).closest("[aria-current]")?.getAttribute("aria-current")).toBe("page");
+  expect((await screen.findByRole("button", { name: "Second campaign" })).getAttribute("aria-current")).toBe("page");
   rerender(<MemoryRouter><LeaderboardScope campaign={{ slug: "older", name: "Older campaign" }} /></MemoryRouter>);
   expect(screen.getByRole("button", { name: "Other campaigns" }).className).toContain("is-current");
 });
@@ -44,7 +44,7 @@ it("keeps Other campaigns hidden when there are no extra desktop tabs, while mob
   render(<MemoryRouter><LeaderboardScope campaign={{ slug: "newest", name: "Newest campaign" }} /></MemoryRouter>);
   expect(await screen.findByText("Second campaign")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Other campaigns" })).toBeNull();
-  const mobilePicker = screen.getByRole("button", { name: "Campaign scores" });
+  const mobilePicker = screen.getByRole("button", { name: "Newest campaign" });
   expect(mobilePicker.getAttribute("aria-current")).toBe("page");
   fireEvent.click(mobilePicker);
   expect((screen.getByPlaceholderText("Name or symbol") as HTMLInputElement).hasAttribute("autofocus")).toBe(false);
