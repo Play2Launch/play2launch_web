@@ -31,6 +31,7 @@ export default function IDOCampaign({
   campaignId?: string;
 }) {
   const navigate = useNavigate();
+  const [subscriptionTarget,setSubscriptionTarget] = useState<HTMLDivElement|null>(null);
   const [paymentBalanceTarget,setPaymentBalanceTarget] = useState<HTMLDivElement|null>(null);
   const app = useApp(),
     walletModule = useWalletModule(),
@@ -148,7 +149,7 @@ export default function IDOCampaign({
               </button>
             </div>
           )}
-          {config?.configured && <IDOTokenInfo config={config} state={state} paymentBalanceSlot={<div className="ido-payment-wallet-balance" ref={setPaymentBalanceTarget}>{(!Wallet || !app.user) && <small>Connect wallet to see balance</small>}</div>} walletControl={
+          {config?.configured && <IDOTokenInfo subscriptionSlot={<div ref={setSubscriptionTarget}/>} config={config} state={state} paymentBalanceSlot={<div className="ido-payment-wallet-balance" ref={setPaymentBalanceTarget}>{(!Wallet || !app.user) && <small>Connect wallet to see balance</small>}</div>} walletControl={
             app.user && walletAllowed(app.platform?.runtime) && WalletControl ? <WalletControl targetChainId={config.chain_id} hideNetworkLabel visibility="connected" /> : null
           }/>}
           {config?.configured && <div className="ido-connect-row">
@@ -162,6 +163,7 @@ export default function IDOCampaign({
               key={`${c.id}:${app.user.id}`}
               hideWalletButton
               paymentBalanceTarget={paymentBalanceTarget}
+              subscriptionTarget={subscriptionTarget}
               slug={c.id}
               config={config}
               eligibility={eligibilityOwner === app.user.id ? eligibility : undefined}

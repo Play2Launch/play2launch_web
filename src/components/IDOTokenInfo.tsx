@@ -2,7 +2,7 @@ import type {ReactNode} from 'react';
 import {formatUnits,ZeroAddress} from 'ethers';
 import {tokenQuantity,type IDOConfig,type IDOState} from '../lib/ido';
 import {AssetIcon} from './AssetIcon';
-export function IDOTokenInfo({config,state,walletControl,paymentBalanceSlot}:{config:IDOConfig;state?:IDOState;walletControl?:ReactNode;paymentBalanceSlot?:ReactNode}){
+export function IDOTokenInfo({config,state,walletControl,paymentBalanceSlot,subscriptionSlot}:{config:IDOConfig;state?:IDOState;walletControl?:ReactNode;paymentBalanceSlot?:ReactNode;subscriptionSlot?:ReactNode}){
  const info=config.metadata?.token;
  const bound=state&&state.token!==ZeroAddress;
  const rate=state?BigInt(state.sale.tokenUnitsPerDollar):0n;
@@ -22,5 +22,6 @@ export function IDOTokenInfo({config,state,walletControl,paymentBalanceSlot}:{co
    {info?.x&&<a href={info.x} target="_blank" rel="noopener noreferrer">X ↗</a>}
    {info?.telegram&&<a href={info.telegram} target="_blank" rel="noopener noreferrer">Telegram ↗</a>}
   </nav>
+  {subscriptionSlot}
  </section>;
 }

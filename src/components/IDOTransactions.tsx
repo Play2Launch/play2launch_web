@@ -32,6 +32,7 @@ export type IDOTransactionProps = {
   onRefresh: () => void;
   onPlay?: () => void;
   paymentBalanceTarget?: HTMLElement | null;
+  subscriptionTarget?: HTMLElement | null;
 };
 type HistoryRow = { hash: string; event: string; data?: string; verified_at?: string };
 export function IDOTransactions({
@@ -42,6 +43,7 @@ export function IDOTransactions({
   onRefresh,
   onPlay,
   paymentBalanceTarget,
+  subscriptionTarget,
   address,
   chainId,
   provider,
@@ -116,7 +118,9 @@ export function IDOTransactions({
     return () => {
       generation.current++;
     };
-  }, [address, chainId, config, version, eligibility?.user_id]);
+  // Reads use the configured IDO RPC, not the wallet network. Clearing state on
+  // a Relay source-chain switch would unmount the active swap and lose its state.
+  }, [address, config, version, eligibility?.user_id]);
   useEffect(() => {
     if (!address) return;
     let cancelled = false, pending = false;
@@ -132,7 +136,7 @@ export function IDOTransactions({
     const timer = setInterval(() => void refresh(), 10000);
     document.addEventListener("visibilitychange", refresh);
     return () => { cancelled = true; clearInterval(timer); document.removeEventListener("visibilitychange", refresh); };
-  }, [address, chainId, config, eligibility?.user_id]);
+  }, [address, config, eligibility?.user_id]);
   const paid = state ? BigInt(state.account.paidCents) : 0n;
   const correctNetwork = chainId === config.chain_id;
   const wrongWallet = !!state?.boundWallet && state.boundWallet !== ZeroAddress && state.boundWallet.toLowerCase() !== address?.toLowerCase();
@@ -303,16 +307,19 @@ export function IDOTransactions({
   const paymentDecimals=state?.units?state.units.toString().length+1:6;
   const getPaymentButton=<button type="button" className="btn btn-primary ido-get-payment" disabled={busy||!address||!provider||!state} onClick={()=>setRelayOpen(true)}>Get {state?.paymentSymbol||"payment token"} ↗</button>;
   const balancePortal = paymentBalanceTarget ? createPortal(<div className="ido-payment-actions"><small>{!address ? "Connect wallet to see balance" : !state || balanceOwner.current !== address ? (error ? "Balance unavailable" : "Loading balance…") : state.paymentBalance == null ? "Balance unavailable" : <>Wallet balance: <b>{tokenQuantity(state.paymentBalance,paymentDecimals)} {state.paymentSymbol}</b></>}</small>{getPaymentButton}</div>,paymentBalanceTarget) : null;
-  if (!address)
-    return (
-      <p className="small muted">
-        {balancePortal}Connect your wallet to view your subscription and claims.
-      </p>
-    );
-  return (
-    <div className="ido-account">
-      {balancePortal}
-      {relayOpen && address && provider && state && <Suspense fallback={<p role="status">Loading swap…</p>}><RelayPaymentSwap key={`${address}:${slug}:${config.chain_id}:${state.payment}`} slug={slug} config={config} address={address} provider={provider} payment={state.payment} symbol={state.paymentSymbol} paymentIcon={state.paymentIcon} onClose={()=>setRelayOpen(false)} onComplete={()=>{setVersion(v=>v+1);onRefresh()}}/></Suspense>}
+  const refreshButton = (
+      <button
+        className="btn btn-secondary full"
+        disabled={busy}
+        onClick={() => {
+          setVersion((v) => v + 1);
+          onRefresh();
+        }}
+      >
+        Refresh balances
+      </button>
+  );
+  const transactionWarnings = <>
       {!correctNetwork && (
         <WarningNotice title="Switch your wallet network" urgent><p>
           Switch your wallet to chain {config.chain_id} to continue.
@@ -323,37 +330,38 @@ export function IDOTransactions({
         <WarningNotice title="Account and wallet don’t match" urgent>
             <dl className="ido-identity-details">
               <div><dt>Current account</dt><dd>{maskedEmail}</dd></div>
-              <div><dt>Current wallet</dt><dd>{address.slice(0, 6)}…{address.slice(-4)}</dd></div>
+              <div><dt>Current wallet</dt><dd>{address?.slice(0, 6)}…{address?.slice(-4)}</dd></div>
             </dl>
             <p>{wrongWallet ? "This P2L account already subscribed with a different wallet. Switch back to the wallet used for your subscription." : "This wallet subscribed with a different P2L account."}</p>
             <p>Switch to the matching account or wallet to continue. Purchases and claims are disabled.</p>
         </WarningNotice>
       )}
-      {!state && !error && <p role="status">Loading your on-chain balance…</p>}
-      {state && (
-        <>
-          <IDOPersonalProgress state={state} score={eligibility && !wrongIdentity ? eligibility.highest_score : undefined} active={active} />
-          {state.phase !== 2 && paid > 0n && (
-            <section className="ido-token-summary" aria-label="Your tokens">
-              <h3>Your {state.tokenSymbol || "token"} balance</h3>
-              <div className="ido-balances">
-                <div><span>Total allocation</span><strong className="ido-small-value">{tokenAmount(state.allocation)}</strong></div>
-                <div><span>Claimed</span><strong className="ido-small-value">{tokenAmount(BigInt(state.account.claimedTokens))}</strong></div>
-                <div><span>{state.phase === 0 ? "Awaiting settlement" : "Locked"}</span><strong className="ido-small-value">{tokenAmount(state.allocation > state.vested ? state.allocation - state.vested : 0n)}</strong></div>
-                <div><span>Available to claim</span><strong className="ido-small-value">{tokenAmount(claimable > 0n ? claimable : 0n)}</strong></div>
-              </div>
-              <p className="small">In your wallet <strong>{state.tokenBalance == null ? "Unavailable" : tokenAmount(state.tokenBalance)} {state.tokenSymbol || ""}</strong></p>
-              <p className="small muted">Wallet balance includes tokens from other transfers. Claimed tracks tokens received from this IDO.</p>
-            </section>
-          )}
-          {state.blocked && (
-            <p role="alert">
-              This contract is frozen or undergoing migration. Transactions are
-              unavailable.
-            </p>
-          )}
-          {state.phase === 0 && (
-            <>
+  </>;
+  const transactionFeedback = <>
+      {notice && (
+        <p role="status" className="small">
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="ido-error">
+          {error}
+        </p>
+      )}
+      {hash && (
+        <a
+          className="text-link"
+          target="_blank"
+          rel="noreferrer"
+          href={`${config.explorer_url}/tx/${hash}`}
+        >
+          View transaction ↗
+        </a>
+      )}
+  </>;
+  const subscriptionForm = state?.phase === 0 ? (
+            <section className="ido-subscription-form" aria-label="Subscribe to IDO">
+              {transactionWarnings}
               <label className="ido-amount">
                 {paid > 0n ? "Add to your subscription" : "Subscription amount"}
                 <div>
@@ -367,7 +375,7 @@ export function IDOTransactions({
                   />
                 </div>
               </label>
-              <div className="ido-purchase-preview"><span className="ido-purchase-balance"><span>Available balance: <strong>{state.paymentBalance==null?'Unavailable':tokenQuantity(state.paymentBalance,paymentDecimals)} {state.paymentSymbol}</strong></span>{getPaymentButton}</span><span>You receive <strong>{tokenQuantity(purchasePreview,18)} {state.tokenSymbol}</strong>{state.token===ZeroAddress?' · Token binding pending':''}</span></div>
+              <div className="ido-purchase-preview">{!paymentBalanceTarget && <span className="ido-purchase-balance"><span>Available balance: <strong>{state.paymentBalance==null?'Unavailable':tokenQuantity(state.paymentBalance,paymentDecimals)} {state.paymentSymbol}</strong></span>{getPaymentButton}</span>}<span>You receive <strong>{tokenQuantity(purchasePreview,18)} {state.tokenSymbol}</strong>{state.token===ZeroAddress?' · Token binding pending':''}</span></div>
               <p className="small muted">
                 First purchase $100 minimum. Add any cent amount afterwards, up
                 to $1,000 total. Pay the full amount now; claim your rebate
@@ -402,7 +410,44 @@ export function IDOTransactions({
                         ? "Add subscription"
                         : "Subscribe"}
               </button>}
-            </>
+              {transactionFeedback}
+              {refreshButton}
+            </section>
+          ) : null;
+  if (!address)
+    return (
+      <p className="small muted">
+        {balancePortal}Connect your wallet to view your subscription and claims.
+      </p>
+    );
+  return (
+    <div className="ido-account">
+      {balancePortal}
+      {relayOpen && address && provider && state && <Suspense fallback={<p role="status">Loading swap…</p>}><RelayPaymentSwap key={`${address}:${slug}:${config.chain_id}:${state.payment}`} slug={slug} config={config} address={address} provider={provider} payment={state.payment} symbol={state.paymentSymbol} paymentIcon={state.paymentIcon} onClose={()=>setRelayOpen(false)} onComplete={()=>{setVersion(v=>v+1);onRefresh()}}/></Suspense>}
+      {!subscriptionForm && transactionWarnings}
+      {!state && !error && <p role="status">Loading your on-chain balance…</p>}
+      {subscriptionForm && (subscriptionTarget ? createPortal(subscriptionForm, subscriptionTarget) : subscriptionForm)}
+      {state && (
+        <>
+          <IDOPersonalProgress state={state} score={eligibility && !wrongIdentity ? eligibility.highest_score : undefined} active={active} />
+          {state.phase !== 2 && paid > 0n && (
+            <section className="ido-token-summary" aria-label="Your tokens">
+              <h3>Your {state.tokenSymbol || "token"} balance</h3>
+              <div className="ido-balances">
+                <div><span>Total allocation</span><strong className="ido-small-value">{tokenAmount(state.allocation)}</strong></div>
+                <div><span>Claimed</span><strong className="ido-small-value">{tokenAmount(BigInt(state.account.claimedTokens))}</strong></div>
+                <div><span>{state.phase === 0 ? "Awaiting settlement" : "Locked"}</span><strong className="ido-small-value">{tokenAmount(state.allocation > state.vested ? state.allocation - state.vested : 0n)}</strong></div>
+                <div><span>Available to claim</span><strong className="ido-small-value">{tokenAmount(claimable > 0n ? claimable : 0n)}</strong></div>
+              </div>
+              <p className="small">In your wallet <strong>{state.tokenBalance == null ? "Unavailable" : tokenAmount(state.tokenBalance)} {state.tokenSymbol || ""}</strong></p>
+              <p className="small muted">Wallet balance includes tokens from other transfers. Claimed tracks tokens received from this IDO.</p>
+            </section>
+          )}
+          {state.blocked && (
+            <p role="alert">
+              This contract is frozen or undergoing migration. Transactions are
+              unavailable.
+            </p>
           )}
           {state.phase === 1 && (
             <>
@@ -495,26 +540,7 @@ export function IDOTransactions({
           )}
         </>
       )}
-      {notice && (
-        <p role="status" className="small">
-          {notice}
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="ido-error">
-          {error}
-        </p>
-      )}
-      {hash && (
-        <a
-          className="text-link"
-          target="_blank"
-          rel="noreferrer"
-          href={`${config.explorer_url}/tx/${hash}`}
-        >
-          View transaction ↗
-        </a>
-      )}
+      {!subscriptionForm && transactionFeedback}
       {history.length > 0 && (
         <details>
           <summary>Transaction history</summary>
@@ -535,16 +561,7 @@ export function IDOTransactions({
         </details>
       )}
       {syncNotice && <p className="small muted">{syncNotice}</p>}
-      <button
-        className="btn btn-secondary full"
-        disabled={busy}
-        onClick={() => {
-          setVersion((v) => v + 1);
-          onRefresh();
-        }}
-      >
-        Refresh balances
-      </button>
+      {state?.phase !== 0 && refreshButton}
     </div>
   );
 }

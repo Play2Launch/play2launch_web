@@ -9,6 +9,9 @@ vi.mock("../lib/ido", async (original) => ({
   walletSigner: mocks.signer,
 }));
 vi.mock("../lib/api", () => ({ api: { authenticated: mocks.auth } }));
+vi.mock("./RelayPaymentSwap", () => ({
+  default: () => <div role="dialog" aria-label="Payment swap"><input aria-label="Swap amount" defaultValue="" /></div>,
+}));
 import { IDOTransactions } from "./IDOTransactions";
 const config = {
   configured: true,
@@ -72,6 +75,51 @@ it("keeps claims disabled until identity is verified and when another account us
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+});
+it("preserves the open swap and input when the wallet switches to the source chain", async () => {
+  const s = state();
+  s.payment = "0x" + "3".repeat(40);
+  s.paymentSymbol = "USDG";
+  mocks.read.mockResolvedValue(s);
+  const props = {
+    slug: "combo", config, address: wallet, chainId: 46630,
+    provider: { request: vi.fn() }, onRefresh: vi.fn(),
+    eligibility: { eligible: true, highest_score: 1000, user_id: "0x123" },
+  };
+  const view = render(<IDOTransactions {...props} />);
+  fireEvent.click(await screen.findByRole("button", { name: /Get USDG/ }));
+  const dialog = await screen.findByRole("dialog", { name: "Payment swap" });
+  fireEvent.change(screen.getByLabelText("Swap amount"), { target: { value: "100" } });
+  const reads = mocks.read.mock.calls.length;
+  view.rerender(<IDOTransactions {...props} chainId={56} />);
+  expect(screen.getByRole("dialog", { name: "Payment swap" })).toBe(dialog);
+  expect((screen.getByLabelText("Swap amount") as HTMLInputElement).value).toBe("100");
+  expect(mocks.read).toHaveBeenCalledTimes(reads);
+  expect((screen.getByRole("button", { name: "Add subscription" }) as HTMLButtonElement).disabled).toBe(true);
+});
+it("places subscription controls in the token card with only one balance and get-token action", async () => {
+  const s = state();
+  s.paymentSymbol = "USDG";
+  s.paymentBalance = 100000000n;
+  mocks.read.mockResolvedValue(s);
+  const balance = document.createElement("div");
+  const subscription = document.createElement("div");
+  document.body.append(balance, subscription);
+  try {
+    render(<IDOTransactions slug="combo" config={config} address={wallet} chainId={46630}
+      provider={{request: vi.fn()}} onRefresh={vi.fn()}
+      paymentBalanceTarget={balance} subscriptionTarget={subscription} />);
+    const input = await screen.findByLabelText("Subscription amount");
+    expect(subscription.contains(input)).toBe(true);
+    expect(subscription.contains(screen.getByRole("button", {name: "Refresh balances"}))).toBe(true);
+    expect(screen.getAllByRole("button", {name: /Get USDG/})).toHaveLength(1);
+    expect(balance.contains(screen.getByRole("button", {name: /Get USDG/}))).toBe(true);
+    expect(screen.queryByText(/Available balance:/)).toBeNull();
+  } finally {
+    cleanup();
+    balance.remove();
+    subscription.remove();
+  }
 });
 it("catches up multiple history batches and stops once synchronized", async () => {
   mocks.read.mockResolvedValue(state());

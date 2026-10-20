@@ -4806,6 +4806,8 @@ body:has(.game-embed) .page-container {
 .ido-raised { margin-top: 24px; overflow-wrap: anywhere; }
 .ido-raised strong { font-size: 28px; }
 .ido-account .btn { margin-top: 12px; }
+.ido-subscription-form { margin-top: 20px; padding-top: 4px; border-top: 1px solid #303628; }
+.ido-subscription-form > .btn { margin-top: 12px; }
 .warning-notice {
   display: flex;
   align-items: flex-start;
@@ -4886,10 +4888,13 @@ body:has(.game-embed) .page-container {
 .ido-rules summary { cursor: pointer; color: #d2fa69; }
 .ido-rules ul { padding-left: 20px; line-height: 1.7; }
 @media(max-width:760px) {
-  .ido-layout .ido-main { order: 1; }
+  /* Flatten the columns on mobile and explicitly order every main-column section. */
+  .ido-layout > .ido-main:first-child { display: contents; }
+  .ido-layout > .ido-main > * { order: 2; width: 100%; box-sizing: border-box; }
+  .ido-layout > .ido-main > .campaign-follow-row { order: -1; }
   .ido-layout .ido-game-sidebar { display: contents; }
   .ido-layout .ido-game-card { order: 0; }
-  .ido-layout .ido-steps { order: 2; }
+  .ido-layout .ido-steps { order: 1; width: 100%; box-sizing: border-box; margin-top: 0; }
   .ido-contract-panel { padding: 20px; }
   .ido-main .ido-token-summary .ido-balances { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .ido-rebate-equation { grid-template-columns: 1fr 14px 1fr 14px 1.15fr; gap: 4px; }
