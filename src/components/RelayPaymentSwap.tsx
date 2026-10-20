@@ -1,3 +1,4 @@
+import {RelayAssetSelect} from './RelayAssetSelect';
 import {AssetIcon} from './AssetIcon';
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -22,13 +23,14 @@ type Chain = {
   id: number;
   name: string;
   displayName?: string;
+  iconUrl?: string;
   vmType?: string;
   disabled?: boolean;
   httpRpcUrl: string;
   explorerUrl: string;
   currency: { name: string; symbol: string; decimals: number };
 };
-type Currency = { address: string; symbol: string; decimals: number };
+type Currency = { address: string; symbol: string; decimals: number; name?: string; metadata?: {logoURI?: string}; logoURI?: string };
 export default function RelayPaymentSwap({
   slug,
   config,
@@ -383,40 +385,12 @@ export default function RelayPaymentSwap({
         {ready && (
           <>
             <div className="relay-fields">
-              <label>
-                From chain
-                <select
-                  disabled={busy || loading}
-                  value={source}
-                  onChange={(e) => {
-                    setSource(Number(e.target.value));
-                    setError("");
-                  }}
-                >
-                  {chains.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.displayName || c.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Pay with
-                <select
-                  value={coin}
-                  disabled={busy || loading}
-                  onChange={(e) => {
-                    setCoin(e.target.value);
-                    setQuote(undefined);
-                  }}
-                >
-                  {coins.map((c) => (
-                    <option key={c.address} value={c.address}>
-                      {c.symbol}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <RelayAssetSelect label="From chain" value={String(source)} disabled={busy || loading}
+                options={chains.map(c=>({value:String(c.id),label:c.displayName||c.name,icon:c.iconUrl}))}
+                onChange={value=>{setSource(Number(value));setQuote(undefined);setError("")}}/>
+              <RelayAssetSelect label="Pay with" value={coin} disabled={busy || loading}
+                options={coins.map(c=>({value:c.address,label:c.symbol,detail:c.name,icon:c.metadata?.logoURI||c.logoURI}))}
+                onChange={value=>{setCoin(value);setQuote(undefined)}}/>
             </div>
             <label className="relay-amount">
               Amount
