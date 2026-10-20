@@ -12,7 +12,7 @@ import {
 } from "@reown/appkit/react";
 import { defineChain } from "@reown/appkit/networks";
 import { P2LEthersAdapter } from "../lib/walletAdapter";
-import { walletConfiguration, idoWalletChains } from "../lib/walletConfig";
+import { walletConfiguration, idoWalletChains, walletChainImages } from "../lib/walletConfig";
 import type { Eip1193Provider } from 'ethers';
 import { IDOTransactions, type IDOTransactionProps } from './IDOTransactions';
 import { useWalletChain } from '../lib/useWalletChain';
@@ -31,6 +31,7 @@ const walletKit = createAppKit({
   adapters: [new P2LEthersAdapter()],
   networks: [network, ...idoNetworks.filter(n=>n.id!==network.id)],
   defaultNetwork: network,
+  chainImages: walletChainImages,
   // Campaigns select their own chain; keep the wallet network picker available.
   enableNetworkSwitch: true,
   projectId: config.projectId,

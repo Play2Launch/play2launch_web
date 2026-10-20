@@ -1,3 +1,4 @@
+import {configuredRelayChains,walletChainImages} from '../lib/walletConfig';
 import {ensureRelaySourceChain,relayErrorMessage} from '../lib/relayWallet';
 import {checkSwapBalance} from '../lib/relayBalance';
 import {RelayAssetSelect} from './RelayAssetSelect';
@@ -120,9 +121,7 @@ export default function RelayPaymentSwap({
             "Payment token swaps are not enabled yet. Please check back soon.",
           );
         const data = await relayRequest<{ chains: Chain[] }>(slug, "/chains");
-        const supported = data.chains.filter(
-          (c) => !c.disabled && c.vmType === "evm",
-        );
+        const supported = configuredRelayChains(data.chains);
         if (!supported.some((c) => c.id === config.chain_id))
           throw new Error(
             "Relay does not support this IDO network yet. Test tokens cannot be obtained here.",
@@ -417,7 +416,7 @@ export default function RelayPaymentSwap({
           <>
             <div className="relay-fields">
               <RelayAssetSelect label="From chain" value={String(source)} disabled={busy || loading}
-                options={chains.map(c=>({value:String(c.id),label:c.displayName||c.name,icon:c.iconUrl}))}
+                options={chains.map(c=>({value:String(c.id),label:c.displayName||c.name,icon:c.iconUrl||walletChainImages[c.id]}))}
                 onChange={value=>{setSource(Number(value));setQuote(undefined);setError("")}}/>
               <RelayAssetSelect label="Pay with" value={coin} disabled={busy || loading}
                 options={coins.map(c=>({value:c.address,label:c.symbol,detail:c.name,icon:c.metadata?.logoURI||c.logoURI}))}
