@@ -1,3 +1,4 @@
+import {ensureRelaySourceChain,relayErrorMessage} from '../lib/relayWallet';
 import {checkSwapBalance} from '../lib/relayBalance';
 import {RelayAssetSelect} from './RelayAssetSelect';
 import {AssetIcon} from './AssetIcon';
@@ -304,6 +305,10 @@ export default function RelayPaymentSwap({
       const currency=coins.find(c=>c.address===coin);
       if(!currency)throw Error("Select a source token.");
       await verifyBalance(parseUnits(amount,currency.decimals),quote);
+      setStatus("Switch to the source network in your wallet to continue.");
+      await ensureRelaySourceChain(provider,source,address);
+      if(!active.current)throw Error("Wallet changed. Reopen the swap.");
+      setStatus("Confirm the approval and swap transactions in your wallet.");
       const wallet = createWalletClient({
         account: address as `0x${string}`,
         transport: custom({
@@ -349,9 +354,7 @@ export default function RelayPaymentSwap({
     } catch (e) {
       setStatus("");
       setError(
-        e instanceof Error
-          ? e.message
-          : "Swap interrupted. Check Relay activity before retrying.",
+        relayErrorMessage(e),
       );
       setQuote(undefined);
     } finally {

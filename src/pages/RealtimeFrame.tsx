@@ -6,6 +6,7 @@ import { createRealtimeBridge, REALTIME_RULES } from "../lib/realtimeBridge";
 
 export function RealtimeFrame({ slug }: { slug: string }) {
   const frame = useRef<HTMLIFrameElement>(null);
+  const [frameHeight,setFrameHeight]=useState(740);
   const [game, setGame] = useState<{
       game_id: string;
       entry_url: string;
@@ -52,8 +53,15 @@ export function RealtimeFrame({ slug }: { slug: string }) {
       socket: (url, protocols) => new WebSocket(url, protocols),
       status: setStatus,
     });
+    const resize=(event:MessageEvent)=>{
+      if(event.source!==frame.current?.contentWindow||event.origin!==new URL(src).origin)return;
+      const data=event.data;
+      if(data?.type==='p2l-marketcombo-resize'&&Number.isFinite(data.height)&&data.height>=300&&data.height<=3000)setFrameHeight(Math.ceil(data.height));
+    };
+    window.addEventListener("message",resize);
     window.addEventListener("message", bridge.receive);
     return () => {
+      window.removeEventListener("message",resize);
       window.removeEventListener("message", bridge.receive);
       bridge.destroy();
     };
@@ -73,6 +81,7 @@ export function RealtimeFrame({ slug }: { slug: string }) {
         <iframe
           ref={frame}
           className="game-embed-frame"
+          style={{height:frameHeight}}
           src={src}
           title="Market Combo game"
           sandbox="allow-scripts allow-same-origin"
