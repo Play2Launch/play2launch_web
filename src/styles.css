@@ -5018,7 +5018,7 @@ body:has(.game-embed) .page-container {
 .relay-dialog header {display:flex;align-items:center;justify-content:space-between;gap:12px}
 .relay-dialog h2,.relay-dialog p {margin:0}
 .relay-destination,.relay-quote {display:grid;gap:8px;padding:16px;border:1px solid #465032;border-radius:12px;background:#202719}
-.relay-fields {display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.relay-fields {display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
 .relay-dialog label {display:grid;gap:8px;min-width:0}
 .relay-dialog select,.relay-dialog input {width:100%;min-width:0;padding:12px;background:#0d120b;color:#fff;border:1px solid #465032;border-radius:8px}
 .relay-warning {padding:14px;background:#382a17;border:1px solid #df9d36;border-radius:10px;color:#ffd393;overflow-wrap:anywhere}
