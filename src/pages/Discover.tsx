@@ -116,7 +116,7 @@ export default function Discover({
                 ? `/campaign/${featured.id}`
                 : `/campaign/${featured.id}/launch`
             }
-            className="genesis-card"
+            className={`genesis-card${featured.campaign_type === "play_to_ido" ? " genesis-card-ido" : ""}`}
           >
             <CampaignArtwork campaign={featured} variant="hero" />
             <div className="hero-shade" />

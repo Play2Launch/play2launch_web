@@ -45,6 +45,11 @@ export default function IDOCampaign({
     [version, setVersion] = useState(0),
     [loadingWallet, setLoadingWallet] = useState(false);
   useEffect(() => {
+    if (!walletAllowed()) return;
+    // Restore AppKit's existing session on refresh; this does not request accounts or sign.
+    void Promise.resolve(loadWallet()).catch(() => {});
+  }, []);
+  useEffect(() => {
     const ctrl = new AbortController();
     setError("");
     api

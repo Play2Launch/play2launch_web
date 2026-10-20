@@ -5052,3 +5052,13 @@ body:has(.game-embed) .page-container {
 .relay-select-option>span:not(.relay-option-fallback){flex:1;min-width:0;overflow-wrap:anywhere}
 .relay-select-option small{display:block;color:#a8b198;font-size:11px}
 .relay-select-options>p{padding:12px;font-size:13px}
+
+/* Keep the search focus on its containing row, without a second neon input ring. */
+.relay-dialog .relay-select-search input:focus-visible{outline:none;box-shadow:none}
+.relay-select-search{border-radius:6px;transition:background .15s,border-color .15s}
+.relay-select-search:focus-within{background:#ffffff05;border-bottom-color:#85965f}
+/* IDO progress can grow with labels; reserve space through normal document flow. */
+.discover-page .genesis-card-ido{display:flex;flex-direction:column}
+.discover-page .genesis-card-ido .genesis-content{padding-bottom:28px;flex:1}
+.discover-page .genesis-card-ido .genesis-bottom{position:relative;inset:auto;flex-shrink:0;width:100%;margin-top:auto}
+@media(max-width:540px){.discover-page .genesis-card-ido .genesis-content{padding-bottom:22px}}

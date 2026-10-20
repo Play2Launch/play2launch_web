@@ -25,7 +25,7 @@ const network = defineChain({
 });
 const idoNetworks=idoWalletChains().map(chain=>defineChain({...chain,chainNamespace:'eip155',caipNetworkId:`eip155:${chain.id}`}));
 const networkFor=(id:number)=>idoNetworks.find(n=>n.id===id)||network;
-// This module is lazy-loaded only after the user opens the wallet connector.
+// IDO pages load this module to restore an existing session without requesting authorization.
 const walletKit = createAppKit({
   adapters: [new P2LEthersAdapter()],
   networks: [network, ...idoNetworks.filter(n=>n.id!==network.id)],
@@ -71,8 +71,11 @@ async function prepareConnection(target = network) {
 
 export async function openWallet(chainId = network.id) {
   assertWalletAllowed();
+  await walletKit.ready();
+  if (walletKit.getAddress('eip155')) return walletKit.open({view:'Account',namespace:'eip155'});
   await prepareConnection(networkFor(chainId));
-  return walletKit.open({ view: 'Connect', namespace: 'eip155' });
+  // Network reconciliation can also finish a pending session restoration.
+  return walletKit.open({ view: walletKit.getAddress('eip155') ? 'Account' : 'Connect', namespace: 'eip155' });
 }
 
 export function IDOWallet(props: IDOTransactionProps & {hideWalletButton?:boolean}) {
@@ -107,11 +110,7 @@ export function WalletButton({targetChainId,hideNetworkLabel=false,visibility,pr
     setBusy(true);
     setError("");
     try {
-      if (!isConnected) await prepareConnection(network);
-      await open({
-        view: isConnected ? "Account" : "Connect",
-        namespace: "eip155",
-      });
+      await openWallet(network.id);
     } catch {
       setError("Wallet could not open. Please retry.");
     } finally {
@@ -234,7 +233,7 @@ export function WalletSession() {
             className="btn btn-primary full"
             disabled={busy}
             onClick={() =>
-              void action(async () => { await prepareConnection(); await open({ view: "Connect", namespace: "eip155" }); })
+              void action(() => openWallet())
             }
           >
             Connect with WalletConnect

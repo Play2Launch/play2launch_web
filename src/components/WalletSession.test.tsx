@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
   selectNetwork: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@reown/appkit/react", () => ({
-  createAppKit: (...args: unknown[]) => { mocks.create(...args); return {getCaipNetworkId: mocks.cachedChain, switchNetwork:mocks.selectNetwork, open:mocks.open}; },
+  createAppKit: (...args: unknown[]) => { mocks.create(...args); return {ready:async()=>{},getAddress:()=>mocks.account.isConnected?mocks.account.address:undefined,getCaipNetworkId: mocks.cachedChain, switchNetwork:mocks.selectNetwork, open:mocks.open}; },
   useAppKit: () => ({ open: mocks.open }),
   useAppKitAccount: () => mocks.account,
   useAppKitNetwork: () => ({
@@ -43,6 +43,7 @@ vi.mock("../lib/walletConfig", async original => ({
 }));
 import { WalletSession, WalletButton, openWallet } from "./WalletSession";
 it('reconciles a stale cached network before opening the connector', async () => {
+  mocks.account.isConnected=false;
   mocks.cachedChain.mockReturnValueOnce(46630);
   await openWallet();
   expect(mocks.selectNetwork).toHaveBeenCalledWith(expect.objectContaining({id:4663}),{throwOnFailure:true});
@@ -125,4 +126,11 @@ it('uses the campaign network instead of the global default',async()=>{
  render(<WalletButton targetChainId={1}/>);
  fireEvent.click(screen.getByRole('button',{name:'Switch to Ethereum'}));
  await waitFor(()=>expect(mocks.switchNetwork).toHaveBeenCalledWith(expect.objectContaining({id:1})));
+});
+
+it('opens the restored account rather than adding the same wallet again',async()=>{
+ mocks.account.isConnected=true; mocks.open.mockClear(); mocks.selectNetwork.mockClear();
+ await openWallet();
+ expect(mocks.open).toHaveBeenCalledWith({view:'Account',namespace:'eip155'});
+ expect(mocks.selectNetwork).not.toHaveBeenCalled();
 });
