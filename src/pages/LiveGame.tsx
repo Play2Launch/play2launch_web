@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { getCampaign } from "../lib/catalog";
 import { myMembership, listTeams } from "../lib/teams";
@@ -7,6 +7,8 @@ import { useApp } from "../state";
 import { GamePage } from "./Game";
 import { PostComposer } from '../components/PostComposer';
 import type { Campaign } from "../data";
+import {RealtimeFrame} from './RealtimeFrame';
+import {REALTIME_RULES} from '../lib/realtimeBridge';
 import { RunnerFrame } from './RunnerFrame';
 import { RUNNER_RULES } from '../lib/runner';
 import { trackGameEvent } from '../lib/firebaseAnalytics';
@@ -72,7 +74,7 @@ function Round({ slug }: { slug: string }) {
             growth: 0,
             score: 0,
           });
-        if(app.user&&!signal.aborted)return Promise.all([myMembership(slug,signal),listTeams(slug,signal)]).then(([m,t])=>{
+        if(c.campaign_type!=='play_to_ido'&&app.user&&!signal.aborted)return Promise.all([myMembership(slug,signal),listTeams(slug,signal)]).then(([m,t])=>{
           if(!signal.aborted)setTeam(t.find(v=>v.id===m?.team_id)?.name||'');
         });
       })
@@ -139,6 +141,8 @@ function Round({ slug }: { slug: string }) {
       if (alive.current) setBusy(false);
     }
   }
+  if (campaign?.availability?.scoring_open === false && campaign.rules_version !== REALTIME_RULES && /^gx[0-9a-z]{1,13}$/.test(campaign.game_key||"")) return <Navigate replace to={`/campaign/${slug}/try`}/>;
+  if (app.user && campaign?.rules_version === REALTIME_RULES && campaign.campaign_type === 'play_to_ido') return <RealtimeFrame slug={slug}/>;
   if (!app.user)
     return (
       <div className="empty-panel">

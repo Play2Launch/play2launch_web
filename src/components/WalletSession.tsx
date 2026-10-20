@@ -7,10 +7,14 @@ import {
   useAppKitAccount,
   useAppKitNetwork,
   useDisconnect,
+  useAppKitProvider,
 } from "@reown/appkit/react";
 import { defineChain } from "@reown/appkit/networks";
-import { EthersAdapter } from "@reown/appkit-adapter-ethers";
-import { walletConfiguration } from "../lib/walletConfig";
+import { P2LEthersAdapter } from "../lib/walletAdapter";
+import { walletConfiguration, idoWalletChains } from "../lib/walletConfig";
+import type { Eip1193Provider } from 'ethers';
+import { IDOTransactions, type IDOTransactionProps } from './IDOTransactions';
+import { useWalletChain } from '../lib/useWalletChain';
 
 assertWalletAllowed();
 const config = walletConfiguration();
@@ -19,14 +23,15 @@ const network = defineChain({
   chainNamespace: "eip155",
   caipNetworkId: `eip155:${config.chain.id}`,
 });
+const idoNetworks=idoWalletChains().map(chain=>defineChain({...chain,chainNamespace:'eip155',caipNetworkId:`eip155:${chain.id}`}));
+const networkFor=(id:number)=>idoNetworks.find(n=>n.id===id)||network;
 // This module is lazy-loaded only after the user opens the wallet connector.
 const walletKit = createAppKit({
-  adapters: [new EthersAdapter()],
-  networks: [network],
+  adapters: [new P2LEthersAdapter()],
+  networks: [network, ...idoNetworks.filter(n=>n.id!==network.id)],
   defaultNetwork: network,
-  // Single-chain app: use our explicit network status/switch action instead
-  // of AppKit's single-network dropdown, which can render but ignore clicks.
-  enableNetworkSwitch: false,
+  // Campaigns select their own chain; keep the wallet network picker available.
+  enableNetworkSwitch: true,
   projectId: config.projectId,
   metadata: {
     name: "Play To Launch",
@@ -50,13 +55,39 @@ const walletKit = createAppKit({
   enableReconnect: true,
 });
 
-export function openWallet() {
-  assertWalletAllowed();
-  return walletKit.open();
+if (import.meta.env.DEV) {
+  walletKit?.subscribeEvents?.(({ data }) => {
+    if (data.event === 'CONNECT_ERROR') console.warn('[P2L wallet] Connector error:', data.properties.message);
+  });
 }
 
-export function WalletButton() {
-  const { chainId, switchNetwork } = useAppKitNetwork();
+async function prepareConnection(target = network) {
+  // AppKit can restore a chain from a previous deployment even when it is no
+  // longer in networks. Reconcile that cached selection before authorization.
+  if (Number(String(walletKit.getCaipNetworkId()).split(':').pop()) !== target.id) {
+    await walletKit.switchNetwork(target, { throwOnFailure: true });
+  }
+}
+
+export async function openWallet(chainId = network.id) {
+  assertWalletAllowed();
+  await prepareConnection(networkFor(chainId));
+  return walletKit.open({ view: 'Connect', namespace: 'eip155' });
+}
+
+export function IDOWallet(props: IDOTransactionProps & {hideWalletButton?:boolean}) {
+  const { address, isConnected } = useAppKitAccount({ namespace: 'eip155' });
+  const { chainId } = useAppKitNetwork();
+  const { walletProvider } = useAppKitProvider<Eip1193Provider>('eip155');
+  const actualChain = useWalletChain(walletProvider, chainId);
+  return <>{!props.hideWalletButton && <WalletButton targetChainId={props.config.chain_id} />}<IDOTransactions {...props} address={isConnected ? address : undefined} chainId={Number(actualChain)} provider={walletProvider} /></>;
+}
+
+export function WalletButton({targetChainId,hideNetworkLabel=false,visibility,primary=false}:{targetChainId?:number;hideNetworkLabel?:boolean;visibility?:"connected"|"disconnected";primary?:boolean} = {}) {
+  const network=networkFor(targetChainId ?? config.chain.id);
+  const { chainId: cachedChain, switchNetwork } = useAppKitNetwork();
+  const { walletProvider } = useAppKitProvider<Eip1193Provider>('eip155');
+  const chainId = useWalletChain(walletProvider, cachedChain);
   const { address, isConnected, status } = useAppKitAccount({
     namespace: "eip155",
   });
@@ -76,6 +107,7 @@ export function WalletButton() {
     setBusy(true);
     setError("");
     try {
+      if (!isConnected) await prepareConnection(network);
       await open({
         view: isConnected ? "Account" : "Connect",
         namespace: "eip155",
@@ -86,10 +118,11 @@ export function WalletButton() {
       setBusy(false);
     }
   }
+  if ((visibility === "connected" && !(isConnected && address)) || (visibility === "disconnected" && isConnected && address)) return null;
   return (
     <div className="header-wallet-controls">
       <button
-        className={`btn btn-secondary ${isConnected && address ? "wallet-identity-button" : ""}`}
+        className={`btn ${primary ? "btn-primary full" : "btn-secondary"} ${isConnected && address ? "wallet-identity-button" : ""}`}
         title={isConnected ? address : "Connect Wallet"}
         disabled={busy}
         onClick={() => void show()}
@@ -103,7 +136,7 @@ export function WalletButton() {
             ? "Connecting…"
             : "Connect Wallet"}
         </span>
-        {isConnected && address && <span className={`wallet-network-label ${wrongNetwork ? "wallet-network-warning" : ""}`}>{wrongNetwork ? `Chain ${chainId ?? "unknown"}` : network.name}</span>}
+        {isConnected && address && (!hideNetworkLabel || wrongNetwork) && <span className={`wallet-network-label ${wrongNetwork ? "wallet-network-warning" : ""}`}>{wrongNetwork ? `Chain ${chainId ?? "unknown"}` : network.name}</span>}
         </span>
       </button>
       {error && (
@@ -201,7 +234,7 @@ export function WalletSession() {
             className="btn btn-primary full"
             disabled={busy}
             onClick={() =>
-              void action(() => open({ view: "Connect", namespace: "eip155" }))
+              void action(async () => { await prepareConnection(); await open({ view: "Connect", namespace: "eip155" }); })
             }
           >
             Connect with WalletConnect

@@ -161,7 +161,7 @@ it("restores the original hero and cards while showing no demo statistics", asyn
   fireEvent.change(screen.getByRole("textbox", { name: "Search campaigns" }), {
     target: { value: "" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Launched" }));
+  fireEvent.click(screen.getByRole("button", { name: "Goal reached" }));
   expect(screen.getByText("No projects found")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "All projects" }));
   expect(document.querySelectorAll(".campaign-card")).toHaveLength(2);
@@ -210,7 +210,7 @@ it("shows qualified progress without promoting the published stage", async () =>
       : reply({ ...campaign, slug: "phood", name: "PAPERHOOD" }),
   );
   mount("/campaign/phood");
-  await screen.findByText("Community goal reached");
+  await screen.findByText("Target met · Awaiting confirmation");
   expect(document.querySelector(".unlock-number strong")?.textContent).toBe(
     "1,500",
   );

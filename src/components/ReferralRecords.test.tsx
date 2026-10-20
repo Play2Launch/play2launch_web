@@ -10,7 +10,8 @@ it('loads private invitation records on demand, showing pending and credited rew
  vi.mocked(api.authenticated).mockResolvedValue({reward:50,next_cursor:'',items:[{id:'ur1',name:'Alice',joined_at:1700000000000,status:'pending',amount:0},{id:'ur2',name:'Bob',joined_at:1700000000000,status:'credited',amount:50}]});
  render(<MemoryRouter><ReferralRecords/></MemoryRouter>);
  expect(api.authenticated).not.toHaveBeenCalled();fireEvent.click(screen.getByText('My invitations'));
- await screen.findByText('Alice');expect(screen.getByText('Waiting for first qualifying game')).toBeTruthy();expect(screen.getByText('+50 P2L Points credited')).toBeTruthy();
+ await screen.findByText('Alice');expect(screen.getByText('Waiting for a valid 15-second game')).toBeTruthy();expect(screen.getByText('+50 P2L Points credited')).toBeTruthy();
+ expect(screen.getByText(/valid game lasting at least 15 seconds in an active campaign/)).toBeTruthy();
  expect(api.authenticated).toHaveBeenCalledWith('/points/referrals');
 });
 it('shows an error and permits retry',async()=>{

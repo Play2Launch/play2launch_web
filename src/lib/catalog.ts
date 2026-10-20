@@ -2,6 +2,7 @@ import { api } from "./api";
 import type { Stage } from "../data";
 
 export type PublicCampaign = {
+ campaign_type?: string; starts_at?: string; ends_at?: string; scoring_ends_at?: string;
   game_key?: string;
   rules_version?: string;
   unlock_target?: number;

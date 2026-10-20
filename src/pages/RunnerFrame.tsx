@@ -32,7 +32,7 @@ export function RunnerFrame({slug}:{slug:string}) {
     if(next.status!=='playing')throw Error('This round is no longer playable.');
     signer=await createRoundSigner(next);if(ctrl.signal.aborted)return;
     delete next.signing;session=next;started=false;runID='';effective=false;setResult(undefined);init();setStatus('Round ready · 90 seconds · No pause');
-   }catch(e){if(!ctrl.signal.aborted){setError((e as Error).message);send('p2l:error',{code:'START_FAILED',message:(e as Error).message,retryable:true});}}
+   }catch(e){if(!ctrl.signal.aborted){setError((e as Error).message);send('p2l:error',{code:'START_FAILED',message:(e as Error).message,retryable:true,stage:'init'});}}
    finally{busy=false;}
   }
   async function receive(e:MessageEvent){
@@ -72,7 +72,7 @@ export function RunnerFrame({slug}:{slug:string}) {
     session=accepted;setResult(accepted);setError('');setStatus('Score accepted');
     trackGameEvent('game_score_accepted',slug,'ranked',accepted.id);
     notifyPointsChanged();
-    send('p2l:result',{submission_id:d.submission_id,status:'accepted',score:accepted.score,message:'Score accepted by the platform.'});
+    send('p2l:result',{submission_id:d.submission_id,status:'accepted',score:accepted.score,metrics:accepted.metrics??{score:accepted.score},message:'Score accepted by the platform.'});
    }catch(e){
     if(ctrl.signal.aborted)return;
     const permanent=e instanceof ApiError&&[10001,10003,14001,14003].includes(e.code);

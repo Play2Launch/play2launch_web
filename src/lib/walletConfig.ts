@@ -15,3 +15,13 @@ export function walletConfiguration(projectId = import.meta.env.VITE_WALLETCONNE
     },
   };
 }
+
+export function idoWalletChains() {
+ const nativeCurrency={name:'Ether',symbol:'ETH',decimals:18};
+ return [
+  {id:1,name:'Ethereum',rpc:'https://ethereum-rpc.publicnode.com',explorer:'https://etherscan.io',testnet:false},
+  {id:11155111,name:'Ethereum Sepolia',rpc:'https://ethereum-sepolia-rpc.publicnode.com',explorer:'https://sepolia.etherscan.io',testnet:true},
+  {id:4663,name:'Robinhood Chain',rpc:'https://rpc.mainnet.chain.robinhood.com',explorer:'https://robinhoodchain.blockscout.com',testnet:false},
+  {id:46630,name:'Robinhood Chain Testnet',rpc:'https://rpc.testnet.chain.robinhood.com',explorer:'https://explorer.testnet.chain.robinhood.com',testnet:true},
+ ].map(n=>({id:n.id,name:n.name,nativeCurrency,rpcUrls:{default:{http:[n.rpc]}},blockExplorers:{default:{name:'Explorer',url:n.explorer}},testnet:n.testnet}));
+}

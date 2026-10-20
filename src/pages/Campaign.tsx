@@ -1,3 +1,6 @@
+import { CampaignStatus } from "../components/CampaignStatus";
+import IDOCampaign from './IDOCampaign';
+import { campaignState } from "../lib/campaignLifecycle";
 import { Link } from "react-router-dom";
 import { formatTicker } from "../lib/ticker";
 import { useEffect, useRef, useState } from "react";
@@ -78,7 +81,7 @@ export function CampaignPage({
   const [teamLookup, setTeamLookup] = useState<{ key: string; member: Membership | null; failed: boolean }>();
   const teamLookupKey = `${c?.id || ""}:${app.user?.id || "guest"}`;
   useEffect(() => {
-    if (!live || !c?.id || !app.user?.id) return;
+    if (!live || !c?.id || !app.user?.id || c.campaign_type === 'play_to_ido') return;
     const ctrl = new AbortController();
     myMembership(c.id, ctrl.signal)
       .then((member) => { if (!ctrl.signal.aborted) setTeamLookup({ key: teamLookupKey, member, failed: false }); })
@@ -86,10 +89,15 @@ export function CampaignPage({
     return () => ctrl.abort();
   }, [live, c?.id, app.user?.id, teamLookupKey]);
   if (!c) return <NotFound />;
+  if (live && c.campaign_type === 'play_to_ido') return <IDOCampaign key={c.id} campaign={c} campaignId={liveCampaignId}/>;
   const liveTeam = live && teamLookup?.key === teamLookupKey ? teamLookup.member : null;
   const checkingLiveTeam = live && !!app.user && teamLookup?.key !== teamLookupKey;
   const teamLookupFailed = live && teamLookup?.key === teamLookupKey && teamLookup.failed;
   const stage = live ? c.stage : app.getStage(c.id);
+  const state = campaignState(c);
+  const practiceOnly = live && c.availability?.scoring_open === false;
+  const liveTitle = state === "goal_reached" ? "The community reached its goal." : state === "scoring_closed" ? "This campaign has ended." : state === "not_started" ? "The next round is coming." : "Play together. Reach the goal.";
+  const liveDetail = practiceOnly ? "Keep playing for fun. Practice does not change scores, rankings or team membership. Airdrop details will follow." : "Your best valid score contributes to the community goal. Reaching the target awaits confirmation.";
   const teams = live ? [] : app.standings(c.id).teams;
   const joined = teams.find((t) => t.id === app.local.memberships[c.id]);
   const invited =
@@ -160,7 +168,7 @@ export function CampaignPage({
               </Link>
             )}
           </div>
-          {live ? <CampaignTeamsPreview slug={c.id} /> : <div className="campaign-team-grid">
+          {live ? <CampaignTeamsPreview slug={c.id} closed={practiceOnly} /> : <div className="campaign-team-grid">
             {teams.slice(0, 3).map((t, i) => (
               <Link
                 to={`/campaign/${c.id}/teams?selected=${t.id}`}
@@ -185,10 +193,7 @@ export function CampaignPage({
         <aside className="campaign-aside">
           <section className={`unlock-panel unlock-${stage}`}>
             <div className="panel-top">
-              <span className={`pill stage-${stage}`}>
-                <i />
-                {stageLabel(stage)}
-              </span>
+              <CampaignStatus stage={stage} campaign={live ? c : undefined} />
               <span className="muted">{formatTicker(c.ticker)}</span>
             </div>
             <div className="lock-emblem">
@@ -200,9 +205,10 @@ export function CampaignPage({
                 <UnlockKeyhole size={29} />
               )}
             </div>
-            <h2>{launchCopy[stage].title}</h2>
-            <p>{launchCopy[stage].detail}</p>
-            {stage === "countdown" && (
+            <h2>{live ? liveTitle : launchCopy[stage].title}</h2>
+            <p>{live ? liveDetail : launchCopy[stage].detail}</p>
+            {live && (c.ends_at || c.scoring_ends_at) && <p className="small muted">Ends {new Date(c.ends_at || c.scoring_ends_at!).toLocaleString()}</p>}
+            {!live && stage === "countdown" && (
               <LaunchTimer campaignId={c.id} live={live} launchAt={c.launch_at} serverTime={c.availability?.server_time} />
             )}
             <div className="unlock-number">
@@ -231,8 +237,8 @@ export function CampaignPage({
                   ? c.unlockPoints === undefined
                     ? "—"
                     : c.unlockPoints >= c.target
-                      ? "Community goal reached"
-                      : `${number(c.target - c.unlockPoints)} to go`
+                      ? (state === "scoring_closed" ? "Ended · Target met" : state === "goal_reached" ? "Community goal reached" : "Target met · Awaiting confirmation")
+                      : state === "scoring_closed" ? "Ended · Goal not reached" : `${number(c.target - c.unlockPoints)} to go`
                   : (c.unlockPoints ?? 0) < c.target
                     ? `${Math.max(c.target - (c.unlockPoints ?? 0), 0).toLocaleString()} to go`
                     : "Requirement reached"}
@@ -286,12 +292,12 @@ export function CampaignPage({
               ((c.game_key === "paperhood" && c.rules_version === "paperhood-v1") || (/^gx[0-9a-z]{1,13}$/.test(c.game_key||"") && c.rules_version === "paper-run-practice-v5")) && (
                 <Link
                   className="btn btn-primary full"
-                  to={`/campaign/${c.id}/compete`}
+                  to={`/campaign/${c.id}/${practiceOnly ? "try" : "compete"}`}
                 >
-                  Play ranked round <ArrowUpRight size={18} />
+                  {practiceOnly ? "Play for fun" : "Play ranked round"} <ArrowUpRight size={18} />
                 </Link>
               )}
-            {live && /^gx[0-9a-z]{1,13}$/.test(c.game_key||'') && (
+            {live && !practiceOnly && /^gx[0-9a-z]{1,13}$/.test(c.game_key||'') && (
               <Link className="btn btn-secondary full" to={`/campaign/${c.id}/try`}>Try it first · No sign-in needed <Play size={15}/></Link>
             )}
             {!live && c.id !== "phood" && (
@@ -376,14 +382,14 @@ export function CampaignPage({
             ) : (
               <>
                 <h3>{checkingLiveTeam ? "Checking your team…" : "Better with a crew."}</h3>
-                <p>{checkingLiveTeam ? "Looking up your team for this campaign." : teamLookupFailed ? "We couldn’t check your team right now. You can still browse teams." : "Choose a community and make every play count together."}</p>
+                <p>{checkingLiveTeam ? "Looking up your team for this campaign." : teamLookupFailed ? "We couldn’t check your team right now. You can still browse teams." : practiceOnly ? "Team membership is closed. Explore the teams and their existing scores." : "Choose a community and make every play count together."}</p>
                 {live ? (
                   <Link
                     to={`/campaign/${c.id}/teams`}
                     className="btn btn-secondary full"
                   >
                     <Users size={16} />
-                    {checkingLiveTeam || teamLookupFailed ? "View teams" : "Choose your team"}
+                    {checkingLiveTeam || teamLookupFailed || practiceOnly ? "View teams" : "Choose your team"}
                   </Link>
                 ) : (
                   <Link

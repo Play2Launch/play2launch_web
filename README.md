@@ -90,3 +90,13 @@ Live 包必须在构建时配置可访问的 API 地址；跨域直连时需要�
 ## MVP 边界
 
 链上发行、交易、token 分配 / 领取、聊天和用户名搜索尚未实现。外部 H5 通信测试不等于成绩认证。上线前仍需真实邮件、生产密钥、Telegram 真机、隐私条款和部署安全验收。
+
+## Relay payment-token swaps
+
+Both IDO payment balances open the same Relay swap dialog. Destination chain and token are fixed to the current IDO; the server reads paymentToken from its contract for each quote. Proceeds go to the connected wallet. Subscribing remains a separate transaction.
+
+Set P2L_RELAY_API_KEY in the **server process environment** and restart the server. Never put the key in VITE variables, browser code, Git, or screenshots. No additional frontend key is needed.
+
+Only Relay-supported EVM source networks and default verified tokens are offered. Robinhood Testnet (46630) and its custom Mock USDT are currently unsupported. Missing keys and unsupported destinations show an explanatory message. A supported network still requires an available liquidity route. Quotes expire after 45 seconds; tolerance is 0.5%. Review wallet transaction fees before signing.
+
+The integration uses the authenticated campaign Relay proxy and official Relay SDK. Production readiness still requires a live quote and a small user-confirmed swap after key configuration; no real swap was executed without a key. On interruption, inspect Relay activity before retrying. Refresh balances after settlement; switch back to the IDO network to subscribe.

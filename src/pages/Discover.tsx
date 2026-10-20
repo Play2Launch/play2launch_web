@@ -1,4 +1,6 @@
+import { IDOCardProgress } from '../components/IDOCardProgress';
 import { formatTicker } from "../lib/ticker";
+import { campaignState } from "../lib/campaignLifecycle";
 import { CampaignStatus } from "../components/CampaignStatus";
 import {
   ArrowDownRight,
@@ -77,7 +79,11 @@ export default function Discover({
   const filtered = catalog.filter(
     (c) =>
       `${c.name} ${c.ticker}`.toLowerCase().includes(search.toLowerCase()) &&
-      (filter === "Launching soon"
+      (live && filter === "Active" ? campaignState(c) === "open" || campaignState(c) === "joining_closed"
+       : live && filter === "Upcoming" ? campaignState(c) === "not_started"
+       : live && filter === "Goal reached" ? campaignState(c) === "goal_reached"
+       : live && filter === "Ended" ? campaignState(c) === "scoring_closed"
+       : filter === "Launching soon"
         ? ["countdown", "ready"].includes(getStage(c.id))
         : filter === "Launched"
           ? getStage(c.id) === "live"
@@ -150,11 +156,12 @@ export default function Discover({
                 <ArrowUpRight size={18} />
               </div>
             </div>
+            {featured.campaign_type === 'play_to_ido' ? <div className="genesis-bottom"><IDOCardProgress slug={featured.id} /></div> : (
             <div className="genesis-bottom">
               <div>
                 <div className="featured-campaign-status">
                   <span className="micro">{formatTicker(featured.ticker)}</span>
-                  <CampaignStatus stage={featuredStage} />
+                  <CampaignStatus stage={featuredStage} campaign={featured} />
                 </div>
                 <div>
                   <strong>
@@ -195,6 +202,7 @@ export default function Discover({
                 </span>
               </div>
             </div>
+            )}
           </Link>
         ) : (
           <div className="genesis-card catalog-placeholder">
@@ -259,7 +267,7 @@ export default function Discover({
       <section className="section" id="campaigns" aria-label="Campaigns">
         <div className="section-heading">
           <h2>
-            <Flame size={22} className="accent" /> Pre-launch radar{" "}
+            <Flame size={22} className="accent" /> {live ? "Campaigns" : "Pre-launch radar"}{" "}
             <span className="count">
               {String(items.length).padStart(2, "0")}
             </span>
@@ -270,8 +278,7 @@ export default function Discover({
           <div className="tabs">
             {[
               ...(live ? ["All projects"] : ["Trending", "New arrivals"]),
-              "Launching soon",
-              "Launched",
+              ...(live ? ["Active", "Upcoming", "Goal reached", "Ended"] : ["Launching soon", "Launched"]),
             ].map((t) => (
               <button
                 key={t}
@@ -299,7 +306,7 @@ export default function Discover({
             <Link key={c.id} to={`/campaign/${c.id}`} className="campaign-card">
               <div className={`card-art art-${c.id}`}>
                 <CampaignArtwork campaign={c} variant="cover" />
-                <CampaignStatus stage={getStage(c.id)} />
+                <CampaignStatus stage={getStage(c.id)} campaign={c} />
                 <span className="art-index">
                   0{catalog.findIndex((item) => item.id === c.id) + 1} / GENESIS
                 </span>
@@ -310,6 +317,7 @@ export default function Discover({
                   <span>{formatTicker(c.ticker)}</span>
                 </div>
                 <div className="card-category">{c.category}</div>
+                {c.campaign_type === 'play_to_ido' ? <IDOCardProgress slug={c.id} /> : <>
                 <div className="card-metrics">
                   <span>
                     <Users size={14} />
@@ -350,6 +358,7 @@ export default function Discover({
                     Launch score <b>{live ? "—" : c.score}</b>
                   </span>
                 </div>
+                </>}
               </div>
             </Link>
           ))}

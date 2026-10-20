@@ -20,7 +20,7 @@ export type ServerTeam = {
 export type Membership = { id: string; team_id: string; joined_at: string };
 export type MyTeam = {
   role?: "captain" | "member";
-  activity_status?: "active" | "upcoming" | "ended";
+  activity_status?: "active" | "upcoming" | "ended" | "goal_reached";
   scoring_ends_at?: string;
   campaign_id: string;
   slug: string;

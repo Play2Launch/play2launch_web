@@ -18,6 +18,7 @@ import { TeamBadge } from "../components/TeamBadge";
 import { TeamAvatarImage } from "../components/TeamAvatarImage";
 import { LeaderboardScope } from "../components/LeaderboardScope";
 import PointsLeaderboard from "./PointsLeaderboard";
+import IDORankings from "./IDORankings";
 type Rank = {
   id: string;
   score: number;
@@ -108,6 +109,7 @@ function Selection({ slug }: { slug?: string }) {
     setCampaign(undefined);
     setError("This campaign is unavailable or no longer published.");
   };
+  if (campaign?.campaign_type === "play_to_ido") return <IDORankings key={campaign.slug} campaign={campaign} />;
   if (campaign)
     return (
       <Board

@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { ArrowLeft, ArrowUpRight, ChevronRight, Send } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import type { Campaign } from "../data";
+import { campaignTypeName } from "../lib/campaignLifecycle";
 import { CampaignStatus } from "./CampaignStatus";
 import { useApp } from "../state";
 import { walletAllowed } from "../lib/walletPolicy";
@@ -10,6 +11,8 @@ import { CampaignArtwork } from "./CampaignArtwork";
 
 export type CampaignHeaderData = Pick<
   Campaign,
+  | "availability"
+  | "campaign_type"
   | "id"
   | "name"
   | "ticker"
@@ -56,7 +59,7 @@ export function CampaignNav({
         </NavLink>
         {live ? (
           <>
-            <NavLink to={`/campaign/${campaign.id}/teams`}>Teams</NavLink>
+            {campaign.campaign_type !== 'play_to_ido' && <NavLink to={`/campaign/${campaign.id}/teams`}>Teams</NavLink>}
             {activeTab === "leaderboard" ? (
               <Link
                 to={`/campaign/${campaign.id}/leaderboard`}
@@ -109,7 +112,8 @@ export function CampaignIdentityCard({
       </div>
       <div className="campaign-identity-content">
         <div className="campaign-identity-meta">
-          <CampaignStatus stage={stage} />
+          <CampaignStatus stage={stage} campaign={campaign} />
+          {campaign.availability && <span className="micro">{campaignTypeName(campaign.campaign_type)}</span>}
           <span>{formatTicker(campaign.ticker)}</span>
           <span className="campaign-identity-category">{campaign.category}</span>
         </div>

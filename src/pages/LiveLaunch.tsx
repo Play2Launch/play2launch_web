@@ -1,9 +1,9 @@
-import { LaunchTimer } from "../LaunchTimer";
+import { CampaignStatus } from "../components/CampaignStatus";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getCampaign, type PublicCampaign } from "../lib/catalog";
 import { api } from "../lib/api";
-import { stageLabel } from "../data";
+
 
 export default function LiveLaunch() {
   const { id = "" } = useParams();
@@ -75,10 +75,9 @@ function Launch({ slug }: { slug: string }) {
       )}
       {campaign && (
         <>
-          <span className="pill">{stageLabel(campaign.stage)}</span>
+          <CampaignStatus stage={campaign.stage} campaign={campaign}/>
           <h1>{campaign.name}</h1>
-          <p>Campaign launch status</p>
-          {campaign.stage === "countdown" && <LaunchTimer campaignId={campaign.id} live launchAt={campaign.launch_at} serverTime={campaign.availability?.server_time} />}
+          <p>Play to Launch · Community goal</p>
           <div className="launch-progress">
             <strong>
               {points === undefined
@@ -88,10 +87,10 @@ function Launch({ slug }: { slug: string }) {
           </div>
           <p>
             Unlock progress and the current stage come from the campaign.
-            Reaching the target does not automatically launch a token.
+            The goal is confirmed by the campaign administrator.
           </p>
           <p>
-            Token claims and trading are not available here. Follow the
+            Airdrop details will follow. See the
             campaign's official announcements.
           </p>
           <div className="launch-actions">

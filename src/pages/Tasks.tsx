@@ -162,7 +162,7 @@ export default function Tasks() {
         </p>
         <p>
           P2L Points are separate from game scores and do not guarantee tokens
-          or redemption. Referral rewards require a new player’s first qualifying game. Team bonuses are not enabled.
+          or redemption. Referral rewards require a new player to complete a valid game lasting at least 15 seconds in an active campaign. Team bonuses are not enabled.
         </p>
         <Link to="/profile#p2l-points">View your points history →</Link>
       </aside>

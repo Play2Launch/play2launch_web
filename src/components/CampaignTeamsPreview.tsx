@@ -11,11 +11,11 @@ import { TeamAvatarImage } from './TeamAvatarImage';
 type Ranking = { id: string; score: number };
 type Preview = { team: ServerTeam; score?: number; rank?: number };
 
-export function CampaignTeamsPreview({ slug }: { slug: string }) {
-  return <PreviewContent key={slug} slug={slug} />;
+export function CampaignTeamsPreview({ slug, closed = false }: { slug: string; closed?: boolean }) {
+  return <PreviewContent key={slug} slug={slug} closed={closed} />;
 }
 
-function PreviewContent({ slug }: { slug: string }) {
+function PreviewContent({ slug, closed }: { slug: string; closed: boolean }) {
   const [rows, setRows] = useState<Preview[]>();
   const [error, setError] = useState(false);
   const [automated, setAutomated] = useState(false);
@@ -73,7 +73,7 @@ function PreviewContent({ slug }: { slug: string }) {
       {!rows && !error && <div className="empty-panel" role="status">Loading campaign teams…</div>}
       {rows?.length === 0 && <div className="empty-panel"><Users /><h3>No teams yet</h3><Link to={`/campaign/${slug}/teams`}>Explore team options</Link></div>}
       {rows?.map(({ team, score, rank }) => <Link key={team.id} className="team-tile" to={`/campaign/${slug}/teams?selected=${encodeURIComponent(team.id)}`}>
-        <span className="eyebrow">{rank ? `#${rank} IN THE BATTLE` : 'JOIN THE BATTLE'}</span>
+        <span className="eyebrow">{rank ? `#${rank} IN THE BATTLE` : closed ? 'VIEW TEAM' : 'JOIN THE BATTLE'}</span>
         <span className="avatar large team-avatar" style={{ background: team.color }}><TeamAvatarImage url={team.avatar_url} initial={team.initial}/><TeamBadge /></span>
         <h3>{team.name}</h3>
         <span className="muted">{number(team.players)} players</span>

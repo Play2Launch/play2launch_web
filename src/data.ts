@@ -1,5 +1,6 @@
 export type Stage = "prelaunch" | "ready" | "countdown" | "live";
 export type Campaign = {
+ campaign_type?: string; starts_at?: string; ends_at?: string; scoring_ends_at?: string;
   game_key?: string;
   rules_version?: string;
   demo_unlock_seed_points?: number;
@@ -10,7 +11,7 @@ export type Campaign = {
   name: string;
   ticker: string;
   launch_at?: string | null;
-  availability?: { server_time: string };
+  availability?: { server_time: string; state?: string; scoring_open?: boolean; join_open?: boolean };
   category: string;
   description: string;
   players: number;

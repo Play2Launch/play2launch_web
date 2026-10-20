@@ -36,7 +36,7 @@ function CatalogContent({ slug }: { slug?: string }) {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [statsError, setStatsError] = useState(false);
   const [statsRetry, setStatsRetry] = useState(0);
-  const slugs = items.map((c) => c.slug).join(",");
+  const slugs = items.filter(c => !c.campaign_type || c.campaign_type === "play_to_launch").map((c) => c.slug).join(",");
   useEffect(() => {
     const controller = new AbortController();
     setStatsError(false);

@@ -378,7 +378,7 @@ function MembershipList({
               <span
                 className={`pill ${m.activity_status === "active" ? "acid" : "neutral"}`}
               >
-                {m.activity_status === "ended"
+                {m.activity_status === "goal_reached" ? "GOAL REACHED" : m.activity_status === "ended"
                   ? "ENDED"
                   : m.activity_status === "upcoming"
                     ? "UPCOMING"
@@ -391,7 +391,7 @@ function MembershipList({
             <h2>{m.team_name}</h2>
             {m.scoring_ends_at && (
               <p className="small muted">
-                {m.activity_status === "ended"
+                {m.activity_status === "goal_reached" ? "Campaign window ends" : m.activity_status === "ended"
                   ? "Scoring ended"
                   : "Scoring ends"}{" "}
                 · {new Date(m.scoring_ends_at).toLocaleString()}

@@ -18,9 +18,11 @@ const mocks = vi.hoisted(() => ({
   disconnect: vi.fn().mockResolvedValue(undefined),
   switchNetwork: vi.fn().mockResolvedValue(undefined),
   create: vi.fn(),
+  cachedChain: vi.fn().mockReturnValue(4663),
+  selectNetwork: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@reown/appkit/react", () => ({
-  createAppKit: mocks.create,
+  createAppKit: (...args: unknown[]) => { mocks.create(...args); return {getCaipNetworkId: mocks.cachedChain, switchNetwork:mocks.selectNetwork, open:mocks.open}; },
   useAppKit: () => ({ open: mocks.open }),
   useAppKitAccount: () => mocks.account,
   useAppKitNetwork: () => ({
@@ -28,21 +30,29 @@ vi.mock("@reown/appkit/react", () => ({
     switchNetwork: mocks.switchNetwork,
   }),
   useDisconnect: () => ({ disconnect: mocks.disconnect }),
+  useAppKitProvider: () => ({ walletProvider: undefined }),
 }));
 vi.mock("@reown/appkit-adapter-ethers", () => ({ EthersAdapter: class {} }));
 vi.mock("@reown/appkit/networks", () => ({ defineChain: (v: unknown) => v }));
-vi.mock("../lib/walletConfig", () => ({
+vi.mock("../lib/walletConfig", async original => ({
+  ...await original<typeof import("../lib/walletConfig")>(),
   walletConfiguration: () => ({
     projectId: "a".repeat(32),
     chain: { id: 4663, name: "Robinhood Chain" },
   }),
 }));
-import { WalletSession, WalletButton } from "./WalletSession";
+import { WalletSession, WalletButton, openWallet } from "./WalletSession";
+it('reconciles a stale cached network before opening the connector', async () => {
+  mocks.cachedChain.mockReturnValueOnce(46630);
+  await openWallet();
+  expect(mocks.selectNetwork).toHaveBeenCalledWith(expect.objectContaining({id:4663}),{throwOnFailure:true});
+  expect(mocks.open).toHaveBeenLastCalledWith({view:'Connect',namespace:'eip155'});
+});
 afterEach(()=>{cleanup();mocks.chainId=4663;mocks.account.isConnected=true;mocks.account.status='connected';mocks.switchNetwork.mockClear();});
 it("shows the configured chain only when connected to it and allows retry after rejection",async()=>{
  const view=render(<WalletButton/>);
  expect(screen.getByText('Robinhood Chain')).toBeTruthy();
- expect(mocks.create.mock.calls[0][0].enableNetworkSwitch).toBe(false);
+ expect(mocks.create.mock.calls[0][0].enableNetworkSwitch).toBe(true);
  expect(mocks.switchNetwork).not.toHaveBeenCalled();
  mocks.chainId=1;view.rerender(<WalletButton/>);
  expect(screen.queryByText('Robinhood Chain')).toBeNull();
@@ -109,4 +119,10 @@ it("shows actual account, handles network mismatch and disconnects without signi
     swaps: false,
     onramp: false,
   });
+});
+
+it('uses the campaign network instead of the global default',async()=>{
+ render(<WalletButton targetChainId={1}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Switch to Ethereum'}));
+ await waitFor(()=>expect(mocks.switchNetwork).toHaveBeenCalledWith(expect.objectContaining({id:1})));
 });
