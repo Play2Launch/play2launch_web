@@ -1,4 +1,5 @@
 import {lazy, Suspense} from 'react';
+import {waitForIDOReceipt} from '../lib/idoReceipt';
 const RelayPaymentSwap = lazy(()=>import('./RelayPaymentSwap'));
 import {createPortal} from 'react-dom';
 import {IDOPersonalProgress} from './IDOPersonalProgress';
@@ -238,11 +239,16 @@ export function IDOTransactions({
         if (allowance < units) {
           if (allowance > 0n) {
             setNotice("Reset the existing token allowance in your wallet.");
-            await (await token.approve(config.contract, 0n)).wait();
+            const reset = await token.approve(config.contract, 0n);
+            setHash(reset.hash);
+            await waitForIDOReceipt(reset, config);
             assertCurrent();
           }
           setNotice("Approve only this subscription amount in your wallet.");
-          await (await token.approve(config.contract, units)).wait();
+          const approval = await token.approve(config.contract, units);
+          setHash(approval.hash);
+          setNotice("Approval submitted. Waiting for confirmation…");
+          await waitForIDOReceipt(approval, config);
           assertCurrent();
         }
         await walletSigner(provider, config, address);
@@ -271,7 +277,7 @@ export function IDOTransactions({
         setHash(tx.hash);
         setNotice("Transaction submitted. Waiting for confirmation…");
       }
-      const receipt = await tx.wait(2);
+      const receipt = await waitForIDOReceipt(tx, config, 2);
       if (!receipt || receipt.status !== 1)
         throw new Error("Transaction did not succeed.");
       // A submitted transaction can confirm after logout/account switching.
@@ -294,10 +300,12 @@ export function IDOTransactions({
         setHistoryVersion((v) => v + 1);
       }
     } catch (e) {
-      if (current === generation.current)
+      if (current === generation.current) {
+        setNotice("");
         setError(
           e instanceof Error ? e.message : "Transaction failed. Please retry.",
         );
+      }
     } finally {
       lock.current = false;
       setBusy(false);
