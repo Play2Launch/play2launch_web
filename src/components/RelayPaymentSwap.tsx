@@ -172,6 +172,8 @@ export default function RelayPaymentSwap({
       cancelled = true;
     };
   }, [slug, source]);
+  const [sourceBalance,setSourceBalance]=useState<{key:string;text:string}>();
+  const balanceKey=[source,coin.toLowerCase(),address.toLowerCase()].join(':');
   async function verifyBalance(value: bigint, route?: Execute) {
     const chain=chains.find(c=>c.id===source),currency=coins.find(c=>c.address===coin);
     if(!chain||!currency)throw Error("Select a source chain and token.");
@@ -182,7 +184,8 @@ export default function RelayPaymentSwap({
     }
     const gas=route?.fees?.gas?.amount;
     try {
-      await checkSwapBalance({rpc:chain.httpRpcUrl,chainId:source,address,token:coin,decimals:currency.decimals,symbol:currency.symbol,nativeSymbol:chain.currency.symbol,amount:value,gas:gas?BigInt(gas):0n,transactionValue});
+      const balance=await checkSwapBalance({rpc:chain.httpRpcUrl,chainId:source,address,token:coin,decimals:currency.decimals,symbol:currency.symbol,nativeSymbol:chain.currency.symbol,amount:value,gas:gas?BigInt(gas):0n,transactionValue});
+      if(active.current)setSourceBalance({key:balanceKey,text:balance});
     } catch(e) {
       if(e instanceof Error&&/Insufficient|mismatch/.test(e.message))throw e;
       throw Error("Unable to verify your source-chain balance. Please retry before swapping.");
@@ -194,6 +197,8 @@ export default function RelayPaymentSwap({
     setBusy(true);
     setError("");
     setQuote(undefined);
+    setStatus("");
+    setSourceBalance(undefined);
     try {
       const currency = coins.find((c) => c.address === coin);
       if (
@@ -225,6 +230,7 @@ export default function RelayPaymentSwap({
         throw new Error(
           "This route is not supported. Choose another source token.",
         );
+      await verifyBalance(value,q);
       if (active.current) {
         setQuote(q);
         setQuotedAt(Date.now());
@@ -295,6 +301,9 @@ export default function RelayPaymentSwap({
       };
     };
     try {
+      const currency=coins.find(c=>c.address===coin);
+      if(!currency)throw Error("Select a source token.");
+      await verifyBalance(parseUnits(amount,currency.decimals),quote);
       const wallet = createWalletClient({
         account: address as `0x${string}`,
         transport: custom({
@@ -338,6 +347,7 @@ export default function RelayPaymentSwap({
       setQuote(undefined);
       onComplete();
     } catch (e) {
+      setStatus("");
       setError(
         e instanceof Error
           ? e.message
@@ -422,6 +432,7 @@ export default function RelayPaymentSwap({
                 }}
               />
             </label>
+            {sourceBalance?.key===balanceKey&&<small className="muted" aria-live="polite">Source wallet balance: <strong>{sourceBalance.text}</strong></small>}
             {out && (
               <div className="relay-quote">
                 <strong>
