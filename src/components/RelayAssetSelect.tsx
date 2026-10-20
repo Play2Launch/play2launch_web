@@ -15,8 +15,8 @@ export function RelayAssetSelect({label,value,options,disabled,onChange}:{label:
  const root=useRef<HTMLDivElement>(null),trigger=useRef<HTMLButtonElement>(null),input=useRef<HTMLInputElement>(null),id=useId();
  const selected=options.find(o=>o.value===value),filtered=options.filter(o=>(o.label+' '+(o.detail||'')).toLowerCase().includes(search.toLowerCase()));
  useEffect(()=>{if(disabled)setOpen(false)},[disabled]);
- useEffect(()=>{if(!open)return;input.current?.focus();const close=(e:PointerEvent)=>{if(!root.current?.contains(e.target as Node))setOpen(false)};document.addEventListener('pointerdown',close);return()=>document.removeEventListener('pointerdown',close)},[open]);
- return <div className="relay-asset-select" ref={root} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))setOpen(false)}} onKeyDown={e=>{if(e.key==='Escape'&&open){e.stopPropagation();setOpen(false);trigger.current?.focus()}}}>
+ useEffect(()=>{if(!open)return;if(!window.matchMedia?.('(pointer: coarse)').matches)input.current?.focus();const close=(e:PointerEvent)=>{if(!root.current?.contains(e.target as Node))setOpen(false)};document.addEventListener('pointerdown',close);return()=>document.removeEventListener('pointerdown',close)},[open]);
+ return <div className="relay-asset-select" ref={root} onBlur={e=>{if(e.relatedTarget&&!e.currentTarget.contains(e.relatedTarget))setOpen(false)}} onKeyDown={e=>{if(e.key==='Escape'&&open){e.stopPropagation();setOpen(false);trigger.current?.focus()}}}>
   <span id={id+'-label'}>{label}</span>
   <button ref={trigger} type="button" className="btn btn-secondary relay-select-trigger" aria-labelledby={id+'-label'} aria-expanded={open} aria-controls={id} disabled={disabled} onClick={()=>{setSearch('');setOpen(!open)}}>
    {selected?<><OptionIcon option={selected}/><span>{selected.label}</span></>:<span>Select {label.toLowerCase()}</span>}<ChevronDown size={16}/>

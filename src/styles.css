@@ -5022,6 +5022,12 @@ body:has(.game-embed) .page-container {
 .relay-dialog {width:min(100%,520px);max-height:90dvh;overflow:auto;background:#131910;border:1px solid #465032;border-radius:18px;padding:24px;box-shadow:0 20px 80px #0008;display:grid;gap:16px}
 .relay-dialog header {display:flex;align-items:center;justify-content:space-between;gap:12px}
 .relay-dialog h2,.relay-dialog p {margin:0}
+.relay-receive-summary {display:grid;gap:10px;padding:6px 0 18px;margin-bottom:6px;border-bottom:1px solid #465032}
+.relay-receive-label {font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#c0cbae}
+.relay-receive-amount {display:flex;align-items:center;gap:12px;color:#d5ff64;min-width:0}
+.relay-receive-amount > svg,.relay-receive-amount > img {flex-shrink:0}
+.relay-receive-amount strong {font-size:clamp(26px,5vw,34px);line-height:1.25;overflow-wrap:anywhere;min-width:0;font-variant-numeric:tabular-nums}
+.relay-receive-amount strong span {font-size:18px;white-space:nowrap}
 .relay-destination,.relay-quote {display:grid;gap:8px;padding:16px;border:1px solid #465032;border-radius:12px;background:#202719}
 .relay-fields {display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
 .relay-dialog label {display:grid;gap:8px;min-width:0}

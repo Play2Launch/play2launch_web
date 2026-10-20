@@ -5,6 +5,10 @@ on:
     branches:
       - release-prod
 
+concurrency:
+  group: web-production-deploy
+  cancel-in-progress: false
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -32,12 +36,28 @@ jobs:
           VITE_WALLETCONNECT_PROJECT_ID: ${{ vars.VITE_WALLETCONNECT_PROJECT_ID }}
           VITE_WALLET_NETWORK: ${{ vars.VITE_WALLET_NETWORK }}
 
-      - name: upload
-        uses: moonpathbg/scp_uploader@latest
-        with:
-          host: ${{ vars.HOST }}
-          port: ${{ vars.PORT }}
-          username: ${{ secrets.DEPLOY_USERNAME }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          source: "./dist"
-          target: "/home/website/websites/p2l_web"
+      - name: Sync latest build and remove obsolete files
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ vars.HOST }}
+          DEPLOY_PORT: ${{ vars.PORT }}
+          DEPLOY_USERNAME: ${{ secrets.DEPLOY_USERNAME }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -s dist/index.html
+          test -d dist/assets
+          : "${DEPLOY_HOST:?Missing deployment host}"
+          : "${DEPLOY_USERNAME:?Missing deployment username}"
+          : "${DEPLOY_KEY:?Missing deployment key}"
+          DEPLOY_PORT="${DEPLOY_PORT:-22}"
+          [[ "$DEPLOY_PORT" =~ ^[0-9]+$ ]]
+          ssh_dir="$(mktemp -d)"
+          trap 'rm -rf -- "$ssh_dir"' EXIT
+          printf '%s\n' "$DEPLOY_KEY" > "$ssh_dir/key"
+          chmod 600 "$ssh_dir/key"
+          ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" > "$ssh_dir/known_hosts"
+          # Only mirror the generated dist directory; config and other sites stay outside it.
+          rsync -az --delay-updates --delete-delay \
+            -e "ssh -i $ssh_dir/key -p $DEPLOY_PORT -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$ssh_dir/known_hosts" \
+            ./dist/ "$DEPLOY_USERNAME@$DEPLOY_HOST:/home/website/websites/p2l_web/dist/"

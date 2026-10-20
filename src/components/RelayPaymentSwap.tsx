@@ -437,9 +437,13 @@ export default function RelayPaymentSwap({
             {sourceBalance?.key===balanceKey&&<small className="muted" aria-live="polite">Source wallet balance: <strong>{sourceBalance.text}</strong></small>}
             {out && (
               <div className="relay-quote">
-                <strong>
-                  You receive ≈ {out.amountFormatted} {symbol}
-                </strong>
+                <div className="relay-receive-summary" aria-live="polite">
+                  <span className="relay-receive-label">You receive</span>
+                  <div className="relay-receive-amount">
+                    <AssetIcon kind={paymentIcon || symbol.toLowerCase()} size={32}/>
+                    <strong>≈ {out.amountFormatted} <span>{symbol}</span></strong>
+                  </div>
+                </div>
                 <span>
                   Minimum:{" "}
                   {out.minimumAmount
