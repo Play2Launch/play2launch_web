@@ -1,3 +1,4 @@
+import {checkSwapBalance} from '../lib/relayBalance';
 import {RelayAssetSelect} from './RelayAssetSelect';
 import {AssetIcon} from './AssetIcon';
 import { useEffect, useRef, useState } from "react";
@@ -171,6 +172,22 @@ export default function RelayPaymentSwap({
       cancelled = true;
     };
   }, [slug, source]);
+  async function verifyBalance(value: bigint, route?: Execute) {
+    const chain=chains.find(c=>c.id===source),currency=coins.find(c=>c.address===coin);
+    if(!chain||!currency)throw Error("Select a source chain and token.");
+    let transactionValue=0n;
+    for(const step of route?.steps||[])for(const item of step.items||[]){
+      const tx=item.data as {chainId?:number;value?:string}|undefined;
+      if(tx?.chainId===source&&tx.value)transactionValue+=BigInt(tx.value);
+    }
+    const gas=route?.fees?.gas?.amount;
+    try {
+      await checkSwapBalance({rpc:chain.httpRpcUrl,chainId:source,address,token:coin,decimals:currency.decimals,symbol:currency.symbol,nativeSymbol:chain.currency.symbol,amount:value,gas:gas?BigInt(gas):0n,transactionValue});
+    } catch(e) {
+      if(e instanceof Error&&/Insufficient|mismatch/.test(e.message))throw e;
+      throw Error("Unable to verify your source-chain balance. Please retry before swapping.");
+    }
+  }
   async function getQuote() {
     if (locked.current) return;
     locked.current = true;
@@ -187,6 +204,7 @@ export default function RelayPaymentSwap({
         throw new Error("Enter a valid amount.");
       const value = parseUnits(amount, currency.decimals);
       if (value <= 0n) throw new Error("Enter an amount greater than zero.");
+      await verifyBalance(value);
       const q = await relayRequest<Execute>(slug, "/quote/v2", "POST", {
         user: address,
         originChainId: source,
