@@ -1,3 +1,4 @@
+import {useIDOAutoSwitch} from '../lib/useIDOAutoSwitch';
 import { useState } from "react";
 import { assertWalletAllowed } from "../lib/walletPolicy";
 import { Wallet } from "lucide-react";
@@ -83,7 +84,9 @@ export function IDOWallet(props: IDOTransactionProps & {hideWalletButton?:boolea
   const { chainId } = useAppKitNetwork();
   const { walletProvider } = useAppKitProvider<Eip1193Provider>('eip155');
   const actualChain = useWalletChain(walletProvider, chainId);
-  return <>{!props.hideWalletButton && <WalletButton targetChainId={props.config.chain_id} />}<IDOTransactions {...props} address={isConnected ? address : undefined} chainId={Number(actualChain)} provider={walletProvider} /></>;
+  const switchError=useIDOAutoSwitch(isConnected,address,actualChain,props.config.chain_id,
+    ()=>walletKit.switchNetwork(networkFor(props.config.chain_id),{throwOnFailure:true}));
+  return <>{switchError&&<p className="small muted" role="status">{switchError}</p>}{!props.hideWalletButton && <WalletButton targetChainId={props.config.chain_id} />}<IDOTransactions {...props} address={isConnected ? address : undefined} chainId={Number(actualChain)} provider={walletProvider} /></>;
 }
 
 export function WalletButton({targetChainId,hideNetworkLabel=false,visibility,primary=false}:{targetChainId?:number;hideNetworkLabel?:boolean;visibility?:"connected"|"disconnected";primary?:boolean} = {}) {
