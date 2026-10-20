@@ -147,7 +147,7 @@ export function WalletButton({targetChainId,hideNetworkLabel=false,visibility,pr
           {error}
         </span>
       )}
-      {isConnected && wrongNetwork && <button className="wallet-network-switch" disabled={busy} onClick={()=>void changeNetwork()} title={`Current chain: ${chainId ?? "unknown"}`}>Switch to {network.name}</button>}
+      {isConnected && wrongNetwork && <button type="button" className="btn btn-primary wallet-network-switch" disabled={busy} onClick={()=>void changeNetwork()} title={`Current chain: ${chainId ?? "unknown"}`}>{busy ? "Switching network…" : `Switch to ${network.name}`}</button>}
     </div>
   );
 }

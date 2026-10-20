@@ -17,6 +17,8 @@ import {
   defineChain,
   parseUnits,
   formatUnits,
+  decodeFunctionData,
+  erc20Abi,
 } from "viem";
 import type { Eip1193Provider } from "ethers";
 import { relayConfigured, relayRequest } from "../lib/relay";
@@ -320,6 +322,22 @@ export default function RelayPaymentSwap({
               });
               if (accounts[0]?.toLowerCase() !== address.toLowerCase())
                 throw new Error("Wallet changed. Reopen the swap.");
+            }
+            if (args.method === "eth_sendTransaction") {
+              const tx = (args.params as [{to?: string; data?: `0x${string}`}] | undefined)?.[0];
+              if (tx?.to?.toLowerCase() === coin.toLowerCase() && tx.data?.startsWith("0x095ea7b3")) {
+                const approval = decodeFunctionData({abi: erc20Abi, data: tx.data});
+                if (approval.functionName === "approve") {
+                  // Public transaction fields only, captured at the wallet handoff.
+                  console.info("[Relay approval]", {
+                    chainId: source,
+                    token: tx.to,
+                    spender: approval.args[0],
+                    amount: formatUnits(approval.args[1], currency.decimals),
+                    symbol: currency.symbol,
+                  });
+                }
+              }
             }
             return provider.request(args);
           },

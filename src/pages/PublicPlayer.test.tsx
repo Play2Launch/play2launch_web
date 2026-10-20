@@ -31,3 +31,11 @@ it('loads more campaigns without discarding the previous page',async()=>{
  await screen.findByText('Second campaign');expect(screen.getByText('Hello campaign')).toBeTruthy();
  expect(vi.mocked(api.request).mock.calls[1][0]).toBe('/players/ur1?after=cp1');
 });
+
+it('hides current team for play to IDO campaigns',async()=>{
+ vi.mocked(api.request).mockResolvedValue({...profile,campaigns:[{...profile.campaigns[0],campaign_type:'play_to_ido'}]});mount();
+ await screen.findByText('Hello campaign');
+ expect(screen.queryByText(/Current team:/)).toBeNull();
+ expect(screen.queryByRole('link',{name:'Current team'})).toBeNull();
+ expect(screen.getAllByText('Personal best')).toHaveLength(2);
+});

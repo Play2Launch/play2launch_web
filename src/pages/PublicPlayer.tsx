@@ -7,7 +7,7 @@ import {ActivityFeed} from '../components/ActivityFeed';
 import {publicAvatarURL} from '../lib/avatar';
 
 type PlayedGame={game_key:string;name:string;rules:string;best:number;rounds:number;last_played:string|null};
-type Participation={id:string;slug:string;name:string;stage:string;team:{id:string;name:string;type?:string}|null;games:PlayedGame[]};
+type Participation={campaign_type?:string;id:string;slug:string;name:string;stage:string;team:{id:string;name:string;type?:string}|null;games:PlayedGame[]};
 export type PublicPlayerData={id:string;display_name:string;handle:string;avatar_url:string;kol_verified:boolean;p2l_points:number;campaigns:Participation[];next_cursor:string};
 export default function PublicPlayer(){
  const {userId=''}=useParams();
@@ -57,7 +57,7 @@ function Player({userId}:{userId:string}){
   <div className="public-player-campaigns">
    {data?.campaigns.map(c=><article key={c.id} className="membership-card">
     <div className="public-player-campaign-title"><h3><Link to={`/campaign/${encodeURIComponent(c.slug)}`}>{c.name}</Link></h3><span className="pill">{c.stage}</span></div>
-    <p>Current team: {c.team?<Link className="accent" to={`/campaign/${encodeURIComponent(c.slug)}/teams?selected=${encodeURIComponent(c.team.id)}`}>{c.team.name}</Link>:<span className="muted">Not currently in a team</span>}</p>
+    {c.campaign_type!=='play_to_ido'&&<p>Current team: {c.team?<Link className="accent" to={`/campaign/${encodeURIComponent(c.slug)}/teams?selected=${encodeURIComponent(c.team.id)}`}>{c.team.name}</Link>:<span className="muted">Not currently in a team</span>}</p>}
     {!c.games.length?<p className="muted">No accepted game rounds yet.</p>:c.games.map(g=><div className="public-player-game" key={`${g.game_key}:${g.rules}`}>
      <div><strong>{g.name||g.game_key||'Game'}</strong><p className="small muted">Rules: {g.rules||'Legacy'}</p></div>
      <dl><div><dt>Personal best</dt><dd className="accent">{g.best.toLocaleString()} <small>pts</small></dd></div><div><dt>Accepted rounds</dt><dd>{g.rounds.toLocaleString()}</dd></div><div><dt>Last played</dt><dd>{g.last_played?new Date(g.last_played).toLocaleString():'—'}</dd></div></dl>

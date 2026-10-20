@@ -4480,8 +4480,7 @@ footer > span:last-child {
 .wallet-identity-text { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
 .wallet-network-label { color: var(--accent); font-size: 11px; font-weight: 600; line-height: 1.3; }
 .wallet-network-label.wallet-network-warning { color: #ffca80; }
-.wallet-network-switch { border: 0; background: transparent; color: var(--accent); padding: 4px 6px; font: inherit; font-size: 11px; cursor: pointer; max-width: 190px; }
-.wallet-network-switch:disabled { opacity: .6; cursor: wait; }
+.wallet-network-switch { width: 100%; min-height: 44px; white-space: normal; text-align: center; }
 .header-wallet-error { position: absolute; top: calc(100% + 8px); right: 0; width: 230px; padding: 12px; background: #20251b; color: #ffb69b; border: 1px solid #49563d; border-radius: 8px; font-size: 12px; z-index: 60; }
 @media (max-width: 1100px) { .header-right .network { display: none; } }
 @media (max-width: 600px) {
