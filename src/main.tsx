@@ -5,7 +5,6 @@ import App from "./App";
 import "./styles.css";
 import { loadTelegramBridge } from "./lib/platform";
 import { trackPageView } from "./lib/firebaseAnalytics";
-import { loadPlayerConfig } from "./lib/playerConfig";
 
 function AnalyticsPageViews() {
   const { pathname } = useLocation();
@@ -16,12 +15,7 @@ function AnalyticsPageViews() {
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 async function start() {
   root.render(<p role="status">Loading…</p>);
-  try {
-    await Promise.all([loadPlayerConfig(), loadTelegramBridge().catch(() => {})]);
-  } catch {
-    root.render(<main><p role="alert">Unable to load site settings. Please try again.</p><button className="btn btn-primary" onClick={() => void start()}>Retry</button></main>);
-    return;
-  }
+  await loadTelegramBridge().catch(() => {});
   root.render(
     <BrowserRouter
       future={{ v7_startTransition: true, v7_relativeSplatPath: true }}

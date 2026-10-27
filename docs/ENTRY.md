@@ -27,7 +27,7 @@ https://t.me/<BOT>?startapp=<payload>
 https://t.me/<BOT>/<APP>?startapp=<payload>
 ```
 
-配置 服务端 `conf/config.yml` 的 `player.telegram_bot_username`（可省略 @）、可选 `player.telegram_app_name` 后，分享弹窗才生成 TMA 链接。Bot 未配置时不猜测、不生成 `t.me/game` 等假链接。
+配置 前端环境变量 `VITE_TELEGRAM_BOT_USERNAME`（可省略 @）、可选 `VITE_TELEGRAM_APP_NAME` 后，分享弹窗才生成 TMA 链接。Bot 未配置时不猜测、不生成 `t.me/game` 等假链接。
 
 当前 payload 协议：`v1_` + Base64URL 编码的 URLSearchParams，字段 `c` Campaign、`t` Team、`r` Referrer、`s` Source、`p` 目标页面。payload 不包含用户密钥或身份凭证，也不具备签名能力。后端上线时可以替换为服务端短码，保留统一 EntryContext。
 
@@ -64,4 +64,4 @@ TMA 必须通过 Bot 绑定的 HTTPS 站点进入。局域网 HTTP 仅用于普�
 
 待真实配置后验证：Telegram iOS/Android/Desktop 的启动、安全区、返回、分享；服务器 Authorization/CORS 与验签；真实归因/成绩接口；HTTPS 深层路由刷新。账户切换和身份隔离已做自动测试，尚未做实际浏览器截图或真机测试。
 
-修改后重启服务端并刷新玩家端；前台通过 `/api/v1/config/player` 获取公开配置，无需重新构建。
+修改后重启 Vite 开发服务；生产环境需要重新构建并部署 Web。玩家端不再请求 `/api/v1/config/player`。

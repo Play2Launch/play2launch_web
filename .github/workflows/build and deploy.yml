@@ -35,6 +35,8 @@ jobs:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
           VITE_WALLETCONNECT_PROJECT_ID: ${{ vars.VITE_WALLETCONNECT_PROJECT_ID }}
           VITE_WALLET_NETWORK: ${{ vars.VITE_WALLET_NETWORK }}
+          VITE_TELEGRAM_BOT_USERNAME: ${{ vars.VITE_TELEGRAM_BOT_USERNAME }}
+          VITE_TELEGRAM_APP_NAME: ${{ vars.VITE_TELEGRAM_APP_NAME }}
 
       - name: Sync latest build and remove obsolete files
         shell: bash

@@ -1,21 +1,17 @@
-import { api, liveAuth } from './api';
-
 export type PlayerConfig = {
   telegram_bot_username: string;
   telegram_app_name: string;
   walletconnect_project_id: string;
   wallet_network: 'mainnet' | 'testnet';
 };
-export const playerConfig: PlayerConfig = {
-  telegram_bot_username: '', telegram_app_name: '',
-  walletconnect_project_id: '', wallet_network: 'mainnet',
-};
-export async function loadPlayerConfig() {
-  if (!liveAuth) return;
-  const value = await api.request<PlayerConfig>('/config/player', undefined, {signal: AbortSignal.timeout(15000)});
-  if (!value || typeof value.telegram_bot_username !== 'string' || typeof value.telegram_app_name !== 'string' ||
-      typeof value.walletconnect_project_id !== 'string' || !['mainnet', 'testnet'].includes(value.wallet_network)) {
-    throw new Error('Invalid player configuration');
-  }
-  Object.assign(playerConfig, value);
+
+// Public build-time settings. No server configuration request is required.
+export function readPlayerConfig(env: Record<string, string | undefined>): PlayerConfig {
+  return {
+    telegram_bot_username: (env.VITE_TELEGRAM_BOT_USERNAME || '').trim().replace(/^@/, ''),
+    telegram_app_name: (env.VITE_TELEGRAM_APP_NAME || '').trim(),
+    walletconnect_project_id: (env.VITE_WALLETCONNECT_PROJECT_ID || '').trim(),
+    wallet_network: (env.VITE_WALLET_NETWORK || 'mainnet') as PlayerConfig['wallet_network'],
+  };
 }
+export const playerConfig = readPlayerConfig(import.meta.env);
