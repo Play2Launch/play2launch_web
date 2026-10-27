@@ -1,3 +1,5 @@
+import { playerConfig } from "./lib/playerConfig";
+import ArcadePage, { ArcadePreview } from './pages/Arcade';
 import LiveTeams from "./pages/LiveTeams";
 import { formatTicker } from "./lib/ticker";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -251,6 +253,8 @@ function Shell() {
       )}
       <main className="page-container">
         <NicknameGate><Routes>
+<Route path="/games/:gameId" element={<ArcadePage/>}/>
+<Route path="/game-test/:sessionId" element={<ArcadePreview/>}/>
           {liveAuth&&<Route path="/auth/telegram" element={<TelegramLogin/>}/>}
           <Route path="/" element={liveAuth ? <LiveCatalog /> : <Discover />} />
           <Route path="/invite/:token" element={<InviteLanding />} />
@@ -496,8 +500,8 @@ function ShareModal({ campaignId }: { campaignId: string }) {
       target: "campaign",
     },
     {
-      bot: import.meta.env.VITE_TELEGRAM_BOT_USERNAME,
-      app: import.meta.env.VITE_TELEGRAM_APP_NAME,
+      bot: playerConfig.telegram_bot_username,
+      app: playerConfig.telegram_app_name,
     },
   );
   const link = destination === "web" ? links.web : links.telegram;

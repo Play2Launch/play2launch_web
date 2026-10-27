@@ -34,6 +34,7 @@ vi.mock("../lib/api", async (original) => {
   const mod = await original<typeof import("../lib/api")>();
   return { ...mod, api: new mod.ApiClient("https://p2l.test/api/v1") };
 });
+vi.mock("./Arcade",()=>({ArcadeHome:()=>null}));
 import LiveCatalog from "./LiveCatalog";
 import { getCampaign, listCampaigns } from "../lib/catalog";
 const campaign = {

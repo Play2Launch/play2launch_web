@@ -1,3 +1,6 @@
+import { lazy, Suspense } from "react";
+const GamePage=lazy(()=>import("./Game").then(m=>({default:m.GamePage})));
+import type { Campaign } from "../data";
 import {useEffect,useRef,useState} from 'react';
 import {Link,useParams} from 'react-router-dom';
 import {getCampaign} from '../lib/catalog';
@@ -12,11 +15,12 @@ export function TryGame(){
 }
 function Trial({slug}:{slug:string}){
  const [ranked,setRanked]=useState(false);
+ const [builtin,setBuiltin]=useState<Campaign>(); const [finished,setFinished]=useState(false);
  const frame=useRef<HTMLIFrameElement>(null);
  const [src,setSrc]=useState(''),[error,setError]=useState(''),[attempt,setAttempt]=useState(0);
  useEffect(()=>{
   const ctrl=new AbortController();setSrc('');setError('');
-  getCampaign(slug,ctrl.signal).then(c=>{if(!ctrl.signal.aborted)setRanked(c.availability?.scoring_open===true);}).catch(()=>setRanked(false));
+  getCampaign(slug,ctrl.signal).then(c=>{if(!ctrl.signal.aborted){setRanked(c.availability?.scoring_open===true);if(c.game_key==='paperhood')setBuiltin({...c,id:c.slug,players:0,teams:0,growth:0,score:0});}}).catch(()=>setRanked(false));
   // Public configuration only. No authentication, session creation, or score submission.
   api.request<{game_id:string;entry_url:string}>(`/campaigns/${encodeURIComponent(slug)}/game`,undefined,{signal:ctrl.signal}).then(config=>{
    if(ctrl.signal.aborted)return;
@@ -26,6 +30,7 @@ function Trial({slug}:{slug:string}){
   return()=>ctrl.abort();
  },[slug,attempt]);
  useEffect(()=>{const receive=(e:MessageEvent)=>{const item=trialMessage(e,frame.current,src);if(item){trackGameEvent(item.event==='trial_start'?'game_start':'game_effective',slug,'trial',item.runID);void recordInviteEvent(slug,item.runID,item.event).catch(()=>{});}};window.addEventListener('message',receive);return()=>window.removeEventListener('message',receive);},[src,slug]);
+ if(builtin)return <section><div className="notice">Play for fun. Scores and airdrop allocations will not change.</div>{finished?<><p>Practice complete.</p><button className="btn btn-primary" onClick={()=>{setFinished(false);setAttempt(n=>n+1)}}>Play again</button><Link className="btn btn-secondary" to={`/campaign/${slug}`}>Return</Link></>:<Suspense fallback={<p>Loading game…</p>}><GamePage key={attempt} live={{campaign:builtin,seed:Math.random()*6,sessionId:'practice',team:'Practice',finish:()=>setFinished(true)}}/></Suspense>}</section>;
  return <section className="game-embed" aria-label="Game mode">
   <div className="notice"><strong>{ranked ? "FREE TRIAL" : "PLAY FOR FUN"}</strong><span> · Trial scores stay local, not ranked.</span></div>
   {error?<p role="alert">{error}</p>:!src?<p role="status">Loading game…</p>:null}

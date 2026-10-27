@@ -66,6 +66,7 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     public code: number,
+    public serverMessage?: string,
   ) {
     super(
       messages[code] ||
@@ -129,7 +130,7 @@ export class ApiClient {
     const timeout = setTimeout(() => {
       timedOut = true;
       controller.abort();
-    }, options.hcaptchaToken ? 22000 : 12000);
+    }, path.includes("/airdrop") ? 45000 : options.hcaptchaToken ? 22000 : 12000);
     const form = data instanceof URLSearchParams;
     const multipart = data instanceof FormData;
     try {
@@ -165,7 +166,7 @@ export class ApiClient {
         signal: controller.signal,
       });
       if (controller.signal.aborted) throw aborted();
-      let result: { code?: number; data?: T };
+      let result: { code?: number; data?: T; msg?: unknown };
       try {
         result = await response.json();
       } catch {
@@ -200,6 +201,7 @@ export class ApiClient {
         throw new ApiError(
           response.status,
           typeof result.code === "number" ? result.code : 10006,
+          result.code===23002 && typeof result.msg==='string' ? result.msg.slice(0,500) : undefined,
         );
       if (!("data" in result)) throw invalid();
       return result.data as T;

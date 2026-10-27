@@ -1,6 +1,7 @@
+import { playerConfig } from "./playerConfig";
 import {mainnet,sepolia,bsc,arbitrum,optimism,base,polygon,avalanche} from 'viem/chains';
 // Official network parameters: https://docs.robinhood.com/chain/connecting/
-export function walletConfiguration(projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '', network = import.meta.env.VITE_WALLET_NETWORK || 'mainnet') {
+export function walletConfiguration(projectId = playerConfig.walletconnect_project_id || '', network: string = playerConfig.wallet_network || 'mainnet') {
   if (!/^[a-f0-9]{32}$/i.test(projectId.trim())) throw new Error('WalletConnect Project ID is missing or invalid.');
   if (network !== 'mainnet' && network !== 'testnet') throw new Error('Wallet network must be mainnet or testnet.');
   const testnet = network === 'testnet';

@@ -116,7 +116,7 @@ export function GamePage({
     return () => document.removeEventListener("visibilitychange", visibility);
   }, []);
   if (!c) return <NotFound />;
-  if (c.id !== "phood")
+  if (c.id !== "phood" && live?.campaign.game_key !== "paperhood")
     return (
       <div className="empty-panel">
         <Gamepad2 size={38} />

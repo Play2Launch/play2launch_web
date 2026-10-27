@@ -141,6 +141,8 @@ function Round({ slug }: { slug: string }) {
       if (alive.current) setBusy(false);
     }
   }
+  if (campaign?.availability?.scoring_open === false && campaign.game_key === "paperhood") return <Navigate replace to={`/campaign/${slug}/try`}/>;
+  if (campaign?.game_key?.startsWith("ga")) return <Navigate replace to={`/games/${campaign.game_key}?campaign=${encodeURIComponent(slug)}`}/>;
   if (campaign?.availability?.scoring_open === false && campaign.rules_version !== REALTIME_RULES && /^gx[0-9a-z]{1,13}$/.test(campaign.game_key||"")) return <Navigate replace to={`/campaign/${slug}/try`}/>;
   if (app.user && campaign?.rules_version === REALTIME_RULES && campaign.campaign_type === 'play_to_ido') return <RealtimeFrame slug={slug}/>;
   if (!app.user)

@@ -11,6 +11,8 @@ import { CampaignArtwork } from "./CampaignArtwork";
 
 export type CampaignHeaderData = Pick<
   Campaign,
+  | "airdrop_locked"
+  | "airdrop_status"
   | "availability"
   | "campaign_type"
   | "id"

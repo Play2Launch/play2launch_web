@@ -1,3 +1,4 @@
+import { playerConfig } from "../lib/playerConfig";
 import { useEffect, useState } from "react";
 import { UserRoundPlus } from "lucide-react";
 import { api } from "../lib/api";
@@ -47,8 +48,8 @@ export function TeamInvite({
       target: "teams",
     },
     {
-      bot: import.meta.env.VITE_TELEGRAM_BOT_USERNAME,
-      app: import.meta.env.VITE_TELEGRAM_APP_NAME,
+      bot: playerConfig.telegram_bot_username,
+      app: playerConfig.telegram_app_name,
     },
   );
   async function copy(value: string) {

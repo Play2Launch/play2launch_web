@@ -2,7 +2,7 @@
 
 Profile (`/profile`) → Open wallet connection → Connect with WalletConnect. Uses Reown AppKit with the Ethers adapter, lazy-loaded on explicit user action. Existing account/TMA authentication is unchanged. SDK-persisted sessions are restored when the connector is opened; wallet changes and remote disconnects update through AppKit subscriptions/hooks.
 
-Local `.env.local` (gitignored) configures the public `VITE_WALLETCONNECT_PROJECT_ID` and `VITE_WALLET_NETWORK=mainnet`. Restart Vite after env changes. Deployed builds need these variables at build time; the Project ID is public, not a server secret. Configure exact production origins and local development origins in Reown Dashboard. Never put private RPC credentials or wallet keys in VITE variables.
+Server `conf/config.yml` configures `player.walletconnect_project_id` and `player.wallet_network` (`mainnet` or `testnet`). The player loads these public settings from `/api/v1/config/player` before rendering. Restart the server and refresh the page after changes; no frontend rebuild is needed. An empty Project ID disables wallet connection. Configure exact allowed origins in the Reown dashboard. Never put wallet keys or private RPC credentials in public player settings.
 
 Official Robinhood configuration: https://docs.robinhood.com/chain/connecting/
 

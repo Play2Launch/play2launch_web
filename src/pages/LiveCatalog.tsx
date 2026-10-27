@@ -107,6 +107,20 @@ function CatalogContent({ slug }: { slug?: string }) {
       });
     return () => controller.abort();
   }, [slug, after, retry]);
+  const visibleIDs = items.map(c=>c.slug).join(',');
+  useEffect(()=>{
+    if(!visibleIDs)return;
+    const controller=new AbortController();
+    let refreshing=false;
+    const timer=setInterval(()=>{
+      if(refreshing)return;
+      refreshing=true;
+      void Promise.all(visibleIDs.split(',').map(id=>getCampaign(id,controller.signal).catch(()=>null))).then(rows=>{
+        if(!controller.signal.aborted)setItems(previous=>previous.map(c=>rows.find(r=>r?.id===c.id) ?? c));
+      }).finally(()=>{refreshing=false});
+    },20000);
+    return()=>{controller.abort();clearInterval(timer)};
+  },[visibleIDs]);
   const selected = slug ? items[0] : undefined;
   useEffect(() => {
     if (selected) document.title = `${selected.name} · PLAY TO LAUNCH`;

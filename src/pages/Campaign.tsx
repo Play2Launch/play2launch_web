@@ -1,3 +1,4 @@
+import { AirdropPanel } from "../components/AirdropPanel";
 import { CampaignStatus } from "../components/CampaignStatus";
 import IDOCampaign from './IDOCampaign';
 import { campaignState } from "../lib/campaignLifecycle";
@@ -96,8 +97,8 @@ export function CampaignPage({
   const stage = live ? c.stage : app.getStage(c.id);
   const state = campaignState(c);
   const practiceOnly = live && c.availability?.scoring_open === false;
-  const liveTitle = state === "goal_reached" ? "The community reached its goal." : state === "scoring_closed" ? "This campaign has ended." : state === "not_started" ? "The next round is coming." : "Play together. Reach the goal.";
-  const liveDetail = practiceOnly ? "Keep playing for fun. Practice does not change scores, rankings or team membership. Airdrop details will follow." : "Your best valid score contributes to the community goal. Reaching the target awaits confirmation.";
+  const liveTitle = c.airdrop_locked ? "Scores are finalized. Check your airdrop below." : state === "goal_reached" ? "The community reached its goal." : state === "scoring_closed" ? "This campaign has ended." : state === "not_started" ? "The next round is coming." : "Play together. Reach the goal.";
+  const liveDetail = practiceOnly ? "Keep playing for fun. Practice does not change scores, rankings or team membership. See the airdrop section for settlement and claim status." : "Your best valid score contributes to the community goal. Reaching the target awaits confirmation.";
   const teams = live ? [] : app.standings(c.id).teams;
   const joined = teams.find((t) => t.id === app.local.memberships[c.id]);
   const invited =
@@ -112,6 +113,7 @@ export function CampaignPage({
     <>
       <CampaignNav campaign={c} live={live} />
       <CampaignIdentityCard campaign={c} stage={stage} />
+      {live && <AirdropPanel slug={c.id}/>}
       <div className="campaign-layout">
         <div>
           {live && liveCampaignId && <div className="campaign-follow-row"><span className="muted">Keep this campaign on your radar.</span><FollowButton kind="campaign" targetId={liveCampaignId} /></div>}
@@ -237,7 +239,7 @@ export function CampaignPage({
                   ? c.unlockPoints === undefined
                     ? "—"
                     : c.unlockPoints >= c.target
-                      ? (state === "scoring_closed" ? "Ended · Target met" : state === "goal_reached" ? "Community goal reached" : "Target met · Awaiting confirmation")
+                      ? (c.airdrop_locked ? "Final score · Target met" : state === "scoring_closed" ? "Ended · Target met" : state === "goal_reached" ? "Community goal reached" : "Target met · Awaiting confirmation")
                       : state === "scoring_closed" ? "Ended · Goal not reached" : `${number(c.target - c.unlockPoints)} to go`
                   : (c.unlockPoints ?? 0) < c.target
                     ? `${Math.max(c.target - (c.unlockPoints ?? 0), 0).toLocaleString()} to go`
@@ -288,6 +290,7 @@ export function CampaignPage({
                 </span>
               </div>
             ) : null}
+            {live && c.game_key?.startsWith('ga') && <Link className="btn btn-primary full" to={`/games/${c.game_key}?campaign=${encodeURIComponent(c.id)}`}>{practiceOnly?'Play for fun':'Play ranked round'}</Link>}
             {live &&
               ((c.game_key === "paperhood" && c.rules_version === "paperhood-v1") || (/^gx[0-9a-z]{1,13}$/.test(c.game_key||"") && c.rules_version === "paper-run-practice-v5")) && (
                 <Link

@@ -1,7 +1,9 @@
+import type { AirdropStatusData } from './campaignLifecycle';
 import { api } from "./api";
 import type { Stage } from "../data";
 
 export type PublicCampaign = {
+ airdrop_locked?: boolean; airdrop_status?: AirdropStatusData;
  campaign_type?: string; starts_at?: string; ends_at?: string; scoring_ends_at?: string;
   game_key?: string;
   rules_version?: string;
@@ -88,6 +90,11 @@ function isCampaign(value: unknown): value is PublicCampaign {
     /^#[0-9a-fA-F]{6}$/.test(v.color)
   );
 }
+async function withAirdrop(c: PublicCampaign, signal?: AbortSignal): Promise<PublicCampaign> {
+ if(!c.airdrop_locked) return c;
+ try { return {...c, airdrop_status: await api.request<AirdropStatusData>(`/campaigns/${encodeURIComponent(c.slug)}/airdrop`, undefined, {signal})}; }
+ catch { return {...c, airdrop_status: undefined}; }
+}
 export async function listCampaigns(
   after = "",
   signal?: AbortSignal,
@@ -108,7 +115,7 @@ export async function listCampaigns(
   ) {
     throw new Error("The campaign response was invalid. Please try again.");
   }
-  return data;
+  return {...data, items: await Promise.all(data.items.map(c => withAirdrop(c, signal)))};
 }
 export async function recentCampaigns(signal?: AbortSignal): Promise<RecentCampaigns> {
   const data = await api.request<CampaignPage>(
@@ -123,7 +130,7 @@ export async function recentCampaigns(signal?: AbortSignal): Promise<RecentCampa
   }
   // Servers deployed before has_more still prove there is no fourth item when
   // fewer than three were returned. With exactly three, keep the picker visible.
-  return { items: data.items, hasMore: data.has_more ?? data.items.length === 3 };
+  return { items: await Promise.all(data.items.map(c => withAirdrop(c, signal))), hasMore: data.has_more ?? data.items.length === 3 };
 }
 export async function getCampaign(
   slug: string,
@@ -136,5 +143,5 @@ export async function getCampaign(
   );
   if (!isCampaign(data) || data.slug !== slug)
     throw new Error("The campaign response was invalid. Please try again.");
-  return data;
+  return withAirdrop(data, signal);
 }

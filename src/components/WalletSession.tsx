@@ -1,3 +1,4 @@
+import { AirdropActions } from "./AirdropActions";
 import {useIDOAutoSwitch} from '../lib/useIDOAutoSwitch';
 import { useState } from "react";
 import { assertWalletAllowed } from "../lib/walletPolicy";
@@ -251,4 +252,10 @@ export function WalletSession() {
       </p>
     </div>
   );
+}
+
+export function AirdropWallet(props:{data:any;entry:any;slug:string;refresh:()=>Promise<void>}) {
+ const {address,isConnected}=useAppKitAccount({namespace:'eip155'});
+ const {walletProvider}=useAppKitProvider<Eip1193Provider>('eip155');
+ return <><WalletButton targetChainId={props.data.settings.chain_id}/><AirdropActions {...props} address={isConnected?address:undefined} provider={walletProvider}/></>;
 }

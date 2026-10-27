@@ -1,6 +1,7 @@
+import { ArcadeHome } from './Arcade';
 import { IDOCardProgress } from '../components/IDOCardProgress';
 import { formatTicker } from "../lib/ticker";
-import { campaignState } from "../lib/campaignLifecycle";
+import { campaignState, campaignStateLabels } from "../lib/campaignLifecycle";
 import { CampaignStatus } from "../components/CampaignStatus";
 import {
   ArrowDownRight,
@@ -82,7 +83,8 @@ export default function Discover({
       (live && filter === "Active" ? campaignState(c) === "open" || campaignState(c) === "joining_closed"
        : live && filter === "Upcoming" ? campaignState(c) === "not_started"
        : live && filter === "Goal reached" ? campaignState(c) === "goal_reached"
-       : live && filter === "Ended" ? campaignState(c) === "scoring_closed"
+       : live && filter === "Claims" ? ["claims_pending","claims_open","claims_paused","claims_unknown"].includes(campaignState(c))
+       : live && filter === "Ended" ? ["scoring_closed","claims_ended","claims_closed"].includes(campaignState(c))
        : filter === "Launching soon"
         ? ["countdown", "ready"].includes(getStage(c.id))
         : filter === "Launched"
@@ -166,7 +168,7 @@ export default function Discover({
                 <div>
                   <strong>
                     {live
-                      ? featured.unlockPoints === undefined
+                      ? featured.airdrop_locked ? campaignStateLabels[campaignState(featured)] : featured.unlockPoints === undefined
                         ? "—"
                         : number(featured.unlockPoints)
                       : number(launchPoints(featured))}
@@ -186,7 +188,7 @@ export default function Discover({
                 </div>
                 <span>
                   {live
-                    ? featured.unlockPoints === undefined
+                    ? featured.airdrop_locked ? campaignStateLabels[campaignState(featured)] : featured.unlockPoints === undefined
                       ? "PARTICIPATION —"
                       : featured.unlockPoints >= featured.target
                         ? "COMMUNITY GOAL REACHED"
@@ -263,6 +265,7 @@ export default function Discover({
           )}
         </div>
       </section>
+      {live && <ArcadeHome/>}
       <PlatformVision />
       <section className="section" id="campaigns" aria-label="Campaigns">
         <div className="section-heading">
@@ -278,7 +281,7 @@ export default function Discover({
           <div className="tabs">
             {[
               ...(live ? ["All projects"] : ["Trending", "New arrivals"]),
-              ...(live ? ["Active", "Upcoming", "Goal reached", "Ended"] : ["Launching soon", "Launched"]),
+              ...(live ? ["Active", "Upcoming", "Goal reached", "Claims", "Ended"] : ["Launching soon", "Launched"]),
             ].map((t) => (
               <button
                 key={t}

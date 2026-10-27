@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ArcadeTasks } from '../components/ArcadeTasks';
 import { Link } from "react-router-dom";
 import { Check, ListChecks } from "lucide-react";
 import { FriendInvite } from '../components/FriendInvite';
@@ -81,6 +82,7 @@ export default function Tasks() {
             </p>
           )}
           {!page && busy && <p role="status">Loading your tasks…</p>}
+          {app.user.mode==='live'&&<ArcadeTasks key={app.user.id} userId={app.user.id}/>}
           {["starter", "daily", "weekly"].map((group) => (
             <section className="task-group" key={group}>
               <h2>

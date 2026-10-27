@@ -1,5 +1,7 @@
+import type { AirdropStatusData } from './lib/campaignLifecycle';
 export type Stage = "prelaunch" | "ready" | "countdown" | "live";
 export type Campaign = {
+ airdrop_locked?: boolean; airdrop_status?: AirdropStatusData;
  campaign_type?: string; starts_at?: string; ends_at?: string; scoring_ends_at?: string;
   game_key?: string;
   rules_version?: string;
