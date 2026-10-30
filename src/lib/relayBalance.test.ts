@@ -7,3 +7,4 @@ it('blocks insufficient source tokens and releases RPC resources',async()=>{mock
 it('blocks insufficient native gas even with sufficient tokens',async()=>{mocks.balance.mockResolvedValue(0n);mocks.token.mockResolvedValue(100000000n);await expect(checkSwapBalance(input)).rejects.toThrow('Insufficient BNB')});
 it('accepts exact token balance with enough gas',async()=>{mocks.balance.mockResolvedValue(1000n);mocks.token.mockResolvedValue(100000000n);await expect(checkSwapBalance(input)).resolves.toBe('100.0 USDT')});
 it('includes native input and fees without counting input twice',()=>{expect(requiredSwapFunds(100n,true,5n,100n).native).toBe(105n);expect(requiredSwapFunds(100n,true,5n,110n).native).toBe(115n)});
+it('requires source gas for ERC20 swaps even before a fee estimate is available',async()=>{mocks.balance.mockResolvedValue(0n);mocks.token.mockResolvedValue(input.amount);await expect(checkSwapBalance({...input,gas:undefined})).rejects.toThrow('Add BNB');});

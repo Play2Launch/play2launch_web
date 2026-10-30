@@ -142,7 +142,7 @@ export default function RelayPaymentSwap({
         if (!cancelled) {
           setChains(supported);
           const sources = gasTopUp ? gasSourceChains(supported) : supported;
-          if (!sources.length) throw new Error('No supported ETH source networks are available.');
+          if (!sources.length) throw new Error('No supported source networks are available.');
           setSource(
             sources.find((c) => c.id !== config.chain_id)?.id ||
               config.chain_id,
@@ -168,19 +168,13 @@ export default function RelayPaymentSwap({
     setCoin("");
     setQuote(undefined);
     setLoading(true);
-    if (gasTopUp) {
-      setCoins([{address: nativeETH, symbol: 'ETH', name: 'Ether', decimals: 18}]);
-      setCoin(nativeETH);
-      setLoading(false);
-      return;
-    }
     relayRequest<Currency[]>(slug, "/currencies/v2", "POST", {
       chainIds: [source],
     })
       .then((c) => {
         if (!cancelled) {
           setCoins(c);
-          setCoin(c[0]?.address || "");
+          setCoin((c.find(currency=>currency.address.toLowerCase()===nativeETH)||c[0])?.address || "");
         }
       })
       .catch((e) => {
@@ -203,7 +197,10 @@ export default function RelayPaymentSwap({
       const tx=item.data as {chainId?:number;value?:string}|undefined;
       if(tx?.chainId===source&&tx.value)transactionValue+=BigInt(tx.value);
     }
-    const gas=route?.fees?.gas?.amount;
+    const gasFee=route?.fees?.gas;
+    // Relay can price fees in the input ERC20. Only native units can be
+    // compared with the wallet's source-network gas balance.
+    const gas=gasFee?.currency?.chainId===source&&gasFee.currency.address?.toLowerCase()===nativeETH&&gasFee.currency.decimals===18?gasFee.amount:undefined;
     try {
       const balance=await checkSwapBalance({rpc:chain.httpRpcUrl,chainId:source,address,token:coin,decimals:currency.decimals,symbol:currency.symbol,nativeSymbol:chain.currency.symbol,amount:value,gas:gas?BigInt(gas):0n,transactionValue});
       if(active.current)setSourceBalance({key:balanceKey,text:balance});
@@ -237,7 +234,7 @@ export default function RelayPaymentSwap({
         originCurrency: coin,
         amount: value.toString(),
       });
-      if (gasTopUp) assertGasQuote(q, source, address, value);
+      if (gasTopUp) assertGasQuote(q, source, address, value, currency.address, currency.decimals);
       if (
         q.details?.recipient?.toLowerCase() !== address.toLowerCase() ||
         q.details?.currencyIn?.currency?.chainId !== source ||
@@ -326,12 +323,12 @@ export default function RelayPaymentSwap({
     try {
       const currency=coins.find(c=>c.address===coin);
       if(!currency)throw Error("Select a source token.");
-      if(gasTopUp) assertGasQuote(quote,source,address,parseUnits(amount,18));
+      if(gasTopUp) assertGasQuote(quote,source,address,parseUnits(amount,currency.decimals),currency.address,currency.decimals);
       await verifyBalance(parseUnits(amount,currency.decimals),quote);
       setStatus("Switch to the source network in your wallet to continue.");
       await ensureRelaySourceChain(provider,source,address);
       if(!active.current)throw Error("Wallet changed. Reopen the swap.");
-      setStatus(gasTopUp ? 'Confirm the ETH bridge transaction in your wallet.' : "Confirm the approval and swap transactions in your wallet.");
+      setStatus(gasTopUp ? 'Confirm any token approval and the swap transactions in your wallet.' : "Confirm the approval and swap transactions in your wallet.");
       const wallet = createWalletClient({
         account: address as `0x${string}`,
         transport: custom({
@@ -440,7 +437,7 @@ export default function RelayPaymentSwap({
           </button>
         </header>
         <p className="muted">
-          {gasTopUp ? 'Transfer native ETH from another network to this wallet on Robinhood Chain. Only ETH is supported. Your source network also needs ETH for its transaction fee.' : 'Swap from another chain into your wallet. Subscribe separately after your tokens arrive.'}
+          {gasTopUp ? 'Use USDT, USDC, USDG, ETH, BNB or another available asset to receive ETH on Robinhood Chain. You also need the source network’s gas token, such as BNB on BNB Chain or ETH on Base.' : 'Swap from another chain into your wallet. Subscribe separately after your tokens arrive.'}
         </p>
         <div className="relay-destination">
           <small>YOU RECEIVE</small>
@@ -469,9 +466,9 @@ export default function RelayPaymentSwap({
               <RelayAssetSelect label="From chain" value={String(source)} disabled={busy || loading}
                 options={(gasTopUp?gasSourceChains(chains):chains).map(c=>({value:String(c.id),label:c.displayName||c.name,icon:c.iconUrl||walletChainImages[c.id]}))}
                 onChange={value=>{setSource(Number(value));setQuote(undefined);setError("")}}/>
-              {gasTopUp ? <div className="relay-destination"><small>YOU SEND</small><strong>ETH · Native Ether</strong></div> : <RelayAssetSelect label="Pay with" value={coin} disabled={busy || loading}
+              <RelayAssetSelect label="Pay with" value={coin} disabled={busy || loading}
                 options={coins.map(c=>({value:c.address,label:c.symbol,detail:c.name,icon:c.metadata?.logoURI||c.logoURI}))}
-                onChange={value=>{setCoin(value);setQuote(undefined)}}/>}
+                onChange={value=>{setCoin(value);setQuote(undefined);setError('');setSourceBalance(undefined)}}/>
             </div>
             <label className="relay-amount">
               Amount

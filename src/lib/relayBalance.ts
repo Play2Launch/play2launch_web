@@ -9,6 +9,7 @@ export async function checkSwapBalance(input:{rpc:string;chainId:number;address:
   const balance=native?nativeBalance:tokenBalance;
   const required=requiredSwapFunds(input.amount,native,input.gas??0n,input.transactionValue??0n);
   if(balance<input.amount)throw Error(`Insufficient ${input.symbol} on the source chain. Balance: ${formatUnits(balance,input.decimals)}; short by ${formatUnits(input.amount-balance,input.decimals)} ${input.symbol}.`);
+  if(!native&&nativeBalance===0n)throw Error(`Insufficient ${input.nativeSymbol} for source-network gas. Add ${input.nativeSymbol} to this wallet on the source network before swapping.`);
   if(nativeBalance<required.native)throw Error(`Insufficient ${input.nativeSymbol} for the swap and estimated network fees. Short by ${formatUnits(required.native-nativeBalance,18)} ${input.nativeSymbol}.`);
   return `${formatUnits(balance,input.decimals)} ${input.symbol}`;
  }finally{provider.destroy()}
