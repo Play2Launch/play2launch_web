@@ -42,3 +42,10 @@
 .airdrop-panel-transaction { margin-top: 18px; font-size: 12px; }
 .airdrop-panel-transaction span { display: block; color: #a7afa4; margin-bottom: 6px; }
 .airdrop-panel-transaction a { color: #d2fa69; overflow-wrap: anywhere; text-decoration: underline; }
+.airdrop-actions { min-width: 0; width: 100%; }
+.airdrop-gas { margin: 14px 0; padding: 12px; border: 1px solid #ffffff20; border-radius: 8px; background: #0b0d0b66; }
+.airdrop-gas-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12px; color: #a7afa4; }
+.airdrop-gas-heading .btn { min-height: 40px; padding: 8px 12px; font-size: 12px; }
+.airdrop-gas p strong { color: #eef2e8; font-size: 18px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.airdrop-gas p.airdrop-gas-warning { color: #f0bd72; }
+.airdrop-action-error { overflow-wrap: anywhere; }
