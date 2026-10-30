@@ -4,11 +4,25 @@ import {api} from '../lib/api';
 import {useApp} from '../state';
 import {loadWallet,useWalletModule} from '../lib/walletLoader';
 import {walletAllowed} from '../lib/walletPolicy';
+import {shareOrigin} from '../lib/entry';
 import {WarningNotice} from './WarningNotice';
 import './AirdropPanel.css';
 function tokenAmount(value:string,decimals:number){const [whole,fraction]=formatUnits(value,decimals).split('.');const trimmed=fraction?.replace(/0+$/,'');return whole.replace(/\B(?=(\d{3})+(?!\d))/g,',')+(trimmed?'.'+trimmed:'');}
 function rewardAmount(value:string,decimals:number){const [whole,fraction='']=formatUnits(value,decimals).split('.');const shortened=tokenAmount(value,decimals).split('.')[0]+(fraction.slice(0,4).replace(/0+$/,'')?'.'+fraction.slice(0,4).replace(/0+$/,''):'');return /[1-9]/.test(fraction.slice(4))?(whole==='0'&&!/[1-9]/.test(fraction.slice(0,4))?'<0.0001':'≈ '+shortened):shortened;}
 function claimCountdown(seconds:number){const days=Math.floor(seconds/86400);const hours=Math.floor(seconds%86400/3600);const minutes=Math.floor(seconds%3600/60);return `${days?days+'d ':''}${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;}
+function BrowserClaimNotice({slug}:{slug:string}){
+ const [copyState,setCopyState]=useState<'idle'|'copied'|'failed'>('idle');
+ const url=new URL(`/campaign/${encodeURIComponent(slug)}`,shareOrigin(window.location.origin)).href;
+ async function copy(){try{await navigator.clipboard.writeText(url);setCopyState('copied')}catch{setCopyState('failed')}}
+ return <WarningNotice title="Open in your browser to claim">
+  <p>Open this link in Safari, Chrome, or another browser, then sign in with the same Telegram account to claim your rewards.</p>
+  <div className="airdrop-browser-link">
+   <button type="button" className="btn btn-secondary airdrop-browser-copy" aria-label="Copy claim page link" onClick={()=>void copy()}><span className="airdrop-browser-url">{url}</span><span className="airdrop-browser-copy-label">{copyState==='copied'?'Copied':'Copy link'}</span></button>
+   {copyState!=='idle'&&<p role="status">{copyState==='copied'?'Link copied. Paste it into your browser to continue.':'Unable to copy automatically. Select and copy the link below.'}</p>}
+   {copyState==='failed'&&<input aria-label="Claim page link" readOnly autoFocus value={url} onFocus={e=>e.currentTarget.select()}/>}
+  </div>
+ </WarningNotice>;
+}
 export function AirdropPanel({slug}:{slug:string}){
  const app=useApp();return <AirdropView key={`${slug}:${app.user?.id||''}`} slug={slug}/>;
 }
@@ -36,7 +50,7 @@ function AirdropView({slug}:{slug:string}){
   {mine?.claimed&&<div className="airdrop-panel-transaction">{mine.transaction&&/^0x[0-9a-fA-F]{64}$/.test(mine.transaction)?<><span>Claim transaction</span><a href={`${data.network.explorer_url}/tx/${mine.transaction}`} target="_blank" rel="noreferrer">{mine.transaction} ↗</a></>:<span>Transaction details are syncing…</span>}</div>}
   <footer className="airdrop-panel-footer">{c.deadline>0&&!c.closed&&!expired&&<div className="airdrop-panel-countdown"><span>Claim ends in</span><strong role="timer" aria-label="Claim countdown">{claimCountdown(remaining)}</strong></div>}
   {!app.user&&data.locked_at?<button className="btn btn-primary" onClick={()=>app.setAuthOpen(true)}>Sign in to view your allocation</button>:entry&&entry.amount!=='0'&&!mine.claimed&&open&&walletAllowed(app.platform.runtime)?Wallet?<Wallet data={data} entry={entry} slug={slug} refresh={()=>load()}/>:<button className="btn btn-primary" disabled={busy} onClick={async()=>{setBusy(true);try{await loadWallet()}catch(e){setError(e instanceof Error?e.message:'Wallet unavailable')}finally{setBusy(false)}}}>{busy?'Loading wallet…':'Connect wallet to claim'}</button>:null}
-  {app.user&&entry&&entry.amount!=='0'&&!mine.claimed&&open&&!walletAllowed(app.platform.runtime)&&<WarningNotice title="Open in your browser to claim"><p>Open this page in Safari, Chrome, or another browser, then sign in with the same Telegram account to claim your rewards.</p><p>Use Telegram's menu to open this page in your browser.</p></WarningNotice>}
+  {app.user&&entry&&entry.amount!=='0'&&!mine.claimed&&open&&!walletAllowed(app.platform.runtime)&&<BrowserClaimNotice slug={slug}/>}
   </footer>
    </div>
    <div className="airdrop-panel-pool"><span className="airdrop-panel-label">Reward pool</span><strong>{tokenAmount(s.total,s.decimals)} <small>{s.symbol}</small></strong><p>Shared in proportion to each player's final valid score.</p></div>
